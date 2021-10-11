@@ -5,12 +5,12 @@ import "./utils/CrowdtainerTest.sol";
 import {Errors} from "../Crowdtainer.sol";
 
 contract CrowdtainerTester is CrowdtainerTest {
+
     function testDummyFunctionCalledByWrongAddress() public {
         try bob.dummyFunction("I'm not allowed") {
 
         } catch (bytes memory lowLevelData) {
-            string memory expectedError = "CallerNotAllowed(address,address)";
-            this.assertEqSignature(expectedError, lowLevelData);
+            this.assertEqSignature(makeError(Errors.CallerNotAllowed.selector), lowLevelData);
             this.printAddresses(lowLevelData);
         }
     }
