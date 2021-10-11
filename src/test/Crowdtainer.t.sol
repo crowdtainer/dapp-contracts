@@ -10,8 +10,8 @@ contract CrowdtainerTester is CrowdtainerTest {
 
         } catch (bytes memory lowLevelData) {
             string memory expectedError = "CallerNotAllowed(address,address)";
-            assertEqSignature(expectedError, lowLevelData);
-            printAddress2(lowLevelData);
+            this.assertEqSignature(expectedError, lowLevelData);
+            this.printAddresses(lowLevelData);
         }
     }
 
