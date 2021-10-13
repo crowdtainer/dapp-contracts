@@ -18,8 +18,7 @@ contract CrowdtainerTestHelpers is DSTest {
         }
     }
 
-    function makeError(bytes4 selector) internal pure returns (bytes memory)
-    {
+    function makeError(bytes4 selector) internal pure returns (bytes memory) {
         bytes memory temp = toBytes(selector);
         return temp;
     }
@@ -35,12 +34,26 @@ contract CrowdtainerTestHelpers is DSTest {
     }
 
     // @dev Helper function to convert 'bytes32' into 'bytes memory'.
-    function toBytes(bytes32 self) internal pure returns (bytes memory tempBytes) {
+    function toBytes(bytes32 self)
+        internal
+        pure
+        returns (bytes memory tempBytes)
+    {
         // Copies 'self' into a new 'bytes memory'.
         // Returns the newly created 'bytes memory', which will be of length 32.
         tempBytes = new bytes(32);
+
+        //solhint-disable no-inline-assembly
         assembly {
-            mstore(add(tempBytes, /*BYTES_HEADER_SIZE*/32), self)
+            mstore(
+                add(
+                    tempBytes,
+                    /*BYTES_HEADER_SIZE*/
+                    32
+                ),
+                self
+            )
         }
+        //solhint-enable no-inline-assembly
     }
 }

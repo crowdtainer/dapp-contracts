@@ -8,12 +8,12 @@ import "./Hevm.sol";
 contract User {
     Crowdtainer internal crowdtainer;
 
-    constructor(address _deployer) {
-        crowdtainer = Crowdtainer(_deployer);
+    constructor(address _owner) {
+        crowdtainer = Crowdtainer(_owner);
     }
 
-    function dummyFunction(string memory message) public {
-        crowdtainer.dummyFunction(message);
+    function getPaidAndDeliver() public {
+        crowdtainer.getPaidAndDeliver();
     }
 }
 
@@ -28,7 +28,32 @@ contract CrowdtainerTest is CrowdtainerTestHelpers {
     User internal bob;
 
     function setUp() public virtual {
-        crowdtainer = new Crowdtainer();
+        uint256 openingTime = block.timestamp;
+        uint256 closingTime = block.timestamp + 2 hours;
+        uint256 minimumSoldUnits = 100;
+        uint256 maximumSoldUnits = 1000;
+        uint256 numberOfProductTypes = 3;
+
+        uint256[] memory unitPricePerType = new uint256[](3);
+        unitPricePerType[0] = 10;
+        unitPricePerType[1] = 20;
+        unitPricePerType[2] = 30;
+
+        uint256 discountRate = 10;
+        uint256 referralRate = 10;
+        address token = address(1); // TODO
+
+        crowdtainer = new Crowdtainer(
+            openingTime,
+            closingTime,
+            minimumSoldUnits,
+            maximumSoldUnits,
+            numberOfProductTypes,
+            unitPricePerType,
+            discountRate,
+            referralRate,
+            IERC20(token)
+        );
 
         alice = new User(address(crowdtainer));
         bob = new User(address(crowdtainer));

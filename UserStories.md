@@ -73,8 +73,6 @@ What follows is a detailed description of the smart contract expectations in Use
       * @param pricePerUnit The price of each unit, in ERC2O units. The price should be given in the number of smallest unit for precision (e.g 10^18 == 1 DAI).
       * @param discount The discount percentage to be received for using the referral system.
       * @param reward The reward percentage to be given for being referred to by a buyer.
-      * @param legalContractIPFSHash A string containing the IPFS hash of the legal agreement to be fullfiled if the goal is reached.
-      * @param legalContractSWARMHash A string containing the SWARM hash of the legal agreement to be fullfiled if the goal is reached.
       */
 ```
 
