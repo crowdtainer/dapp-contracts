@@ -2,8 +2,11 @@
 pragma solidity ^0.8.9;
 
 import "ds-test/test.sol";
+import "./Hevm.sol";
 
 contract CrowdtainerTestHelpers is DSTest {
+    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
+
     // @dev Helper function to check wheether the thrown Custom Error type matches expectation.
     function assertEqSignature(
         bytes calldata expectedSignature,
@@ -11,7 +14,8 @@ contract CrowdtainerTestHelpers is DSTest {
     ) external {
         bytes memory receivedErrorSignature = receivedBytes[:4];
         bytes memory expected = expectedSignature[:4];
-        if (!checkEq0(bytes(expected), receivedErrorSignature)) {
+
+        if (!checkEq0(expected, receivedErrorSignature)) {
             emit log_named_bytes("  Expected", expected);
             emit log_named_bytes("    Actual", receivedErrorSignature);
             fail();
@@ -23,10 +27,10 @@ contract CrowdtainerTestHelpers is DSTest {
         return temp;
     }
 
-    // @dev Helper function to decode 2 address parameters and print their values.
+    // @dev Helper function to decode 2 address parameters and print their values from returned data.
     function printAddresses(bytes calldata receivedBytes) external {
         (address expected, address actual) = abi.decode(
-            receivedBytes[4:],
+            receivedBytes,
             (address, address)
         );
         emit log_named_address("  Expected", expected);

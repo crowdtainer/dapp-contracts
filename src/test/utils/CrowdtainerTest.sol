@@ -3,7 +3,7 @@ pragma solidity ^0.8.9;
 import "./CrowdtainerTestHelpers.sol";
 
 import "../../Crowdtainer.sol";
-import "./Hevm.sol";
+import "@openzeppelin/contracts/mocks/ERC20Mock.sol";
 
 contract User {
     Crowdtainer internal crowdtainer;
@@ -18,8 +18,6 @@ contract User {
 }
 
 contract CrowdtainerTest is CrowdtainerTestHelpers {
-    Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
-
     // contracts
     Crowdtainer internal crowdtainer;
 
@@ -27,33 +25,33 @@ contract CrowdtainerTest is CrowdtainerTestHelpers {
     User internal alice;
     User internal bob;
 
+    // Default valid constructor values
+    uint256 internal openingTime;
+    uint256 internal closingTime;
+    uint256 internal minimumSoldUnits = 100;
+    uint256 internal maximumSoldUnits = 1000;
+    uint256 internal numberOfProductTypes = 3;
+
+    uint256[] internal unitPricePerType = [uint256(10), 20, 30];
+
+    uint256 internal discountRate = 10;
+    uint256 internal referralRate = 10;
+
+    // Create a token stub
+    uint8 internal numberOfDecimals = 18;
+    uint256 internal initialBalance = 30000 * (10**uint256(numberOfDecimals));
+    ERC20Mock internal token =
+        new ERC20Mock("StableToken", "STK", msg.sender, initialBalance);
+    address internal owner = address(this);
+
     function setUp() public virtual {
-        uint256 openingTime = block.timestamp;
-        uint256 closingTime = block.timestamp + 2 hours;
-        uint256 minimumSoldUnits = 100;
-        uint256 maximumSoldUnits = 1000;
-        uint256 numberOfProductTypes = 3;
+        hevm.warp(1634151199); // 13.10.2021
+        emit log_named_address("CrowdtainerTest address", owner);
 
-        uint256[] memory unitPricePerType = new uint256[](3);
-        unitPricePerType[0] = 10;
-        unitPricePerType[1] = 20;
-        unitPricePerType[2] = 30;
+        openingTime = block.timestamp;
+        closingTime = block.timestamp + 2 hours;
 
-        uint256 discountRate = 10;
-        uint256 referralRate = 10;
-        address token = address(1); // TODO
-
-        crowdtainer = new Crowdtainer(
-            openingTime,
-            closingTime,
-            minimumSoldUnits,
-            maximumSoldUnits,
-            numberOfProductTypes,
-            unitPricePerType,
-            discountRate,
-            referralRate,
-            IERC20(token)
-        );
+        crowdtainer = new Crowdtainer(owner);
 
         alice = new User(address(crowdtainer));
         bob = new User(address(crowdtainer));
