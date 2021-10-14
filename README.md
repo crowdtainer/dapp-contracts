@@ -9,7 +9,7 @@
 
 This repository contains all solidity code related to the core functionality of crowdtainer.
 
-```TODO: Add summary + system description link with further details.```
+See [`Crowdtainer smart contracts system`](./UserStories.md) for description and User Stories.
 
 ## Building and testing
 
