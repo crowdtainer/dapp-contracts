@@ -36,12 +36,12 @@ There are 2 main actor types involved:
 The contract has the following possible states:
 
 - *Funding*:  The project started and is collecting interested people's funds. Any participant is allowed to change their mind and withdraw their funds at this stage. The service provider is not allowed to withdraw any funds.
-- *Expired*:  The project's goal has not been reached in time. Any participant can widraw their funds back. The service provider is not allowed to withdraw any funds.
+- *Failed*:  The project's goal has not been reached in time. Any participant can widraw their funds back. The service provider however is not allowed to withdraw any funds.
 - *Delivery*: Successfully funded and the products or services will be delivered per legal contract terms. Funds are made available for the service/product provider.
 
 Only the *selling side* (deployer of the contract, i.e. service/product provider) is able to switch the contract into "Delivery" state. This is used to simultaneously withdraw the funds and signal that the provider agrees with the orders and represents her/his "signature" of the agreement to the sale terms.
 
-If the deployer/service provider for whatever reason is no longer interested or able to provide the service/products (by not switching the contract to this state), it falls into "Expired" state.
+If the deployer/service provider for whatever reason is no longer interested or able to provide the service/products (by not switching the contract to this state), it eventually enter into "Expired" state.
 
 Once the smart contract is in "Delivery" state, it is no longer possible for participants to withdraw their funds. Should an event happen where the provider can't deliver the promised services, dispute resolution happens via normal means, and the provider needs to return the funds manually.
 
@@ -49,13 +49,19 @@ Once the smart contract is in "Delivery" state, it is no longer possible for par
 
 ## Smart contract incentive mechanism 
 
-For the *group buying side*, the smart contract contains two incentive mechanisms (described below) in order to reward participants that provably helped the group to achieve their minimum goal. This is similar to referral codes available in apps like Uber or Airbnb, but it is different in that usually those credits are restricted for usage within those apps themselves, while here, one can withdraw the credits and do whatever is desired with it, since it is redeemed in stablecoin.
+For the *group buying side*, the smart contract contains two incentive mechanisms (described below) in order to reward participants that provably helped the group to achieve their minimum goal. This is similar to referral codes available in apps like Uber or Airbnb, but it is different in that usually those credits are restricted for usage within those apps themselves, while here, one can withdraw the credits and do whatever is desired with it, since it is redeemed in stablecoin. It also has no limits and is proportional to the number of times it was referred to.
 
 - *Referral code sharing*: Participants are given a referral code after a purchase. If a new purchase refers to this given code, this entitles the referral code owner to a percentage of the sale - redeemable directly in the smart contract.
 
 - *Buy with referral code*: Participants that uses a referral code during a purchase, get a discount in their purchase - also redeemable directly in the smart contract.
 
-All such credit is redeemable only if a project has its funding goals met.
+Example:
+
+For a Crowdtainer setup with a single product at 50 DAI per unit, and referral rate of 20%:
+
+* User A joins a Crowdtainer (spending 50 DAI) and publishes her referral code in her blog. 100 people then use her referral code to get a discount on a new purchase. User A's rewards will then be 950 DAI: 100 (units) x 50 (product price in DAI) x 0.2 (reward rate) - 50 (cost of joining the Crowdtainer with one product unit).
+
+> Note: All rewards are redeemable only if a project has its minimum funding goals met.
 
 ## User Stories
 
@@ -65,22 +71,22 @@ What follows is a detailed description of the smart contract expectations in Use
 - I must be able to create a project by specifying the following variables so that I can start a crowdtainer for my product or service:
 
 ```
-    /** @param openingTime Funding opening time.
-      * @param closingTime Funding closing time.
-      * @param minimumUnitsTarget The amount of sales required for funding to be considered to be successful.
-      * @param maximumTargetUnits A limit after which no further purchases are possible.
-      * @param token Address of the ERC20 token used for payment.
-      * @param pricePerUnit The price of each unit, in ERC2O units. The price should be given in the number of smallest unit for precision (e.g 10^18 == 1 DAI).
-      * @param discount The discount percentage to be received for using the referral system.
-      * @param reward The reward percentage to be given for being referred to by a buyer.
-      */
+    /**
+     * @param _openingTime Funding opening time.
+     * @param _expireTime Time after which the owner can no longer withdraw funds.
+     * @param _minimumSoldUnits The amount of sales required for funding to be considered to be successful.
+     * @param _maximumSoldUnits A limit after which no further purchases are possible.
+     * @param _unitPricePerType Array with price of each item, in ERC2O units.
+     * @param _referralRate Percentage used for incentivising participation.
+     * @param _token Address of the ERC20 token used for payment.
+     */
 ```
 
-- I need tooling to deploy the contract at a deterministic address (using CREATE2 opcode), so that I can reference the contract address in the legal agreement document even before the contract has been deployed.
+- I need tooling to deploy the contract at a deterministic address, so that I can reference the contract address in the legal agreement document even before the contract has been deployed.
 
 - I must be able to withdraw the funds if the minimum target is reached, so that I can signal that no more sales are avaiable, and start working on shipping the sold products.
 
-- I must be able to signal that products will no longer be delivered, so that 
+- I need a 2-way communication channel, so that once a Crowdtainer is successful, I can communicate with them regarding their delivery.
 
 ### As a buyer
 

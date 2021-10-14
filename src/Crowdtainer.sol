@@ -6,7 +6,8 @@ import "@openzeppelin/contracts/interfaces/IERC20.sol";
 enum CrowdtainerState {
     Uninitialized,
     Initialized,
-    Delivery
+    Delivery,
+    Failed
 }
 
 library Errors {
