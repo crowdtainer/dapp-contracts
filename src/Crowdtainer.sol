@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/interfaces/IERC20.sol";
+// import "@openzeppelin/contracts/interfaces/IERC20.sol";
+import "../lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
 enum CrowdtainerState {
     Uninitialized,
@@ -11,20 +12,13 @@ enum CrowdtainerState {
 }
 
 library Errors {
-    // --- Constructor errors ---
-
-    // @notice: Payable receive function called, but we don't accept Eth for payment
-    error ContractDoesNotAcceptEther();
-    // @notice: The function invoked does not exist in this contract
-    error FunctionNotFound();
-    // @notice: Constructor invoked with owner unset: address(0)
+    // -----------------------------------------------
+    //  Initialization with invalid parameters
+    // -----------------------------------------------
+    // @notice: Cannot initialize with owner of address(0)
     error OwnerAddressIsZero();
     // @notice: Cannot initialize with token of address(0)
     error TokenAddressIsZero();
-    // @notice: Method invoked with unexpected message sender
-    error CallerNotAllowed(address expected, address actual);
-    // @notice: Initialize called with opening time in the past (timestamp < now)
-    error OpeningTimeInThePast();
     // @notice: Initialize called with closing time is less than one hour away from the opening time
     error ClosingTimeTooEarly();
     // @notice: Initialize called with invalid number of maximum units to be sold (0)
@@ -35,29 +29,65 @@ library Errors {
     error InvalidNumberOfProductTypes();
     // @notice: Initialize called with invalid referral rate.
     error InvalidReferralRate(uint256 received, uint256 maximum);
-    // @notice: Invalid state transition attempted.
-    error InvalidStateTransition(CrowdtainerState from, CrowdtainerState to);
-}
 
-abstract contract WithModifiers {
-    /**
-     * @dev Throws if called by any account other than the specified.
-     */
-    modifier onlyAddress(address requiredAddress) {
-        if (requiredAddress != msg.sender)
-            revert Errors.CallerNotAllowed({
-                expected: msg.sender,
-                actual: requiredAddress
-            });
-        _;
-    }
+    // -----------------------------------------------
+    //  Authorization
+    // -----------------------------------------------
+    // @notice: Method not authorized for caller (message sender)
+    error CallerNotAllowed(address expected, address actual);
+
+    // -----------------------------------------------
+    //  State transition
+    // -----------------------------------------------
+    // @notice: Invalid state transition
+    error InvalidStateTransition(CrowdtainerState from, CrowdtainerState to);
+    // @notice: Method can't be invoked at current state
+    error InvalidOperationFor(CrowdtainerState state);
+
+    // -----------------------------------------------
+    //  Other Invariants
+    // -----------------------------------------------
+    // @notice: Payable receive function called, but we don't accept Eth for payment
+    error ContractDoesNotAcceptEther();
 }
 
 /**
  * @title Crowdtainer contract
  */
-contract Crowdtainer is WithModifiers {
+contract Crowdtainer {
+    // @dev Only the owner is able to initialize the system.
     address public immutable owner;
+
+    // -----------------------------------------------
+    //  Main contract state
+    // -----------------------------------------------
+    CrowdtainerState public crowdtainerState;
+
+    // -----------------------------------------------
+    //  Modifiers
+    // -----------------------------------------------
+    /**
+     * @dev Throws if called by any account other than the specified.
+     */
+    modifier onlyAddress(address requiredAddress) {
+        if (msg.sender != requiredAddress)
+            revert Errors.CallerNotAllowed({
+                expected: msg.sender,
+                actual: requiredAddress
+            });
+        require(msg.sender == requiredAddress);
+        _;
+    }
+
+    /**
+     * @dev Throws if called in state other than the specified.
+     */
+    modifier onlyInState(CrowdtainerState requiredState) {
+        if (crowdtainerState != requiredState)
+            revert Errors.InvalidOperationFor({state: crowdtainerState});
+        require(crowdtainerState == requiredState);
+        _;
+    }
 
     // -----------------------------------------------
     //  Safety margins to avoid impractical values
@@ -66,10 +96,10 @@ contract Crowdtainer is WithModifiers {
     // @notice Maximum value for referral discounts and rewards
     uint256 public constant SAFETY_MAX_REFERRAL_RATE = 50;
     // @notice Maximum number of different products.
-    uint256 public constant MAX_NUMBER_OF_PRODUCTS = 100;
+    uint256 public constant MAX_NUMBER_OF_PRODUCTS = 10;
 
     // -----------------------------------------------
-    //  Values set by init function
+    //  Values set by initialize function
     // -----------------------------------------------
     // @note Time after which it is possible to join this Crowdtainer.
     uint256 public openingTime;
@@ -81,19 +111,33 @@ contract Crowdtainer is WithModifiers {
     uint256 public maximumSoldUnits;
     // @note The price for each unit type.
     // @dev The price should be given in the number of smallest unit for precision (e.g 10^18 == 1 DAI).
-    uint256[] public unitPricePerType;
+    uint256[10] public unitPricePerType;
     // @note Half of the value is given for being referred to by a buyer, and the other half as discount for using a referral code.
     uint256 public referralRate;
     // @note Address of the ERC20 token used for payment.
     IERC20 public token;
 
-    CrowdtainerState private crowdtainerState;
-
-    // Events
+    // -----------------------------------------------
+    //  Events
+    // -----------------------------------------------
     event CrowdtainerCreated(address indexed owner);
-    event CrowdtainerInitialized();
+    event CrowdtainerInitialized(
+        address indexed owner,
+        uint256 _openingTime,
+        uint256 _expireTime,
+        uint256 _minimumSoldUnits,
+        uint256 _maximumSoldUnits,
+        uint256[10] _unitPricePerType,
+        uint256 _referralRate,
+        IERC20 _token
+    );
     event CrowdtainerInDeliveryStage();
 
+    // -----------------------------------------------
+    // Contract functions
+    // -----------------------------------------------
+
+    // @dev The contract is fully initialized outside the constructor so that we can do more extensive hevm symbolic testing.
     // @param _owner Address entitled to initialize the contract. Represents the product or service provider.
     constructor(address _owner) {
         if (_owner == address(0)) revert Errors.OwnerAddressIsZero();
@@ -103,7 +147,6 @@ contract Crowdtainer is WithModifiers {
 
     /**
      * @dev Initializes a Crowdtainer.
-     * @dev The contract is initialized outside the constructor so that we can do more extensive symbolic testing.
      * @param _openingTime Funding opening time.
      * @param _expireTime Time after which the owner can no longer withdraw funds.
      * @param _minimumSoldUnits The amount of sales required for funding to be considered to be successful.
@@ -117,44 +160,37 @@ contract Crowdtainer is WithModifiers {
         uint256 _expireTime,
         uint256 _minimumSoldUnits,
         uint256 _maximumSoldUnits,
-        uint256[] memory _unitPricePerType,
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType,
         uint256 _referralRate,
         IERC20 _token
-    ) public onlyAddress(owner) {
-        // @dev: Basic sanity checks
-        if (address(_token) == address(0)) revert Errors.TokenAddressIsZero();
+    ) public onlyAddress(owner) onlyInState(CrowdtainerState.Uninitialized) {
 
-        // @dev: Opening time should not be too far in the past
-        if (_openingTime < block.timestamp - SAFETY_TIME_RANGE)
-            revert Errors.OpeningTimeInThePast();
+        // @dev: Sanity checks
+        if (address(_token) == address(0)) revert Errors.TokenAddressIsZero();
+        // @dev: revert statements are not filtered by Solidity's SMTChecker, so we add require as well.
+        require(!(address(_token) == address(0)));
 
         // @dev: Expiration time should not be too close to the opening time
         if (_expireTime < _openingTime + SAFETY_TIME_RANGE)
             revert Errors.ClosingTimeTooEarly();
+        require(!(_expireTime < _openingTime + SAFETY_TIME_RANGE));
 
         if (_maximumSoldUnits == 0) revert Errors.InvalidMaximumSoldUnits();
+        require(!(_maximumSoldUnits == 0));
+
+        if (_minimumSoldUnits == 0) revert Errors.InvalidMinimumSoldUnits();
+        require(!(_minimumSoldUnits == 0));
 
         if (_minimumSoldUnits > _maximumSoldUnits)
             revert Errors.InvalidMinimumSoldUnits();
-
-        if (
-            _unitPricePerType.length == 0 ||
-            _unitPricePerType.length > MAX_NUMBER_OF_PRODUCTS
-        ) revert Errors.InvalidNumberOfProductTypes();
+        require(!(_minimumSoldUnits > _maximumSoldUnits));
 
         if (_referralRate > SAFETY_MAX_REFERRAL_RATE)
             revert Errors.InvalidReferralRate({
                 received: _referralRate,
                 maximum: SAFETY_MAX_REFERRAL_RATE
             });
-
-        if (crowdtainerState != CrowdtainerState.Uninitialized)
-            revert Errors.InvalidStateTransition({
-                from: crowdtainerState,
-                to: CrowdtainerState.Initialized
-            });
-
-        crowdtainerState = CrowdtainerState.Initialized;
+        require(!(_referralRate > SAFETY_MAX_REFERRAL_RATE));
 
         openingTime = _openingTime;
         expireTime = _expireTime;
@@ -164,11 +200,40 @@ contract Crowdtainer is WithModifiers {
         referralRate = _referralRate;
         token = _token;
 
-        emit CrowdtainerInitialized();
+        crowdtainerState = CrowdtainerState.Initialized;
+
+        emit CrowdtainerInitialized(
+            owner,
+            openingTime,
+            expireTime,
+            minimumSoldUnits,
+            maximumSoldUnits,
+            unitPricePerType,
+            referralRate,
+            token
+        );
     }
 
-    function getPaidAndDeliver() public onlyAddress(owner) {
+    function getPaidAndDeliver()
+        public
+        onlyAddress(owner)
+        onlyInState(CrowdtainerState.Initialized)
+    {
         // TODO: implementation
+
+        crowdtainerState = CrowdtainerState.Delivery;
+
         emit CrowdtainerInDeliveryStage();
+    }
+
+    // @dev This method is only used for Formal Verification with SMTChecker
+    // @dev It is executed with `make solcheck` command provided with the project's scripts
+    function invariant() public view {
+        if(crowdtainerState != CrowdtainerState.Uninitialized) {
+            assert(expireTime >= (openingTime + SAFETY_TIME_RANGE));
+            assert(maximumSoldUnits > 0);
+            assert(minimumSoldUnits <= maximumSoldUnits);
+            assert(referralRate <= SAFETY_MAX_REFERRAL_RATE);
+        }
     }
 }

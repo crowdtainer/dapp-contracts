@@ -84,7 +84,7 @@ What follows is a detailed description of the smart contract expectations in Use
 
 - I need tooling to deploy the contract at a deterministic address, so that I can reference the contract address in the legal agreement document even before the contract has been deployed.
 
-- I must be able to withdraw the funds if the minimum target is reached, so that I can signal that no more sales are avaiable, and start working on shipping the sold products.
+- I must be able to withdraw the funds if the minimum target is reached, so that I can signal that no more sales are available, and start working on shipping the sold products.
 
 - The withdrawl function should allow for partial withdrawals, so that participants can get a 'cash-back' in case the estimated price for producing the service or product was higher than estimated.
     - This allows for getting signal of intent from participants, even before the exact final cost can be calculated, by guessing the cost by a higher margin. E.g.: Estimate unit meal cost of 15 eur per person for price to pool money, but return overpayment once the exact final price was calculated by the restaurant (discounting for shipping savings etc).
@@ -96,7 +96,7 @@ What follows is a detailed description of the smart contract expectations in Use
 
 - I'd like way to read the IPFS/HASH data so that I can verify that the legal term is the same as provided in a frontend interface.
 
-- I'd like to specify my details of order and signing a transaction, so that I can participate in a group buying.
+- I'd like to specify my details of order and sign such transaction, so that I can participate in a group buying.
 
 - Optionally, when joining a buying group, I'd like to additionally specify:
     - a *custom personal referral code*, so that I can share it and get rewards for my friend's purchases.

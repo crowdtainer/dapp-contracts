@@ -11,7 +11,7 @@ This repository contains all solidity code related to the core functionality of 
 
 See [`Crowdtainer smart contracts system`](./UserStories.md) for description and User Stories.
 
-## Building and testing
+## Installing dependencies
 
 #### Install Nix
 
@@ -29,13 +29,18 @@ curl -L https://nixos.org/nix/install | sh
 curl https://dapp.tools/install | sh
 ```
 
-### Build and test 
+## Building and testing
 
 ```sh
 git clone https://github.com/crowdtainer/dapp-contracts
 cd dapp-contracs
-make # Also installs project dependencies
-make test
+make         # Also installs project dependencies
+
+# To run dapp-tools based tests (Unit testing, Fuzz and Symbolic):
+dapp test
+
+# To run Solidity' SMTChecker-based tests:
+make solcheck
 ```
 
 

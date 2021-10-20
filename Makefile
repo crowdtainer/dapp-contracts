@@ -39,6 +39,8 @@ ifndef ALCHEMY_API_KEY
 	$(error ALCHEMY_API_KEY is undefined)
 endif
 
+solcheck:; solc src/Crowdtainer.sol --model-checker-targets constantCondition,divByZero,balance,assert,popEmptyArray,outOfBounds --model-checker-show-unproved --model-checker-timeout 0 --model-checker-engine chc
+
 # Returns the URL to deploy to a hosted node.
 # Requires the ALCHEMY_API_KEY env var to be set.
 # The first argument determines the network (mainnet / rinkeby / ropsten / kovan / goerli)
