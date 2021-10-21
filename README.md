@@ -37,13 +37,21 @@ cd dapp-contracs
 make         # Also installs project dependencies
 
 # To run dapp-tools based tests (Unit testing, Fuzz and Symbolic):
-dapp test
+make test
+
+# To see unit test code coverage:
+make coverage
 
 # To run Solidity' SMTChecker-based tests:
 make solcheck
 ```
 
+## Contributing
 
+### To apply linter:
+```sh
+make lint
+```
 ## Deploying
 
 Contracts can be deployed via the `make deploy` command. Addresses are automatically
