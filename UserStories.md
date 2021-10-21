@@ -11,7 +11,8 @@ The main goal of the contract is help people with similar interests to coordinat
 The idea is not far away, but there are some crucial implementation differences: 
 
 - The lack of yet another company between the seller and buyer, since coordination happens via smart contract.
-- Allows for more flexible design and transparency of the incentive mechanims.
+- Allows for more flexible design and transparency of the incentive mechanims, example:
+ - In Crowdtainer, the person that indicates a friend with a referral code is rewarded proportionally to the number of people using the given code. This doesn't happen with most crowdfunding platforms (if any).
 - Here (at least to start) there is an actual legal sales agreement for delivering the promised products. We are starting with simpler/safer products/services, and not things that are ultra high risk of not being delivered.
 
 ### Example:
