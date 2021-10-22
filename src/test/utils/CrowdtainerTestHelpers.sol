@@ -11,15 +11,16 @@ contract CrowdtainerTestHelpers is DSTest {
     function assertEqSignature(
         bytes calldata expectedSignature,
         bytes calldata receivedBytes
-    ) external {
+    ) external returns (bool) {
         bytes memory receivedErrorSignature = receivedBytes[:4];
         bytes memory expected = expectedSignature[:4];
 
         if (!checkEq0(expected, receivedErrorSignature)) {
             emit log_named_bytes("  Expected", expected);
             emit log_named_bytes("    Actual", receivedErrorSignature);
-            fail();
+            return false;
         }
+        return true;
     }
 
     function makeError(bytes4 selector) internal pure returns (bytes memory) {
