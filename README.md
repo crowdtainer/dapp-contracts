@@ -17,7 +17,7 @@ See [`Crowdtainer smart contracts system`](./UserStories.md) for description and
 
 ```sh
 # User must be in sudoers
-curl -L https://nixos.org/nix/install | sh
+sh <(curl -L https://nixos.org/nix/install) --daemon
 
 # Run this or login again to use Nix
 . "$HOME/.nix-profile/etc/profile.d/nix.sh"
@@ -32,7 +32,7 @@ curl https://dapp.tools/install | sh
 ## Building and testing
 
 ```sh
-git clone https://github.com/crowdtainer/dapp-contracts
+git clone --recursive https://github.com/crowdtainer/dapp-contracts
 cd dapp-contracs
 make         # Also installs project dependencies
 
