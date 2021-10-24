@@ -15,7 +15,7 @@ contract ValidInitializeTester is BaseTest {
             targetMaximum,
             unitPricePerType,
             referralRate,
-            token
+            erc20Token
         );
     }
 }
@@ -23,7 +23,7 @@ contract ValidInitializeTester is BaseTest {
 contract InvalidInitializeTester is BaseTest {
     function testWithInvalidTokenAddress() public {
         failed = true; // @dev: specific error must be thrown
-        ERC20 invalidTokenAddress = ERC20(address(0));
+        IERC20 invalidTokenAddress = IERC20(address(0));
         try
             crowdtainer.initialize(
                 openingTime,
@@ -54,7 +54,7 @@ contract InvalidInitializeTester is BaseTest {
                 targetMaximum,
                 unitPricePerType,
                 referralRate,
-                token
+                erc20Token
             )
         {} catch (bytes memory lowLevelData) {
             failed = !(
@@ -76,7 +76,7 @@ contract InvalidInitializeTester is BaseTest {
                 targetMaximum,
                 unitPricePerType,
                 referralRate,
-                token
+                erc20Token
             )
         {} catch (bytes memory lowLevelData) {
             failed = !(
@@ -98,7 +98,7 @@ contract InvalidInitializeTester is BaseTest {
                 targetMaximum,
                 unitPricePerType,
                 referralRate,
-                token
+                erc20Token
             )
         {} catch (bytes memory lowLevelData) {
             failed = !(
@@ -120,7 +120,7 @@ contract InvalidInitializeTester is BaseTest {
                 0,
                 unitPricePerType,
                 referralRate,
-                token
+                erc20Token
             )
         {} catch (bytes memory lowLevelData) {
             failed = !(
@@ -142,7 +142,7 @@ contract InvalidInitializeTester is BaseTest {
                 targetMaximum,
                 unitPricePerType,
                 160,
-                token
+                erc20Token
             )
         {} catch (bytes memory lowLevelData) {
             failed = !(
@@ -169,7 +169,7 @@ contract InitializeFuzzer is BaseTest {
         IERC20 _token
     ) public {
         // Discard initialize() invariants
-        if (address(token) != address(0)) return;
+        if (address(_token) != address(0)) return;
         if (
             crowdtainer.expireTime() >
             (crowdtainer.openingTime() + SAFETY_TIME_RANGE)
@@ -187,7 +187,7 @@ contract InitializeFuzzer is BaseTest {
             _token
         );
 
-        assert(address(token) != address(0));
+        assert(address(_token) != address(0));
         assert(
             crowdtainer.expireTime() >
                 (crowdtainer.openingTime() + SAFETY_TIME_RANGE)

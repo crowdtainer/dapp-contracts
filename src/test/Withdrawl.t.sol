@@ -15,10 +15,11 @@ contract CrowdtainerStateTransitionTester is BaseTest {
             targetMaximum,
             unitPricePerType,
             referralRate,
-            token
+            erc20Token
         );
         crowdtainer.getPaidAndDeliver();
         assert(crowdtainer.crowdtainerState() == CrowdtainerState.Delivery);
+        // TODO: implementation
     }
 }
 

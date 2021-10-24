@@ -29,6 +29,8 @@ library Errors {
     error ReferralCodeAlreadyUsed();
     // @notice: Purchase exceed target's maximum goal.
     error PurchaseExceedsMaximumTarget();
+    // @notice: Number of items purchased per type exceeds maximum allowed.
+    error ExceededNumberOfItemsAllowed(uint256 received, uint256 maximum);
 
     // -----------------------------------------------
     //  Authorization

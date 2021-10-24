@@ -2,12 +2,8 @@
 pragma solidity ^0.8.9;
 
 // @dev External dependencies
-// import "@openzeppelin/contracts/interfaces/IERC20.sol";
-// import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-// import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import "../lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
-// import "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // @dev Internal dependencies
 import "./States.sol";
@@ -38,8 +34,6 @@ contract Crowdtainer is ReentrancyGuard {
 
     // @dev The total currency raised, given in the specified ERC20.
     uint256 public amountRaised;
-
-    //
 
     // -----------------------------------------------
     //  Modifiers
@@ -91,16 +85,17 @@ contract Crowdtainer is ReentrancyGuard {
     // -----------------------------------------------
     //  Events
     // -----------------------------------------------
+
     event CrowdtainerCreated(address indexed owner);
     event CrowdtainerInitialized(
+        IERC20 indexed _token,
         address indexed owner,
         uint256 _openingTime,
         uint256 _expireTime,
         uint256 _targetMinimum,
         uint256 _targetMaximum,
         uint256[MAX_NUMBER_OF_PRODUCTS] _unitPricePerType,
-        uint256 _referralRate,
-        IERC20 _token
+        uint256 _referralRate
     );
     event CrowdtainerInDeliveryStage();
 
@@ -136,8 +131,7 @@ contract Crowdtainer is ReentrancyGuard {
         IERC20 _token
     ) public onlyAddress(owner) onlyInState(CrowdtainerState.Uninitialized) {
         // @dev: Sanity checks
-        if (address(_token) == address(0))
-            revert Errors.TokenAddressIsZero();
+        if (address(_token) == address(0)) revert Errors.TokenAddressIsZero();
 
         // @dev: revert statements are not filtered by Solidity's SMTChecker, so we add require as well.
         require(!(address(_token) == address(0)));
@@ -148,13 +142,11 @@ contract Crowdtainer is ReentrancyGuard {
 
         require(!(_expireTime < _openingTime + SAFETY_TIME_RANGE));
 
-        if (_targetMaximum == 0)
-            revert Errors.InvalidMaximumTarget();
+        if (_targetMaximum == 0) revert Errors.InvalidMaximumTarget();
 
         require(!(_targetMaximum == 0));
 
-        if (_targetMinimum == 0)
-            revert Errors.InvalidMinimumTarget();
+        if (_targetMinimum == 0) revert Errors.InvalidMinimumTarget();
 
         require(!(_targetMinimum == 0));
 
@@ -182,14 +174,14 @@ contract Crowdtainer is ReentrancyGuard {
         crowdtainerState = CrowdtainerState.Initialized;
 
         emit CrowdtainerInitialized(
+            token,
             owner,
             openingTime,
             expireTime,
             targetMinimum,
             targetMaximum,
             unitPricePerType,
-            referralRate,
-            token
+            referralRate
         );
     }
 
@@ -245,6 +237,11 @@ contract Crowdtainer is ReentrancyGuard {
         uint256 totalCost;
 
         for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
+            // @dev Check if number of items isn't beyond the allowed.
+            if(quantities[i] > MAX_NUMBER_OF_PURCHASED_ITEMS)
+                revert Errors.ExceededNumberOfItemsAllowed({received: quantities[i], maximum: MAX_NUMBER_OF_PURCHASED_ITEMS});
+            require(quantities[i] <= MAX_NUMBER_OF_PURCHASED_ITEMS);
+
             totalCost += unitPricePerType[i] * quantities[i];
         }
 
