@@ -106,7 +106,8 @@ contract Crowdtainer is ReentrancyGuard {
     // @dev The contract is fully initialized outside the constructor so that we can do more extensive hevm symbolic testing.
     // @param _owner Address entitled to initialize the contract. Represents the product or service provider.
     constructor(address _owner) {
-        if (_owner == address(0)) revert Errors.OwnerAddressIsZero();
+        if (_owner == address(0))
+            revert Errors.OwnerAddressIsZero();
         owner = _owner;
         emit CrowdtainerCreated(owner);
     }
@@ -117,7 +118,7 @@ contract Crowdtainer is ReentrancyGuard {
      * @param _expireTime Time after which the owner can no longer withdraw funds.
      * @param _targetMinimum Amount in ERC20 units required for project to be considered to be successful.
      * @param _targetMaximum Amount in ERC20 units after which no further participation is possible.
-     * @param _unitPricePerType Array with price of each item, in ERC2O units.
+     * @param _unitPricePerType Array with price of each item, in ERC2O units. Zero is an invalid value and will throw.
      * @param _referralRate Percentage used for incentivising participation. Half the amount goes to the referee, and the other half to the referrer.
      * @param _token Address of the ERC20 token used for payment.
      */
@@ -131,7 +132,8 @@ contract Crowdtainer is ReentrancyGuard {
         IERC20 _token
     ) public onlyAddress(owner) onlyInState(CrowdtainerState.Uninitialized) {
         // @dev: Sanity checks
-        if (address(_token) == address(0)) revert Errors.TokenAddressIsZero();
+        if (address(_token) == address(0))
+            revert Errors.TokenAddressIsZero();
 
         // @dev: revert statements are not filtered by Solidity's SMTChecker, so we add require as well.
         require(!(address(_token) == address(0)));
@@ -142,11 +144,13 @@ contract Crowdtainer is ReentrancyGuard {
 
         require(!(_expireTime < _openingTime + SAFETY_TIME_RANGE));
 
-        if (_targetMaximum == 0) revert Errors.InvalidMaximumTarget();
+        if (_targetMaximum == 0)
+            revert Errors.InvalidMaximumTarget();
 
         require(!(_targetMaximum == 0));
 
-        if (_targetMinimum == 0) revert Errors.InvalidMinimumTarget();
+        if (_targetMinimum == 0)
+            revert Errors.InvalidMinimumTarget();
 
         require(!(_targetMinimum == 0));
 
@@ -154,6 +158,14 @@ contract Crowdtainer is ReentrancyGuard {
             revert Errors.InvalidMinimumTarget();
 
         require(!(_targetMinimum > _targetMaximum));
+
+        // Ensure that there are no prices set to zero
+        for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
+            // @dev Check if number of items isn't beyond the allowed.
+            if(_unitPricePerType[i] == 0)
+                revert Errors.InvalidPriceSpecified();
+            require(_unitPricePerType[i] != 0);
+        }
 
         if (_referralRate > SAFETY_MAX_REFERRAL_RATE)
             revert Errors.InvalidReferralRate({
@@ -216,13 +228,14 @@ contract Crowdtainer is ReentrancyGuard {
             require(referrer != address(0x0));
 
             // @dev Check if account is not referencing itself
-            if (referrer == msg.sender) revert Errors.CannotReferItself();
+            if (referrer == msg.sender)
+                revert Errors.CannotReferItself();
             require(referrer != msg.sender);
 
             hasDiscount = true;
         }
 
-        // @dev Check validity of referral code
+        // @dev Check validity of new referral code
         if (newReferralCode != 0x0) {
             // @dev Check if the new referral code is not already taken by another account
             if (ownerOfReferralCode[newReferralCode] != address(0x0)) {
@@ -255,10 +268,12 @@ contract Crowdtainer is ReentrancyGuard {
             accumulatedRewards[referrer] += discount;
         }
 
+        amountRaised += totalCost;
+
         // @dev Check if the purchase doesn't exceed the goal's `targetMaximum`.
-        if (totalCost > targetMaximum)
-            revert Errors.PurchaseExceedsMaximumTarget();
-        require(totalCost < targetMaximum);
+        if (amountRaised > targetMaximum)
+            revert Errors.PurchaseExceedsMaximumTarget({received: amountRaised, maximum: targetMaximum});
+        require(amountRaised < targetMaximum);
 
         // @dev withdraw required funds into this contract
         //token.safeTransferFrom(msg.sender, address(this), totalCost);

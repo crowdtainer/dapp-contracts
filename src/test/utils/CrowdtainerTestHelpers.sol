@@ -29,13 +29,25 @@ contract CrowdtainerTestHelpers is DSTest {
     }
 
     // @dev Helper function to decode 2 address parameters and print their values from returned data.
-    function printAddresses(bytes calldata receivedBytes) external {
-        (address expected, address actual) = abi.decode(
-            receivedBytes,
+    // @dev This function can be removed once Solidity has support for decoding revert args of custom error types.
+    function printTwoAddresses(bytes calldata receivedBytes) external {
+        (address actual, address expected) = abi.decode(
+            receivedBytes[4:],
             (address, address)
         );
         emit log_named_address("  Expected", expected);
         emit log_named_address("    Actual", actual);
+    }
+
+    // @dev Helper function to decode 2 uint256 parameters and print their values from returned data.
+    // @dev This function can be removed once Solidity has support for decoding revert args custom error types.
+    function printTwoUint256(bytes calldata receivedBytes) external {
+        (uint256 received, uint256 limit) = abi.decode(
+            receivedBytes[4:],
+            (uint256, uint256)
+        );
+        emit log_named_uint("  Received", received);
+        emit log_named_uint("    Limit", limit);
     }
 
     // @dev Helper function to convert 'bytes32' into 'bytes memory'.

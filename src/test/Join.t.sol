@@ -20,18 +20,18 @@ contract CrowdtainerValidJoinTester is BaseTest {
         uint256 totalCost = quantities[1] * unitPricePerType[1];
         totalCost += quantities[2] * unitPricePerType[2];
 
-        assert(erc20Token.balanceOf(address(bob)) == (previousBalance - totalCost));
+        assertEq(erc20Token.balanceOf(address(bob)), (previousBalance - totalCost));
     }
 
     function testNewValidReferralCodeMustSucceed() public {
         init();
         uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 10];
         bytes32 bobsReferralCode = "BobsReferralCode";
-        assert(crowdtainer.ownerOfReferralCode(bobsReferralCode) == address(0x0));
+        assertEq(crowdtainer.ownerOfReferralCode(bobsReferralCode), address(0x0));
 
         bob.doJoin(quantities, bytes32(0x0), bobsReferralCode);
 
-        assert(crowdtainer.ownerOfReferralCode(bobsReferralCode) == address(bob));
+        assertEq(crowdtainer.ownerOfReferralCode(bobsReferralCode), address(bob));
     }
 
     function testUsageOfValidReferralCodeMustSucceed() public {
@@ -48,22 +48,19 @@ contract CrowdtainerValidJoinTester is BaseTest {
 
         alice.doJoin(quantities, bobsReferralCode, bytes32(0x0));
 
-        assert(erc20Token.balanceOf(address(alice)) == previousAliceBalance - (totalCost - discount));
+        assertEq(erc20Token.balanceOf(address(alice)), previousAliceBalance - (totalCost - discount));
 
         // verify that bob has referral credits
-        assert(crowdtainer.accumulatedRewards(address(bob)) == discount);
+        assertEq(crowdtainer.accumulatedRewards(address(bob)), discount);
     }
 }
 
 contract CrowdtainerInvalidJoinTester is BaseTest {
     function testFailCreateNewButAlreadyUsedReferralCode() public {
-
-        failed = false;
-
         init();
         uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 10];
         bytes32 bobsReferralCode = "BobsReferralCode";
-        assert(crowdtainer.ownerOfReferralCode(bobsReferralCode) == address(0x0));
+        assertEq(crowdtainer.ownerOfReferralCode(bobsReferralCode), address(0x0));
 
         bob.doJoin(quantities, bytes32(0x0), bobsReferralCode);
 
@@ -78,14 +75,31 @@ contract CrowdtainerInvalidJoinTester is BaseTest {
         }
     }
 
-    function testFailUseOfInvalidReferralCode() public {
-
-        failed = false;
-
+    function testFailUseOwnReferralCode() public {
         init();
         uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 10];
         bytes32 bobsReferralCode = "BobsReferralCode";
-        assert(crowdtainer.ownerOfReferralCode(bobsReferralCode) == address(0x0));
+
+        // join and create a new referral code
+        bob.doJoin(quantities, bytes32(0x0), bobsReferralCode);
+
+        try
+            // bob can't use referral code coming from the same wallet
+            bob.doJoin(quantities, bobsReferralCode, bytes32(0x0))
+        {} catch (bytes memory lowLevelData) {
+            failed = this.assertEqSignature(
+                    makeError(Errors.CannotReferItself.selector),
+                    lowLevelData
+                );
+        }
+    }
+
+    function testFailUseOfInvalidReferralCode() public {
+        init();
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 10];
+
+        bytes32 bobsReferralCode = "BobsReferralCode";
+        assertEq(crowdtainer.ownerOfReferralCode(bobsReferralCode),address(0x0));
 
         //bob.doJoin(quantities, bytes32(0x0), bobsReferralCode); // not registered
 
@@ -96,6 +110,42 @@ contract CrowdtainerInvalidJoinTester is BaseTest {
                     makeError(Errors.ReferralCodeInexistent.selector),
                     lowLevelData
                 );
+        }
+    }
+
+    function testFailExceedingNumberOfMaximumItemsPurchased() public {
+        init();
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(2), MAX_NUMBER_OF_PURCHASED_ITEMS + 1, 10];
+
+        try
+            alice.doJoin(quantities, bytes32(0x0), bytes32(0x0))
+        {} catch (bytes memory lowLevelData) {
+            failed = this.assertEqSignature(
+                    makeError(Errors.ExceededNumberOfItemsAllowed.selector),
+                    lowLevelData
+                );
+            this.printTwoUint256(lowLevelData);
+        }
+    }
+
+    function testFailPurchaseExceedsMaximumTarget() public {
+        init();
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities;
+        quantities = [uint256(MAX_NUMBER_OF_PURCHASED_ITEMS), MAX_NUMBER_OF_PURCHASED_ITEMS, MAX_NUMBER_OF_PURCHASED_ITEMS];
+
+        for(uint256 i = 0; i < 9999; i++)
+        {
+            try
+                alice.doJoin(quantities, bytes32(0x0), bytes32(0x0))
+            {} catch (bytes memory lowLevelData) {
+                failed = this.assertEqSignature(
+                        makeError(Errors.PurchaseExceedsMaximumTarget.selector),
+                        lowLevelData
+                    );
+                this.printTwoUint256(lowLevelData);
+                emit log_named_uint("Required purchases to exceed target:", i);
+                break;
+            }
         }
     }
 }
@@ -123,7 +173,7 @@ contract JoinFuzzer is BaseTest {
 
         alice.doJoin(quantities, bytes32(0x0), "");
 
-        assert(erc20Token.balanceOf(address(alice)) == (previousAliceBalance - totalCost));
+        assertEq(erc20Token.balanceOf(address(alice)), (previousAliceBalance - totalCost));
     }
 }
 
@@ -161,7 +211,7 @@ contract JoinProver is BaseTest {
 
         alice.doJoin(quantities, bytes32(0x0), "");
 
-        assert(erc20Token.balanceOf(address(alice)) == (previousAliceBalance - totalCost));
+        assertEq(erc20Token.balanceOf(address(alice)), (previousAliceBalance - totalCost));
     }*/
 }
 /* solhint-enable no-empty-blocks */

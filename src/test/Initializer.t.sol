@@ -21,8 +21,7 @@ contract ValidInitializeTester is BaseTest {
 }
 
 contract InvalidInitializeTester is BaseTest {
-    function testWithInvalidTokenAddress() public {
-        failed = true; // @dev: specific error must be thrown
+    function testFailWithInvalidTokenAddress() public {
         IERC20 invalidTokenAddress = IERC20(address(0));
         try
             crowdtainer.initialize(
@@ -35,17 +34,13 @@ contract InvalidInitializeTester is BaseTest {
                 invalidTokenAddress
             )
         {} catch (bytes memory lowLevelData) {
-            failed = !(
-                this.assertEqSignature(
+            failed = this.assertEqSignature(
                     makeError(Errors.TokenAddressIsZero.selector),
-                    lowLevelData
-                )
-            );
+                    lowLevelData);
         }
     }
 
-    function testInvalidClosingTime() public {
-        failed = true; // @dev: specific error must be thrown
+    function testFailInvalidClosingTime() public {
         try
             crowdtainer.initialize(
                 openingTime,
@@ -57,17 +52,13 @@ contract InvalidInitializeTester is BaseTest {
                 erc20Token
             )
         {} catch (bytes memory lowLevelData) {
-            failed = !(
-                this.assertEqSignature(
+            failed = this.assertEqSignature(
                     makeError(Errors.ClosingTimeTooEarly.selector),
-                    lowLevelData
-                )
-            );
+                    lowLevelData);
         }
     }
 
-    function testMinimumTargetTooHigh() public {
-        failed = true; // @dev: specific error must be thrown
+    function testFailMinimumTargetTooHigh() public {
         try
             crowdtainer.initialize(
                 openingTime,
@@ -79,17 +70,13 @@ contract InvalidInitializeTester is BaseTest {
                 erc20Token
             )
         {} catch (bytes memory lowLevelData) {
-            failed = !(
-                this.assertEqSignature(
+            failed = this.assertEqSignature(
                     makeError(Errors.InvalidMinimumTarget.selector),
-                    lowLevelData
-                )
-            );
+                    lowLevelData);
         }
     }
 
-    function testMinimumTargetTooLow() public {
-        failed = true; // @dev: specific error must be thrown
+    function testFailMinimumTargetTooLow() public {
         try
             crowdtainer.initialize(
                 openingTime,
@@ -101,17 +88,13 @@ contract InvalidInitializeTester is BaseTest {
                 erc20Token
             )
         {} catch (bytes memory lowLevelData) {
-            failed = !(
-                this.assertEqSignature(
+            failed = this.assertEqSignature(
                     makeError(Errors.InvalidMinimumTarget.selector),
-                    lowLevelData
-                )
-            );
+                    lowLevelData);
         }
     }
 
-    function testInvalidMaximumTarget() public {
-        failed = true; // @dev: specific error must be thrown
+    function testFailInvalidMaximumTarget() public {
         try
             crowdtainer.initialize(
                 openingTime,
@@ -123,17 +106,13 @@ contract InvalidInitializeTester is BaseTest {
                 erc20Token
             )
         {} catch (bytes memory lowLevelData) {
-            failed = !(
-                this.assertEqSignature(
+            failed = this.assertEqSignature(
                     makeError(Errors.InvalidMaximumTarget.selector),
-                    lowLevelData
-                )
-            );
+                    lowLevelData);
         }
     }
 
-    function testInvalidReferralRate() public {
-        failed = true; // @dev: specific error must be thrown
+    function testFailInvalidReferralRate() public {
         try
             crowdtainer.initialize(
                 openingTime,
@@ -145,12 +124,28 @@ contract InvalidInitializeTester is BaseTest {
                 erc20Token
             )
         {} catch (bytes memory lowLevelData) {
-            failed = !(
-                this.assertEqSignature(
+            failed = this.assertEqSignature(
                     makeError(Errors.InvalidReferralRate.selector),
-                    lowLevelData
-                )
-            );
+                    lowLevelData);
+        }
+    }
+
+    function testFailWhenInvalidPriceOfZero() public {
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [uint256(10), 0, 25];
+        try
+            crowdtainer.initialize(
+                openingTime,
+                closingTime,
+                targetMinimum,
+                targetMaximum,
+                _unitPricePerType,
+                referralRate,
+                erc20Token
+            )
+        {} catch (bytes memory lowLevelData) {
+            failed = this.assertEqSignature(
+                    makeError(Errors.InvalidPriceSpecified.selector),
+                    lowLevelData);
         }
     }
 }
@@ -192,7 +187,7 @@ contract InitializeFuzzer is BaseTest {
             crowdtainer.expireTime() >
                 (crowdtainer.openingTime() + SAFETY_TIME_RANGE)
         );
-        assert(crowdtainer.targetMaximum() > 0);
+        assertGt(crowdtainer.targetMaximum(), 0);
         assert(crowdtainer.targetMinimum() >= crowdtainer.targetMaximum());
         assert(crowdtainer.referralRate() <= SAFETY_MAX_REFERRAL_RATE);
     }

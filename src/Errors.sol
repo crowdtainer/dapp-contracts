@@ -21,16 +21,8 @@ library Errors {
     error InvalidNumberOfProductTypes();
     // @notice: Initialize called with invalid referral rate.
     error InvalidReferralRate(uint256 received, uint256 maximum);
-    // @notice: The given referral was not created and thus can't be used to claim a discount.
-    error ReferralCodeInexistent();
-    // @notice: An account can't refer itself to claim a discount.
-    error CannotReferItself();
-    // @notice: Referral code already used by another account.
-    error ReferralCodeAlreadyUsed();
-    // @notice: Purchase exceed target's maximum goal.
-    error PurchaseExceedsMaximumTarget();
-    // @notice: Number of items purchased per type exceeds maximum allowed.
-    error ExceededNumberOfItemsAllowed(uint256 received, uint256 maximum);
+    // @notice: An invalid price was set (zero).
+    error InvalidPriceSpecified();
 
     // -----------------------------------------------
     //  Authorization
@@ -39,10 +31,22 @@ library Errors {
     error CallerNotAllowed(address expected, address actual);
 
     // -----------------------------------------------
+    //  Join() operation
+    // -----------------------------------------------
+    // @notice: The given referral was not created and thus can't be used to claim a discount.
+    error ReferralCodeInexistent();
+    // @notice: An account can't refer itself to claim a discount.
+    error CannotReferItself();
+    // @notice: Referral code already used by another account.
+    error ReferralCodeAlreadyUsed();
+    // @notice: Purchase exceed target's maximum goal.
+    error PurchaseExceedsMaximumTarget(uint256 received, uint256 maximum);
+    // @notice: Number of items purchased per type exceeds maximum allowed.
+    error ExceededNumberOfItemsAllowed(uint256 received, uint256 maximum);
+
+    // -----------------------------------------------
     //  State transition
     // -----------------------------------------------
-    // @notice: Invalid state transition
-    error InvalidStateTransition(CrowdtainerState from, CrowdtainerState to);
     // @notice: Method can't be invoked at current state
     error InvalidOperationFor(CrowdtainerState state);
 
