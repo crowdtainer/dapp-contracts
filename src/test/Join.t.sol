@@ -50,8 +50,8 @@ contract CrowdtainerValidJoinTester is BaseTest {
 
         assertEq(erc20Token.balanceOf(address(alice)), previousAliceBalance - (totalCost - discount));
 
-        // verify that bob has referral credits
-        assertEq(crowdtainer.accumulatedRewards(address(bob)), discount);
+        // verify that bob received referral credits
+        assertEq(crowdtainer.accumulatedRewardsOf(address(bob)), discount);
     }
 }
 

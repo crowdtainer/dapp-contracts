@@ -27,12 +27,14 @@ contract Crowdtainer is ReentrancyGuard {
     // @dev Maps referral codes to its owner.
     mapping(bytes32 => address) public ownerOfReferralCode;
     // @dev Maps account to accumulated referral rewards.
-    mapping(address => uint256) public accumulatedRewards;
+    mapping(address => uint256) public accumulatedRewardsOf;
+
+    uint256 public accumulatedRewards;
 
     // @dev The total number of unique wallets that participated.
     uint256 public numberOfParticipants;
 
-    // @dev The total currency raised, given in the specified ERC20.
+    // @dev The total raised by the contract, minus paybacks due referral (in the specified ERC20 units).
     uint256 public amountRaised;
 
     // -----------------------------------------------
@@ -260,20 +262,24 @@ contract Crowdtainer is ReentrancyGuard {
 
         uint256 discount;
         if (hasDiscount) {
-            // @dev apply discount for referee (msg.sender)
+            // @dev Calculate the discount value
             discount = totalCost * ((referralRate / 2) / 100);
+
+            // @dev apply discount for referee (msg.sender)
             totalCost -= discount;
 
-            // @dev update reward for referrer
-            accumulatedRewards[referrer] += discount;
+            // @dev apply reward for referrer
+            accumulatedRewardsOf[referrer] += discount;
+
+            accumulatedRewards += discount;
         }
 
-        amountRaised += totalCost;
+        amountRaised += (totalCost - discount);
 
         // @dev Check if the purchase doesn't exceed the goal's `targetMaximum`.
         if (amountRaised > targetMaximum)
             revert Errors.PurchaseExceedsMaximumTarget({received: amountRaised, maximum: targetMaximum});
-        require(amountRaised < targetMaximum);
+        require(amountRaised <= targetMaximum);
 
         // @dev withdraw required funds into this contract
         //token.safeTransferFrom(msg.sender, address(this), totalCost);
