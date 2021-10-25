@@ -88,7 +88,10 @@ contract Crowdtainer is ReentrancyGuard {
     //  Events
     // -----------------------------------------------
 
+    // @note Emmited when a Crowdtainer is created.
     event CrowdtainerCreated(address indexed owner);
+
+    // @note Emmited when a Crowdtainer is initialized.
     event CrowdtainerInitialized(
         IERC20 indexed _token,
         address indexed owner,
@@ -99,6 +102,16 @@ contract Crowdtainer is ReentrancyGuard {
         uint256[MAX_NUMBER_OF_PRODUCTS] _unitPricePerType,
         uint256 _referralRate
     );
+
+    // @note Emmited when a user joins, signalling participation intent.
+    event Joined(
+        address indexed wallet,
+        bytes32 indexed referralCode,
+        uint256[MAX_NUMBER_OF_PRODUCTS] quantities,
+        bytes32 newReferralCode,
+        uint256 discount,
+        uint256 finalCost // @dev with discount applied
+        );
     event CrowdtainerInDeliveryStage();
 
     // -----------------------------------------------
@@ -286,6 +299,15 @@ contract Crowdtainer is ReentrancyGuard {
         token.transferFrom(msg.sender, address(this), totalCost);
 
         numberOfParticipants += 1;
+
+        emit Joined(
+            msg.sender,
+            referralCode,
+            quantities,
+            newReferralCode,
+            discount,
+            totalCost
+        );
     }
 
     function getPaidAndDeliver()
