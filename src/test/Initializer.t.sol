@@ -130,6 +130,24 @@ contract InvalidInitializeTester is BaseTest {
         }
     }
 
+    function testFailInvalidReferralRateNotMultipleOfTwo() public {
+        try
+            crowdtainer.initialize(
+                openingTime,
+                closingTime,
+                targetMinimum,
+                targetMaximum,
+                unitPricePerType,
+                3,
+                erc20Token
+            )
+        {} catch (bytes memory lowLevelData) {
+            failed = this.assertEqSignature(
+                    makeError(Errors.ReferralRateNotMultipleOfTwo.selector),
+                    lowLevelData);
+        }
+    }
+
     function testFailWhenInvalidPriceOfZero() public {
         uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [uint256(10), 0, 25];
         try
@@ -165,12 +183,11 @@ contract InitializeFuzzer is BaseTest {
     ) public {
         // Discard initialize() invariants
         if (address(_token) != address(0)) return;
-        if (
-            crowdtainer.expireTime() >
-            (crowdtainer.openingTime() + SAFETY_TIME_RANGE)
-        ) return;
-        if (crowdtainer.targetMaximum() > 0) return;
-        if (crowdtainer.targetMinimum() >= crowdtainer.targetMaximum()) return;
+        if (!(_openingTime < type(uint256).max - SAFETY_TIME_RANGE)) return;
+        if (_expireTime > _openingTime + SAFETY_TIME_RANGE) return;
+        if (_targetMaximum > 0) return;
+        if (_targetMinimum >= _targetMaximum) return;
+        if (_referralRate % 2 != 0) return;
 
         crowdtainer.initialize(
             _openingTime,
@@ -213,6 +230,7 @@ contract InitializeProver is BaseTest {
         if(_expireTime < (_openingTime + crowdtainer.SAFETY_TIME_RANGE())) return;
         if(_targetMaximum == 0) return;
         if(_targetMinimum < _targetMaximum) return;
+        if (_referralRate % 2 != 0) return;
 
         crowdtainer.initialize(
             _openingTime,

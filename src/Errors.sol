@@ -21,6 +21,8 @@ library Errors {
     error InvalidNumberOfProductTypes();
     // @notice: Initialize called with invalid referral rate.
     error InvalidReferralRate(uint256 received, uint256 maximum);
+    // @notice: Referral rate not multiple of 2.
+    error ReferralRateNotMultipleOfTwo();
     // @notice: An invalid price was set (zero).
     error InvalidPriceSpecified();
 

@@ -153,6 +153,10 @@ contract Crowdtainer is ReentrancyGuard {
         // @dev: revert statements are not filtered by Solidity's SMTChecker, so we add require as well.
         require(!(address(_token) == address(0)));
 
+        if(_referralRate % 2 != 0 )
+            revert Errors.ReferralRateNotMultipleOfTwo();
+        require(_referralRate % 2 == 0 );
+
         // @dev: Expiration time should not be too close to the opening time
         if (_expireTime < _openingTime + SAFETY_TIME_RANGE)
             revert Errors.ClosingTimeTooEarly();
