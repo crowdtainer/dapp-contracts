@@ -4,6 +4,7 @@ pragma solidity ^0.8.9;
 // @dev External dependencies
 import "../lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import "../lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
+import "../lib/openzeppelin-contracts/contracts/tokens/ERC20/utils/SafeERC20.sol";
 
 // @dev Internal dependencies
 import "./States.sol";
@@ -301,7 +302,7 @@ contract Crowdtainer is ReentrancyGuard {
 
         // @dev withdraw required funds into this contract
         //token.safeTransferFrom(msg.sender, address(this), totalCost);
-        require(token.transferFrom(msg.sender, address(this), totalCost));
+        token.safeTransferFrom(msg.sender, address(this), totalCost);
 
         numberOfParticipants += 1;
 
