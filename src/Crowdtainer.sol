@@ -242,9 +242,9 @@ contract Crowdtainer is ReentrancyGuard {
         if (referralCode != 0x0) {
             // @dev Check if referral code exists
             referrer = ownerOfReferralCode[referralCode];
-            if (referrer == address(0x0))
+            if (referrer == address(0))
                 revert Errors.ReferralCodeInexistent();
-            require(referrer != address(0x0));
+            require(referrer != address(0));
 
             // @dev Check if account is not referencing itself
             if (referrer == msg.sender)
@@ -257,10 +257,11 @@ contract Crowdtainer is ReentrancyGuard {
         // @dev Check validity of new referral code
         if (newReferralCode != 0x0) {
             // @dev Check if the new referral code is not already taken by another account
-            if (ownerOfReferralCode[newReferralCode] != address(0x0)) {
+            address ownerOfReferral = ownerOfReferralCode[newReferralCode];
+            if (ownerOfReferral != address(0)) {
                 revert Errors.ReferralCodeAlreadyUsed();
             }
-            require(ownerOfReferralCode[newReferralCode] == address(0x0));
+            require(ownerOfReferral == address(0));
             // @dev Create new referral code.
             ownerOfReferralCode[newReferralCode] = msg.sender;
         }
