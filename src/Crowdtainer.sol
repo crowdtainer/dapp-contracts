@@ -301,7 +301,7 @@ contract Crowdtainer is ReentrancyGuard {
 
         // @dev withdraw required funds into this contract
         //token.safeTransferFrom(msg.sender, address(this), totalCost);
-        token.transferFrom(msg.sender, address(this), totalCost);
+        require(token.transferFrom(msg.sender, address(this), totalCost));
 
         numberOfParticipants += 1;
 
