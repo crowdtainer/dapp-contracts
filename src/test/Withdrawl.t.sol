@@ -15,9 +15,10 @@ contract CrowdtainerStateTransitionTester is BaseTest {
             targetMaximum,
             unitPricePerType,
             referralRate,
-            erc20Token
+            erc20Token,
+            uri
         );
-        crowdtainer.getPaidAndDeliver();
+        crowdtainer.getPaidAndDeliver(10);
         assert(crowdtainer.crowdtainerState() == CrowdtainerState.Delivery);
         // TODO: implementation
     }
@@ -26,7 +27,7 @@ contract CrowdtainerStateTransitionTester is BaseTest {
 contract CrowdtainerAuthorizationTester is BaseTest {
     function testGetPaidAndDeliverCalledByNonOwnerMustFail() public {
         failed = true; // @dev: specific error must be thrown
-        try bob.getPaidAndDeliver() {} catch (bytes memory lowLevelData) {
+        try bob.getPaidAndDeliver(10) {} catch (bytes memory lowLevelData) {
             this.assertEqSignature(
                 makeError(Errors.CallerNotAllowed.selector),
                 lowLevelData

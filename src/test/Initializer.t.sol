@@ -15,7 +15,8 @@ contract ValidInitializeTester is BaseTest {
             targetMaximum,
             unitPricePerType,
             referralRate,
-            erc20Token
+            erc20Token,
+            uri
         );
     }
 }
@@ -31,12 +32,14 @@ contract InvalidInitializeTester is BaseTest {
                 targetMaximum,
                 unitPricePerType,
                 referralRate,
-                invalidTokenAddress
+                invalidTokenAddress,
+                uri
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
-                    makeError(Errors.TokenAddressIsZero.selector),
-                    lowLevelData);
+                makeError(Errors.TokenAddressIsZero.selector),
+                lowLevelData
+            );
         }
     }
 
@@ -49,12 +52,14 @@ contract InvalidInitializeTester is BaseTest {
                 targetMaximum,
                 unitPricePerType,
                 referralRate,
-                erc20Token
+                erc20Token,
+                uri
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
-                    makeError(Errors.ClosingTimeTooEarly.selector),
-                    lowLevelData);
+                makeError(Errors.ClosingTimeTooEarly.selector),
+                lowLevelData
+            );
         }
     }
 
@@ -67,12 +72,14 @@ contract InvalidInitializeTester is BaseTest {
                 targetMaximum,
                 unitPricePerType,
                 referralRate,
-                erc20Token
+                erc20Token,
+                uri
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
-                    makeError(Errors.InvalidMinimumTarget.selector),
-                    lowLevelData);
+                makeError(Errors.InvalidMinimumTarget.selector),
+                lowLevelData
+            );
         }
     }
 
@@ -85,12 +92,14 @@ contract InvalidInitializeTester is BaseTest {
                 targetMaximum,
                 unitPricePerType,
                 referralRate,
-                erc20Token
+                erc20Token,
+                uri
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
-                    makeError(Errors.InvalidMinimumTarget.selector),
-                    lowLevelData);
+                makeError(Errors.InvalidMinimumTarget.selector),
+                lowLevelData
+            );
         }
     }
 
@@ -103,12 +112,14 @@ contract InvalidInitializeTester is BaseTest {
                 0,
                 unitPricePerType,
                 referralRate,
-                erc20Token
+                erc20Token,
+                uri
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
-                    makeError(Errors.InvalidMaximumTarget.selector),
-                    lowLevelData);
+                makeError(Errors.InvalidMaximumTarget.selector),
+                lowLevelData
+            );
         }
     }
 
@@ -121,12 +132,14 @@ contract InvalidInitializeTester is BaseTest {
                 targetMaximum,
                 unitPricePerType,
                 160,
-                erc20Token
+                erc20Token,
+                uri
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
-                    makeError(Errors.InvalidReferralRate.selector),
-                    lowLevelData);
+                makeError(Errors.InvalidReferralRate.selector),
+                lowLevelData
+            );
         }
     }
 
@@ -139,17 +152,23 @@ contract InvalidInitializeTester is BaseTest {
                 targetMaximum,
                 unitPricePerType,
                 3,
-                erc20Token
+                erc20Token,
+                uri
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
-                    makeError(Errors.ReferralRateNotMultipleOfTwo.selector),
-                    lowLevelData);
+                makeError(Errors.ReferralRateNotMultipleOfTwo.selector),
+                lowLevelData
+            );
         }
     }
 
     function testFailWhenInvalidPriceOfZero() public {
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [uint256(10), 0, 25];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
+            uint256(10),
+            0,
+            25
+        ];
         try
             crowdtainer.initialize(
                 openingTime,
@@ -158,12 +177,14 @@ contract InvalidInitializeTester is BaseTest {
                 targetMaximum,
                 _unitPricePerType,
                 referralRate,
-                erc20Token
+                erc20Token,
+                uri
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
-                    makeError(Errors.InvalidPriceSpecified.selector),
-                    lowLevelData);
+                makeError(Errors.InvalidPriceSpecified.selector),
+                lowLevelData
+            );
         }
     }
 }
@@ -185,9 +206,18 @@ contract InitializeFuzzer is BaseTest {
         if (address(_token) != address(0)) return;
         if (!(_openingTime < type(uint256).max - SAFETY_TIME_RANGE)) return;
         if (_expireTime > _openingTime + SAFETY_TIME_RANGE) return;
-        if (_targetMaximum > 0) return;
-        if (_targetMinimum >= _targetMaximum) return;
+        if (_targetMaximum == 0) return;
+        if (_targetMinimum == 0) return;
+        if (_targetMinimum > _targetMaximum) return;
         if (_referralRate % 2 != 0) return;
+
+        // Ensure that there are no prices set to zero
+        for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
+            // @dev Check if number of items isn't beyond the allowed.
+            if (_unitPricePerType[i] == 0) return;
+        }
+
+        if (_referralRate > SAFETY_MAX_REFERRAL_RATE) return;
 
         crowdtainer.initialize(
             _openingTime,
@@ -196,7 +226,8 @@ contract InitializeFuzzer is BaseTest {
             _targetMaximum,
             _unitPricePerType,
             _referralRate,
-            _token
+            _token,
+            "dummyURL"
         );
 
         assert(address(_token) != address(0));

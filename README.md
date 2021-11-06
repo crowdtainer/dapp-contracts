@@ -16,11 +16,15 @@ See [`Crowdtainer smart contracts system`](./UserStories.md) for description and
 #### Install Nix
 
 ```sh
-# User must be in sudoers
+# For Linux users:
 sh <(curl -L https://nixos.org/nix/install) --daemon
 
-# Run this or login again to use Nix
-. "$HOME/.nix-profile/etc/profile.d/nix.sh"
+# For MacOS users:
+sh <(curl -L https://nixos.org/nix/install) --darwin-use-unencrypted-nix-store-volume --daemon
+# In case of MacOS arm (M1) issues, you may want to run everything under Rosetta.
+# For details, see: https://cutecoder.org/software/run-command-line-apple-silicon/
+
+# Then, restart your terminal/shell session to make the installation effective.
 ```
 
 #### Install DappTools

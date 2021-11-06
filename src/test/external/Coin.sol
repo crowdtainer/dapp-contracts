@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GNU-AGPLv3
 // Copyright (C) 2017, 2018, 2019 dbrock, rain, mrchico
 
 // This program is free software: you can redistribute it and/or modify

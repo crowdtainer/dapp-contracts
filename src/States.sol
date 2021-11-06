@@ -3,7 +3,7 @@ pragma solidity ^0.8.9;
 
 enum CrowdtainerState {
     Uninitialized,
-    Initialized,
+    Funding,
     Delivery,
     Failed
 }

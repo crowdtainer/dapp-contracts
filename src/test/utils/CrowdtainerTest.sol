@@ -20,17 +20,16 @@ contract User {
     function doJoin(
         uint256[MAX_NUMBER_OF_PRODUCTS] calldata quantities,
         bytes32 referralCode,
-        bytes32 newReferralCode) public
-    {
+        bytes32 newReferralCode
+    ) public {
         crowdtainer.join(quantities, referralCode, newReferralCode);
     }
 
-    function getPaidAndDeliver() public {
-        crowdtainer.getPaidAndDeliver();
+    function getPaidAndDeliver(uint256 amount) public {
+        crowdtainer.getPaidAndDeliver(amount);
     }
 
-    function doApprove(address _contract, uint256 amount) public
-    {
+    function doApprove(address _contract, uint256 amount) public {
         token.approve(_contract, amount);
     }
 }
@@ -58,10 +57,11 @@ contract BaseTest is CrowdtainerTestHelpers {
     uint8 internal numberOfDecimals = 18;
     uint256 internal multiplier = (10**uint256(numberOfDecimals));
 
-    Coin internal coin = new Coin("StableToken", "STK", 1);
-    IERC20 internal erc20Token = IERC20(coin);
+    Coin internal erc20Token = new Coin("StableToken", "STK", 1);
+    IERC20 internal iERC20Token = IERC20(erc20Token);
 
     address internal owner = address(this);
+    string internal uri = "dummyURI";
 
     function init() internal {
         crowdtainer.initialize(
@@ -71,7 +71,8 @@ contract BaseTest is CrowdtainerTestHelpers {
             targetMaximum,
             unitPricePerType,
             referralRate,
-            erc20Token
+            iERC20Token,
+            uri
         );
     }
 
@@ -88,12 +89,12 @@ contract BaseTest is CrowdtainerTestHelpers {
         bob = new User(address(crowdtainer), address(erc20Token));
 
         // Give lots of tokens to alice
-        coin.mint(address(alice), type(uint256).max - 1000);
+        erc20Token.mint(address(alice), type(uint256).max - 1000);
         // Alice allows Crowdtainer to pull the value
         alice.doApprove(address(crowdtainer), type(uint256).max - 1000);
 
         // Give 1000 tokens to bob
-        coin.mint(address(bob), 1000);
+        erc20Token.mint(address(bob), 1000);
         // Bob allows Crowdtainer to pull the value
         bob.doApprove(address(crowdtainer), 1000);
     }

@@ -5,6 +5,28 @@ import "./States.sol";
 
 library Errors {
     // -----------------------------------------------
+    //  EIP1155
+    //
+    // @notice: Account cannot be of address(0)
+    error AccountAddressIsZero();
+    // @notice: Accounts and ids lengths do not match
+    error AccountIdsLengthMismatch();
+    // @notice: ID's and amounts lengths do not match
+    error IDsAmountsLengthMismatch();
+    // @notice: Cannot set approval for the same account
+    error CannotSetApprovalForSelf();
+    // @notice: Caller is not owner nor approved
+    error AccountNotOwnerOrApproved();
+    // @notice: Cannot transfer someone else's tokens
+    error UnauthorizedTransfer();
+    // @notice: Insufficient balance
+    error InsufficientBalance();
+    // @notice: ERC1155: ERC1155Receiver rejected tokens
+    error ERC1155ReceiverRejectedTokens();
+    // @notice: Invalid receiver (non ERC155Receiver)
+    error NonERC1155Receiver();
+
+    // -----------------------------------------------
     //  Initialization with invalid parameters
     // -----------------------------------------------
     // @notice: Cannot initialize with owner of address(0)
