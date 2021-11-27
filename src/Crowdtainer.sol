@@ -2,13 +2,12 @@
 pragma solidity ^0.8.9;
 
 // @dev External dependencies
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import "../lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../lib/openzeppelin-contracts/contracts/interfaces/IERC1155.sol";
 
 // @dev Internal dependencies
-import "./ERC1155.sol";
 import "./States.sol";
 import "./Errors.sol";
 import "./Constants.sol";
@@ -16,37 +15,51 @@ import "./Constants.sol";
 /**
  * @title Crowdtainer contract
  */
-contract Crowdtainer is ERC1155, ReentrancyGuard {
+contract Crowdtainer is ReentrancyGuard, Initializable {
     using SafeERC20 for IERC20;
 
-    // @dev Only the owner is able to initialize the system.
-    address public immutable owner;
-
     // -----------------------------------------------
-    //  Main contract state
+    //  Main project state
     // -----------------------------------------------
     CrowdtainerState public crowdtainerState;
 
-    // @dev Maps referral codes to its owner.
-    mapping(bytes32 => address) public ownerOfReferralCode;
-    // @dev Maps account to accumulated referral rewards.
+    // @dev Owner of this contract.
+    // @notice Has permissions to call: initilize(), join() and leave() functions. These functions are gated so 
+    // that an owner contract can do special accounting (such as for being EIP1155 compatible).
+    address public immutable owner;
+
+    // @dev The entity or person responsible for the delivery of this crowdtainer project.
+    // @notice Allowed to call getPaidAndDeliver().
+    address private shippingAgent;
+
+    // @dev Starting token id claimed by this Crowdtainer.
+    uint256 private tokenId;
+
+    // @dev Equals the number of products or services available to choose from when joining the project.
+    uint256 private numberOfItems;
+
+    // @dev Maps wallets that joined this Crowdtainer to the values they paid to join.
+    mapping(address => uint256) private costForWallet;
+
+    // @dev Maps accounts to accumulated referral rewards.
     mapping(address => uint256) public accumulatedRewardsOf;
+
+    // @dev Total rewards claimable for project.
+    uint256 public accumulatedRewards;
 
     // @dev Maps referee to referrer.
     mapping(address => address) public referrerOfReferee;
-    // @dev Maps referrer to referee.
-    mapping(address => address) public refereeOfReferrer;
+
+    // @dev Wether an account has opted into being elibible for referral rewards
+    mapping(address => bool) private enableReferral;
 
     // @dev Maps the total discount for each user.
     mapping(address => uint256) public discountForUser;
 
-    // @dev The total accumulated discounts in new purchases plus referral rewards.
-    uint256 public discountAndRewards;
+    // @dev The total value raised or accumulated by this contract.
+    uint256 public totalValue;
 
-    // @dev The total raised by the contract, minus paybacks due referral (in the specified ERC20 units).
-    uint256 public totalRaised;
-
-    string private uri_;
+    string public uri_;
 
     // -----------------------------------------------
     //  Modifiers
@@ -74,6 +87,14 @@ contract Crowdtainer is ERC1155, ReentrancyGuard {
         _;
     }
 
+    modifier onlyActive() {
+        if(block.timestamp < openingTime)
+            revert Errors.OpeningTimeNotReachedYet(block.timestamp, openingTime);
+        if(block.timestamp > expireTime)
+            revert Errors.CrowdtainerExpired(block.timestamp, expireTime);
+        _;
+    }
+
     // -----------------------------------------------
     //  Values set by initialize function
     // -----------------------------------------------
@@ -81,7 +102,7 @@ contract Crowdtainer is ERC1155, ReentrancyGuard {
     uint256 public openingTime;
     // @note Time after which it is no longer possible for the service or product provider to withdraw funds.
     uint256 public expireTime;
-    // @note Minimum amount in ERC20 units required for project to be considered to be successful.
+    // @note Minimum amount in ERC20 units required for Crowdtainer to be considered to be successful.
     uint256 public targetMinimum;
     // @note Amount in ERC20 units after which no further participation is possible.
     uint256 public targetMaximum;
@@ -90,7 +111,7 @@ contract Crowdtainer is ERC1155, ReentrancyGuard {
     uint256[MAX_NUMBER_OF_PRODUCTS] public unitPricePerType;
     // @note Half of the value act as a discount for a new participant using an existing referral code, and the other
     // half is given for the participant making a referral. The former is similar to the 'cash discount device' in stamp era,
-    // while the latter is a reward for contributing to the project by incentivising participation from others.
+    // while the latter is a reward for contributing to the Crowdtainer by incentivising participation from others.
     uint256 public referralRate;
     // @note Address of the ERC20 token used for payment.
     IERC20 public token;
@@ -100,7 +121,7 @@ contract Crowdtainer is ERC1155, ReentrancyGuard {
     // -----------------------------------------------
 
     // @note Emmited when a Crowdtainer is created.
-    event CrowdtainerCreated(address indexed owner);
+    event CrowdtainerCreated(address indexed owner, address indexed shippingAgent);
 
     // @note Emmited when a Crowdtainer is initialized.
     event CrowdtainerInitialized(
@@ -117,49 +138,66 @@ contract Crowdtainer is ERC1155, ReentrancyGuard {
     // @note Emmited when a user joins, signalling participation intent.
     event Joined(
         address indexed wallet,
-        bytes32 indexed referralCode,
         uint256[MAX_NUMBER_OF_PRODUCTS] quantities,
-        bytes32 newReferralCode,
-        uint256 discount,
+        address indexed referrer,
         uint256 finalCost // @dev with discount applied
     );
+
+    event Left(
+        address indexed wallet,
+        uint256 withdrawnAmount
+    );
+
+    event PaidRewards(
+        address indexed wallet,
+        uint256 withdrawnAmount
+    );
+
+    event FundsClaimed(
+        address indexed wallet,
+        uint256 withdrawnAmount
+    );
+
     event CrowdtainerInDeliveryStage();
 
     // -----------------------------------------------
     // Contract functions
     // -----------------------------------------------
 
-    // @dev The contract is fully initialized outside the constructor so that we can do more extensive hevm symbolic testing.
-    // @param _owner Address entitled to initialize the contract. Represents the product or service provider.
-    constructor(address _owner) {
-        if (_owner == address(0)) revert Errors.OwnerAddressIsZero();
-        owner = _owner;
-        emit CrowdtainerCreated(owner);
-    }
-
     /**
      * @dev Initializes a Crowdtainer.
+     * @param _owner Address owning this contract.
+     * @param _shippingAgent Address that represents the product or service provider.
+     * @param _tokenIdStartIndex The starting id used to represent this Crowdtainer's products or services.
+     * @param _numberOfItems The number of ids used by this Crowdtainer. The last id will be at `_tokenIdStartIndex` + `_numberOfItems`.
      * @param _openingTime Funding opening time.
      * @param _expireTime Time after which the owner can no longer withdraw funds.
-     * @param _targetMinimum Amount in ERC20 units required for project to be considered to be successful.
+     * @param _targetMinimum Amount in ERC20 units required for the Crowdtainer to be considered to be successful.
      * @param _targetMaximum Amount in ERC20 units after which no further participation is possible.
      * @param _unitPricePerType Array with price of each item, in ERC2O units. Zero is an invalid value and will throw.
      * @param _referralRate Percentage used for incentivising participation. Half the amount goes to the referee, and the other half to the referrer.
      * @param _token Address of the ERC20 token used for payment.
-     * @param _uri URI used to fetch metadata details. See `IERC1155MetadataURI`.
      */
     function initialize(
+        address _owner,
+        address _shippingAgent,
+        uint128 _tokenIdStartIndex,
+        uint128 _numberOfItems,
         uint256 _openingTime,
         uint256 _expireTime,
         uint256 _targetMinimum,
         uint256 _targetMaximum,
         uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType,
         uint256 _referralRate,
-        IERC20 _token,
-        string memory _uri
-    ) public onlyAddress(owner) onlyInState(CrowdtainerState.Uninitialized) {
+        IERC20 _token
+    ) public onlyAddress(owner) onlyInState(CrowdtainerState.Uninitialized) Initializable{
         // @dev: Sanity checks
         if (address(_token) == address(0)) revert Errors.TokenAddressIsZero();
+
+        owner = _owner;
+        shippingAgent = _shippingAgent;
+        tokenId = _tokenIdStartIndex;
+        numberOfItems = _numberOfItems;
 
         if (_referralRate % 2 != 0)
             revert Errors.ReferralRateNotMultipleOfTwo();
@@ -175,11 +213,13 @@ contract Crowdtainer is ERC1155, ReentrancyGuard {
         if (_targetMinimum > _targetMaximum)
             revert Errors.InvalidMinimumTarget();
 
-        // Ensure that there are no prices set to zero
+        // Ensure that there are no prices set to zero and input lengths are correct
         for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
             // @dev Check if number of items isn't beyond the allowed.
             if (_unitPricePerType[i] == 0)
                 revert Errors.InvalidPriceSpecified();
+            if ( i+1 > numberOfItems)
+                revert Errors.TokenIdRangeMismatch();
         }
 
         if (_referralRate > SAFETY_MAX_REFERRAL_RATE)
@@ -213,168 +253,156 @@ contract Crowdtainer is ERC1155, ReentrancyGuard {
     }
 
     /*
-     * @dev Join the pool.
-     * @param quantities Array with the number of units desired for each product.
-     * @param referralCode Optional referral code to be used to claim a discount.
-     * @param newReferralCode Optional identifier to generate a new referral code.
+     * @dev Join the Crowdtainer project.
+     * @param _wallet The wallet that is joining the Crowdtainer.
+     * @param _quantities Array with the number of units desired for each product.
+     * @param enableReferral Informs whether the user would like to be elible to collect rewards for being referred.
+     * @param _referrer Optional referral code to be used to claim a discount.
      *
-     * @note referralCode and newReferralCode both accept values of 0x0, which means no current or future
-     * discounts will be available for the participant joining the pool.
+     * @note referrer is the wallet address of a previous participant.
      *
-     * @note referralCode and newReferralCode are expected to only contain printable ASCII characters,
-     * which means the characters between and including 0x1F .. 0x7E, and be in total up to 32 characters.
-     * The frontend can normalize all characters to lower-case before interacting with this contract to
-     * avoid user typing mistakes.
+     * @note if `enableReferral` is true, and the user decides to leave after the wallet has been used to claim a discount,
+     *       then the full value can't be claimed if deciding to leave the project.
      *
-     * @note A same user is allowed to increase the order amounts (i.e., by calling join multiple times).
-     *       However, a second call to join() can't provide yet a new referral code (newReferralCode parameter) if
-     *       the previous referral code has already been claimed by another account.
+     * @note A same user is not allowed to increase the order amounts (i.e., by calling join multiple times).
+     *       To 'update' an order, the user must first 'leave' then join again with the new values. 
      *
      * @dev State variables manipulated by this function:
      *
-     *       ownerOfReferralCode[newReferralCode]   (msg.sender)
-     *       balanceOf[msg.sender][i]               (+= quantities[i])
      *       accumulatedRewardsOf[referrer]         (+= discount)
-     *       discountAndRewards                     (+= discount * 2)
      *       discountForUser[msg.sender]            (+= discount)
-     *       totalRaised                            (+= finalCost)
+     *       totalValue                            (+= finalCost)
      */
     function join(
-        uint256[MAX_NUMBER_OF_PRODUCTS] calldata quantities,
-        bytes32 referralCode,
-        bytes32 newReferralCode
-    ) external onlyInState(CrowdtainerState.Funding) nonReentrant {
-        bool hasDiscount;
-        address referrer;
+        address _wallet,
+        uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities,
+        bool _enableReferral,
+        address _referrer
+    ) external 
+      onlyAddress(owner)
+      onlyInState(CrowdtainerState.Funding)
+      onlyActive
+      nonReentrant
+    {
 
-        // @dev Verify validity of given `referralCode`
-        if (referralCode != 0x0) {
-            // @dev Check if referral code exists
-            referrer = ownerOfReferralCode[referralCode];
-            if (referrer == address(0)) revert Errors.ReferralCodeInexistent();
+        // @dev Check if wallet didn't already join
+        if(costForWallet[_wallet] != 0)
+            revert Errors.UserAlreadyJoined();
 
-            // @dev Check if account is not referencing itself
-            if (referrer == msg.sender) revert Errors.CannotReferItself();
-
-            hasDiscount = true;
-        }
-
-        // @dev Check validity of new referral code
-        if (newReferralCode != 0x0) {
-            // @dev A user can only crearte or update for a new referral code if either:
-            // - A new referral code for this msg.sender was never requested before, or
-            // - TODO:: finish this
-
-            // @dev Check if the new referral code is not already taken
-            address ownerOfReferral = ownerOfReferralCode[newReferralCode];
-            if (ownerOfReferral == msg.sender) {
-                // Can it be updated?
-            }
-            if (ownerOfReferral != address(0)) {
-                revert Errors.ReferralCodeAlreadyUsed();
-            }
-
-            // @dev Create new referral code.
-            ownerOfReferralCode[newReferralCode] = msg.sender;
-        }
-
-        // @dev Calculate final cost with discounts applied, if any.
+        // @dev Calculate cost
         uint256 finalCost;
 
         for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
             // @dev Check if number of items isn't beyond the allowed.
-            if (quantities[i] > MAX_NUMBER_OF_PURCHASED_ITEMS)
+            if (_quantities[i] > MAX_NUMBER_OF_PURCHASED_ITEMS)
                 revert Errors.ExceededNumberOfItemsAllowed({
-                    received: quantities[i],
+                    received: _quantities[i],
                     maximum: MAX_NUMBER_OF_PURCHASED_ITEMS
                 });
 
-            // @dev params: to, id, amount
-            _mint(msg.sender, i, quantities[i]);
+            finalCost += unitPricePerType[i] * _quantities[i];
 
-            finalCost += unitPricePerType[i] * quantities[i];
+            if ( i+1 > numberOfItems)
+                break; // reached end of product list
         }
 
-        uint256 discount;
-        if (hasDiscount) {
+        // @dev Apply discounts to `finalCost` if applicable.
+        bool eligibleForDiscount;
+        // @dev Verify validity of given `referrer`
+        if (_referrer != 0x0) {
+            // @dev Check if referrer participated
+            if (costForWallet[_referrer] <= 0) revert Errors.ReferralInexistent();
+
+            // @dev Check if account is not referencing itself
+            if (_referrer == _wallet) revert Errors.CannotReferItself();
+
+            if(!enableReferral[_referrer])
+                revert Errors.ReferralDisabled();
+
+            eligibleForDiscount = true;
+        }
+
+        if (eligibleForDiscount) {
             // @dev Two things happens when a valid referral code is given:
-            //       1 - Half of the referral rate is applied to the current order.
+            //       1 - Half of the referral rate is applied as a discount to the current order.
             //       2 - Half of the referral rate is credited to the referrer.
 
             // @dev Calculate the discount value
-            discount = finalCost * ((referralRate / 100) / 2);
+            uint256 discount = finalCost * ((referralRate / 100) / 2);
 
-            // @dev 1- Apply discount for referee (msg.sender)
+            // @dev 1- Apply discount
             finalCost -= discount;
-            discountForUser[msg.sender] += discount;
+            discountForUser[_wallet] += discount;
 
             // @dev 2- Apply reward for referrer
-            accumulatedRewardsOf[referrer] += discount;
+            accumulatedRewardsOf[_referrer] += discount;
+            accumulatedRewards += discount;
 
-            // Required to undo subtract rewards accounting if referee decides to leave participation
-            referrerOfReferee[msg.sender] = referrer;
-            refereeOfReferrer[referrer] = msg.sender;
-
-            discountAndRewards += discount * 2;
+            referrerOfReferee[_wallet] = _referrer;
         }
 
-        totalRaised += finalCost;
+        costForWallet[_wallet] = finalCost;
+
+        totalValue += finalCost;
+
+        enableReferral[_wallet] = _enableReferral;
 
         // @dev Check if the purchase order doesn't exceed the goal's `targetMaximum`.
-        if (totalRaised > targetMaximum)
+        if ((totalValue - accumulatedRewards) > targetMaximum)
             revert Errors.PurchaseExceedsMaximumTarget({
-                received: totalRaised,
+                received: totalValue,
                 maximum: targetMaximum
             });
 
         // @dev transfer required funds into this contract
-        token.safeTransferFrom(msg.sender, address(this), finalCost);
+        token.safeTransferFrom(_wallet, address(this), finalCost);
 
         emit Joined(
-            msg.sender,
-            referralCode,
-            quantities,
-            newReferralCode,
-            discount,
+            _wallet,
+            _quantities,
+            _referrer,
             finalCost
         );
     }
 
     /*
-     * @dev Leave the pool and withdraw deposited funds given when joining.
+     * @dev Leave the Crowdtainer and withdraw deposited funds given when joining.
      * @note Calling this method signals that the user is no longer interested in participating.
+     * @param _wallet The wallet that is leaving the Crowdtainer.
      */
-    function leave()
+    function leave(address _wallet)
         external
+        onlyAddress(owner)
         onlyInState(CrowdtainerState.Funding)
+        onlyActive
         nonReentrant
     {
-        /* @dev  If the user generated a referral code when joining, and it has been used for a discount,
-         *       then the discount is kept. This is to discourage users from joining just to generate discount codes without
-         *       really being referred to. E.g.: A user uses two different wallets, the first joins to generate a
-         *       discount code for him/herself to be used in the second wallet, and then immediatelly leaves the pool
-         *       from the first wallet, leaving the second wallet with a full discount.
-         *       If the account however did not generate a new referral code, or the code was generatated but not used,
-         *       then the full amount can be refunded.
-         */
+        uint256 withdrawalTotal = costForWallet[_wallet];
 
-        // Calculate total order amount
-        uint256 withdrawTotal;
-        for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
-            withdrawTotal += balanceOf(msg.sender, i) * unitPricePerType[i];
+        // @dev Subtract formerly given referral rewards originating from this account
+        address referrer = referrerOfReferee[_wallet];
+        accumulatedRewardsOf[referrer] -= discountForUser[_wallet];
+
+        /* @dev   If this wallet's referral was used, then a value equal to the discount is kept.
+         *        This is to discourage users from joining just to generate discount codes.
+         *        E.g.: A user uses two different wallets, the first joins to generate a discount code for him/herself to be used in
+         *        the second wallet, and then immediatelly leaves the pool from the first wallet, leaving the second wallet with a full discount.
+         */
+        if(accumulatedRewardsOf[_wallet] > 0) {
+            withdrawalTotal -= discountForUser[_wallet];
+            accumulatedRewards -= discountForUser[_wallet];
         }
 
-        // subtract discounts used by referee
-        uint256 discount = discountForUser[msg.sender];
-        withdrawTotal -= discount;
+        totalValue -= costForWallet[_wallet];
+        costForWallet[_wallet] = 0;
+        discountForUser[_wallet] = 0;
+        referrerOfReferee[_wallet] = address(0);
+        enableReferral[_wallet] = false;
 
-        // undo rewards to referrer related to msg.sender
-        // address referrer = referrerOfReferee[msg.sender];
-        // if(referrer != 0)
-        //     accumulatedRewardsOf[referrer] -= discount;
+        // @dev transfer the owed funds from this contract back to the user.
+        token.safeTransferFrom(address(this), _wallet, withdrawalTotal);
 
-        // if the user generated a new referral code and the code has been used,
-        // keep a fee proportionally.
+        emit Left(_wallet, withdrawalTotal);
     }
 
     /**
@@ -385,32 +413,75 @@ contract Crowdtainer is ERC1155, ReentrancyGuard {
         return uri_;
     }
 
-    function _mint(
-        address to,
-        uint256 id,
-        uint256 amount
-    ) internal override {
-        super._mint(to, id, amount);
-    }
-
-    function _mintBatch(
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts
-    ) internal override {
-        super._mintBatch(to, ids, amounts);
-    }
-
-    function getPaidAndDeliver(uint256 amount)
+    /**
+     * @notice Function used by project deployer to signal intent to ship service or product
+     * by withdrawing the funds.
+     */
+    function getPaidAndDeliver()
         public
-        onlyAddress(owner)
+        onlyAddress(shippingAgent)
         onlyInState(CrowdtainerState.Funding)
+        onlyActive
     {
-        // TODO: implementation
+        if(totalValue < targetMinimum) {
+            revert Errors.MinimumTargetNotReached(targetMinimum, totalValue);
+        }
 
         crowdtainerState = CrowdtainerState.Delivery;
 
+        // @dev transfer the owed funds from this contract back to the service provider.
+        token.safeTransferFrom(address(this), shippingAgent, totalValue);
+
         emit CrowdtainerInDeliveryStage();
+    }
+
+    /**
+     * @notice Function used by participants to withdrawl funds from a failed/expired project.
+     */
+    function claimFunds()
+        public
+    {
+        if (crowdtainerState == CrowdtainerState.Uninitialized)
+            revert Errors.InvalidOperationFor({state: crowdtainerState});
+        
+        if (crowdtainerState == CrowdtainerState.Delivery)
+            revert Errors.InvalidOperationFor({state: crowdtainerState});
+
+        // The first person interacting with this function 'nudges' the state to Failed if
+        // the project didn't reach the goal in time.
+        if(block.timestamp > expireTime && totalValue < targetMinimum)
+        {
+            crowdtainerState = CrowdtainerState.Failed;
+        }
+        else {
+            revert Errors.CantClaimFundsOnActiveProject();
+        }
+
+        uint256 withdrawalTotal = costForWallet[msg.sender];
+
+        costForWallet[msg.sender] = 0;
+        discountForUser[msg.sender] = 0;
+        referrerOfReferee[msg.sender] = address(0);
+
+        // @dev transfer the owed funds from this contract back to the user.
+        token.safeTransferFrom(address(this), msg.sender, withdrawalTotal);
+
+        emit FundsClaimed(msg.sender, withdrawalTotal);
+    }
+
+    /**
+     * @notice Function used by participants to withdrawl referral rewards from a successful project.
+     */
+    function claimRewards()
+        public
+        onlyInState(CrowdtainerState.Delivery)
+    {
+        uint256 totalRewards = accumulatedRewardsOf[msg.sender];
+        accumulatedRewardsOf[msg.sender] = 0;
+
+        token.safeTransferFrom(address(this), msg.sender, totalRewards);
+
+        emit PaidRewards(msg.sender, totalRewards);
     }
 
     // @dev This method is only used for Formal Verification with SMTChecker

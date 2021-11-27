@@ -47,6 +47,8 @@ library Errors {
     error ReferralRateNotMultipleOfTwo();
     // @notice: An invalid price was set (zero).
     error InvalidPriceSpecified();
+    // @notice: Number of products (derived from non-zero prices does not match reserved token id ranges).
+    error TokenIdRangeMismatch();
 
     // -----------------------------------------------
     //  Authorization
@@ -57,16 +59,34 @@ library Errors {
     // -----------------------------------------------
     //  Join() operation
     // -----------------------------------------------
-    // @notice: The given referral was not created and thus can't be used to claim a discount.
-    error ReferralCodeInexistent();
+    // @notice: The given referral was not found thus can't be used to claim a discount.
+    error ReferralInexistent();
     // @notice: An account can't refer itself to claim a discount.
     error CannotReferItself();
-    // @notice: Referral code already used by another account.
-    error ReferralCodeAlreadyUsed();
     // @notice: Purchase exceed target's maximum goal.
     error PurchaseExceedsMaximumTarget(uint256 received, uint256 maximum);
     // @notice: Number of items purchased per type exceeds maximum allowed.
     error ExceededNumberOfItemsAllowed(uint256 received, uint256 maximum);
+    // @notice: Wallet already used to join project.
+    error UserAlreadyJoined();
+    // @notice: Referral is not enabled for the given wallet.
+    error ReferralDisabled();
+
+    // -----------------------------------------------
+    //  GetPaidAndDeliver() operation
+    // -----------------------------------------------
+    // @notice: GetPaidAndDeliver can't be called on a expired project.
+    error CrowdtainerExpired(uint256 timestamp, uint256 expiredTime);
+    // @notice: Not enough funds were raised.
+    error MinimumTargetNotReached(uint256 minimum, uint256 actual);
+
+    error OpeningTimeNotReachedYet(uint256 timestamp, uint256 openingTime);
+
+    // -----------------------------------------------
+    //  ClaimFunds() operation
+    // -----------------------------------------------
+    // @notice: Can't be called if the project is still active.
+    error CantClaimFundsOnActiveProject();
 
     // -----------------------------------------------
     //  State transition

@@ -23,6 +23,8 @@ abstract contract ERC1155 is ERC165, IERC1155, IERC1155MetadataURI {
     // @dev Mapping of token ID => account => balances
     mapping(uint256 => mapping(address => uint256)) private _balances;
 
+    function isTransferEnabled() internal virtual;
+
     /**
      * @dev See {IERC165-supportsInterface}.
      */
@@ -182,6 +184,8 @@ abstract contract ERC1155 is ERC165, IERC1155, IERC1155MetadataURI {
     /**************************************************************************
      * Internal/private methods
      *************************************************************************/
+
+    function _canTransfer(uint256 tokenId) internal virtual returns (bool);
 
     /**
      * @dev xref:ROOT:erc1155.adoc#batch-operations[Batched] version of {_mint}.

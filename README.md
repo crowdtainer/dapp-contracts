@@ -22,8 +22,10 @@ sh <(curl -L https://nixos.org/nix/install) --daemon
 # For MacOS users:
 sh <(curl -L https://nixos.org/nix/install) --darwin-use-unencrypted-nix-store-volume --daemon
 # In case of MacOS arm (M1) issues, you may want to run everything under Rosetta.
-# For details, see: https://cutecoder.org/software/run-command-line-apple-silicon/
-
+vi ~/.config/nix/nix.conf
+# set:
+system = x86_64-darwin
+nix-env -iA ghc -f $(curl -sS https://api.github.com/repos/dapphub/dapptools/releases/latest | jq -r .tarball_url)
 # Then, restart your terminal/shell session to make the installation effective.
 ```
 
@@ -32,7 +34,6 @@ sh <(curl -L https://nixos.org/nix/install) --darwin-use-unencrypted-nix-store-v
 ```sh
 curl https://dapp.tools/install | sh
 ```
-
 ## Building and testing
 
 ```sh
