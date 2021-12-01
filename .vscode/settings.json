@@ -3,5 +3,6 @@
   "solidity.packageDefaultDependenciesDirectory": "lib",
   "files.associations": {
     ".dapprc": "shellscript"
-  }
+  },
+  "solidity-va.uml.actors.enable": true
 }
