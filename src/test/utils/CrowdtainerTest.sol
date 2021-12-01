@@ -12,21 +12,21 @@ contract User {
     Crowdtainer internal crowdtainer;
     IERC20 internal token;
 
-    constructor(address _owner, address _token) {
-        crowdtainer = Crowdtainer(_owner);
+    constructor(address _crowdtainer, address _token) {
+        crowdtainer = Crowdtainer(_crowdtainer);
         token = IERC20(_token);
     }
 
     function doJoin(
         uint256[MAX_NUMBER_OF_PRODUCTS] calldata quantities,
-        bytes32 referralCode,
-        bytes32 newReferralCode
+        bool enableReferral,
+        address referrer
     ) public {
-        crowdtainer.join(quantities, referralCode, newReferralCode);
+        crowdtainer.join(address(this), quantities, enableReferral, referrer);
     }
 
-    function getPaidAndDeliver(uint256 amount) public {
-        crowdtainer.getPaidAndDeliver(amount);
+    function getPaidAndDeliver() public {
+        crowdtainer.getPaidAndDeliver();
     }
 
     function doApprove(address _contract, uint256 amount) public {
@@ -34,15 +34,32 @@ contract User {
     }
 }
 
+contract ShippingAgent {
+    Crowdtainer internal crowdtainer;
+
+    constructor(address _crowdtainer) {
+        crowdtainer = Crowdtainer(_crowdtainer);
+    }
+
+    function getPaidAndDeliver() public {
+        crowdtainer.getPaidAndDeliver();
+    }
+}
+
 contract BaseTest is CrowdtainerTestHelpers {
     // contracts
     Crowdtainer internal crowdtainer;
+
+    // shipping agent
+    ShippingAgent internal agent;
 
     // users
     User internal alice;
     User internal bob;
 
     // Default valid constructor values
+    uint256 internal tokenIdStartIndex = 0;
+    uint128 internal numberOfItems = 3;
     uint256 internal openingTime;
     uint256 internal closingTime;
     uint256 internal targetMinimum = 20000;
@@ -61,18 +78,19 @@ contract BaseTest is CrowdtainerTestHelpers {
     IERC20 internal iERC20Token = IERC20(erc20Token);
 
     address internal owner = address(this);
-    string internal uri = "dummyURI";
 
     function init() internal {
         crowdtainer.initialize(
+            address(agent),
+            tokenIdStartIndex,
+            numberOfItems,
             openingTime,
             closingTime,
             targetMinimum,
             targetMaximum,
             unitPricePerType,
             referralRate,
-            iERC20Token,
-            uri
+            iERC20Token
         );
     }
 
@@ -83,7 +101,9 @@ contract BaseTest is CrowdtainerTestHelpers {
         openingTime = block.timestamp;
         closingTime = block.timestamp + 2 hours;
 
-        crowdtainer = new Crowdtainer(owner);
+        crowdtainer = new Crowdtainer(address(0));
+
+        agent = new ShippingAgent(address(crowdtainer));
 
         alice = new User(address(crowdtainer), address(erc20Token));
         bob = new User(address(crowdtainer), address(erc20Token));

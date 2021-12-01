@@ -39,7 +39,7 @@ library Errors {
     error InvalidMaximumTarget();
     // @notice: Initialize called with invalid number of minimum units to be sold (less than maximum sold units)
     error InvalidMinimumTarget();
-    // @notice: Initialize called with invalid number of product types: must be > 0 and smaller than `MAX_NUMBER_OF_PRODUCTS`.
+    // @notice: Initialize called with invalid number of product types: must be > 0 and <= `MAX_NUMBER_OF_PRODUCTS`.
     error InvalidNumberOfProductTypes();
     // @notice: Initialize called with invalid referral rate.
     error InvalidReferralRate(uint256 received, uint256 maximum);
@@ -61,8 +61,6 @@ library Errors {
     // -----------------------------------------------
     // @notice: The given referral was not found thus can't be used to claim a discount.
     error ReferralInexistent();
-    // @notice: An account can't refer itself to claim a discount.
-    error CannotReferItself();
     // @notice: Purchase exceed target's maximum goal.
     error PurchaseExceedsMaximumTarget(uint256 received, uint256 maximum);
     // @notice: Number of items purchased per type exceeds maximum allowed.
@@ -93,6 +91,12 @@ library Errors {
     // -----------------------------------------------
     // @notice: Method can't be invoked at current state
     error InvalidOperationFor(CrowdtainerState state);
+
+    // -----------------------------------------------
+    //  ERC-1155
+    // -----------------------------------------------
+    // @notice: Can't make transfers in given state.
+    error TransferNotAllowed(address crowdtainer, CrowdtainerState state);
 
     // -----------------------------------------------
     //  Other Invariants

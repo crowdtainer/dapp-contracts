@@ -12,7 +12,10 @@ import "./Constants.sol";
 import "./Errors.sol";
 
 /**
- * A simple implementation of ERC1155 for Crowdtainer
+ * A simple implementation of ERC1155 for Crowdtainer. Based on OpenZeppelin implementation,
+ * with the following modifications:
+ * - Use of custom errors instead of revert with string
+ * - Added method _revertIfNotTransferable(tokenId) instead of OpenZeppelin "hooks".
  */
 abstract contract ERC1155 is ERC165, IERC1155, IERC1155MetadataURI {
     using Address for address;
@@ -22,8 +25,6 @@ abstract contract ERC1155 is ERC165, IERC1155, IERC1155MetadataURI {
 
     // @dev Mapping of token ID => account => balances
     mapping(uint256 => mapping(address => uint256)) private _balances;
-
-    function isTransferEnabled() internal virtual;
 
     /**
      * @dev See {IERC165-supportsInterface}.
@@ -128,11 +129,12 @@ abstract contract ERC1155 is ERC165, IERC1155, IERC1155MetadataURI {
         bool allowed = from == msg.sender || isApprovedForAll(from, msg.sender);
         if (!allowed) revert Errors.AccountNotOwnerOrApproved(); // "ERC1155: caller is not owner nor approved"
 
+        _revertIfNotTransferable(id);
+
         uint256 fromBalance = _balances[id][from];
         if (fromBalance < amount) revert Errors.InsufficientBalance(); // ERC1155: insufficient balance for transfer
 
         _balances[id][from] = fromBalance - amount;
-
         _balances[id][to] += amount;
 
         emit TransferSingle(msg.sender, from, to, id, amount);
@@ -160,6 +162,9 @@ abstract contract ERC1155 is ERC165, IERC1155, IERC1155MetadataURI {
 
         for (uint256 i = 0; i < ids.length; ++i) {
             uint256 id = ids[i];
+
+            _revertIfNotTransferable(id);
+
             uint256 amount = amounts[i];
 
             uint256 fromBalance = _balances[id][from];
@@ -185,7 +190,7 @@ abstract contract ERC1155 is ERC165, IERC1155, IERC1155MetadataURI {
      * Internal/private methods
      *************************************************************************/
 
-    function _canTransfer(uint256 tokenId) internal virtual returns (bool);
+    function _revertIfNotTransferable(uint256 tokenId) internal virtual;
 
     /**
      * @dev xref:ROOT:erc1155.adoc#batch-operations[Batched] version of {_mint}.
@@ -274,6 +279,16 @@ abstract contract ERC1155 is ERC165, IERC1155, IERC1155MetadataURI {
         _balances[tokenId][from] = fromBalance - amount;
 
         emit TransferSingle(msg.sender, from, address(0), tokenId, amount);
+    }
+
+    function _asSingletonArray(uint256 element)
+        private
+        pure
+        returns (uint256[] memory)
+    {
+        uint256[] memory array = new uint256[](1);
+        array[0] = element;
+        return array;
     }
 
     function _doSafeTransferAcceptanceCheck(

@@ -24,8 +24,9 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     CrowdtainerState public crowdtainerState;
 
     // @dev Owner of this contract.
-    // @notice Has permissions to call: initilize(), join() and leave() functions. These functions are gated so 
+    // @notice Has permissions to call: initialize(), join() and leave() functions. These functions are gated so
     // that an owner contract can do special accounting (such as for being EIP1155 compatible).
+    // If set to address(0), no restriction is applied.
     address public immutable owner;
 
     // @dev The entity or person responsible for the delivery of this crowdtainer project.
@@ -59,15 +60,17 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     // @dev The total value raised or accumulated by this contract.
     uint256 public totalValue;
 
-    string public uri_;
-
     // -----------------------------------------------
     //  Modifiers
     // -----------------------------------------------
     /**
-     * @dev Throws if called by any account other than the specified.
+     * @dev Throws if msg.sender != owner, except when owner is address(0), in which case no restriction is applied.
      */
     modifier onlyAddress(address requiredAddress) {
+        if (owner == address(0)) {
+            _;
+            return;
+        }
         if (msg.sender != requiredAddress)
             revert Errors.CallerNotAllowed({
                 expected: msg.sender,
@@ -88,9 +91,12 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     }
 
     modifier onlyActive() {
-        if(block.timestamp < openingTime)
-            revert Errors.OpeningTimeNotReachedYet(block.timestamp, openingTime);
-        if(block.timestamp > expireTime)
+        if (block.timestamp < openingTime)
+            revert Errors.OpeningTimeNotReachedYet(
+                block.timestamp,
+                openingTime
+            );
+        if (block.timestamp > expireTime)
             revert Errors.CrowdtainerExpired(block.timestamp, expireTime);
         _;
     }
@@ -116,17 +122,23 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     // @note Address of the ERC20 token used for payment.
     IERC20 public token;
 
+    constructor(address _owner) {
+        owner = _owner;
+    }
+
     // -----------------------------------------------
     //  Events
     // -----------------------------------------------
 
     // @note Emmited when a Crowdtainer is created.
-    event CrowdtainerCreated(address indexed owner, address indexed shippingAgent);
+    event CrowdtainerCreated(
+        address indexed owner,
+        address indexed shippingAgent
+    );
 
     // @note Emmited when a Crowdtainer is initialized.
     event CrowdtainerInitialized(
         IERC20 indexed _token,
-        address indexed owner,
         uint256 _openingTime,
         uint256 _expireTime,
         uint256 _targetMinimum,
@@ -143,20 +155,11 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         uint256 finalCost // @dev with discount applied
     );
 
-    event Left(
-        address indexed wallet,
-        uint256 withdrawnAmount
-    );
+    event Left(address indexed wallet, uint256 withdrawnAmount);
 
-    event PaidRewards(
-        address indexed wallet,
-        uint256 withdrawnAmount
-    );
+    event PaidRewards(address indexed wallet, uint256 withdrawnAmount);
 
-    event FundsClaimed(
-        address indexed wallet,
-        uint256 withdrawnAmount
-    );
+    event FundsClaimed(address indexed wallet, uint256 withdrawnAmount);
 
     event CrowdtainerInDeliveryStage();
 
@@ -166,7 +169,6 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
 
     /**
      * @dev Initializes a Crowdtainer.
-     * @param _owner Address owning this contract.
      * @param _shippingAgent Address that represents the product or service provider.
      * @param _tokenIdStartIndex The starting id used to represent this Crowdtainer's products or services.
      * @param _numberOfItems The number of ids used by this Crowdtainer. The last id will be at `_tokenIdStartIndex` + `_numberOfItems`.
@@ -179,9 +181,8 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
      * @param _token Address of the ERC20 token used for payment.
      */
     function initialize(
-        address _owner,
         address _shippingAgent,
-        uint128 _tokenIdStartIndex,
+        uint256 _tokenIdStartIndex,
         uint128 _numberOfItems,
         uint256 _openingTime,
         uint256 _expireTime,
@@ -190,11 +191,19 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType,
         uint256 _referralRate,
         IERC20 _token
-    ) public onlyAddress(owner) onlyInState(CrowdtainerState.Uninitialized) Initializable{
+    )
+        public
+        initializer
+        onlyAddress(owner)
+        onlyInState(CrowdtainerState.Uninitialized)
+    {
         // @dev: Sanity checks
         if (address(_token) == address(0)) revert Errors.TokenAddressIsZero();
 
-        owner = _owner;
+        if (_numberOfItems > MAX_NUMBER_OF_PRODUCTS) {
+            revert Errors.InvalidNumberOfProductTypes();
+        }
+
         shippingAgent = _shippingAgent;
         tokenId = _tokenIdStartIndex;
         numberOfItems = _numberOfItems;
@@ -218,8 +227,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
             // @dev Check if number of items isn't beyond the allowed.
             if (_unitPricePerType[i] == 0)
                 revert Errors.InvalidPriceSpecified();
-            if ( i+1 > numberOfItems)
-                revert Errors.TokenIdRangeMismatch();
+            if (i + 1 > numberOfItems) revert Errors.TokenIdRangeMismatch();
         }
 
         if (_referralRate > SAFETY_MAX_REFERRAL_RATE)
@@ -238,11 +246,8 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
 
         crowdtainerState = CrowdtainerState.Funding;
 
-        uri_ = _uri;
-
         emit CrowdtainerInitialized(
             token,
-            owner,
             openingTime,
             expireTime,
             targetMinimum,
@@ -256,7 +261,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
      * @dev Join the Crowdtainer project.
      * @param _wallet The wallet that is joining the Crowdtainer.
      * @param _quantities Array with the number of units desired for each product.
-     * @param enableReferral Informs whether the user would like to be elible to collect rewards for being referred.
+     * @param _enableReferral Informs whether the user would like to be elible to collect rewards for being referred.
      * @param _referrer Optional referral code to be used to claim a discount.
      *
      * @note referrer is the wallet address of a previous participant.
@@ -265,7 +270,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
      *       then the full value can't be claimed if deciding to leave the project.
      *
      * @note A same user is not allowed to increase the order amounts (i.e., by calling join multiple times).
-     *       To 'update' an order, the user must first 'leave' then join again with the new values. 
+     *       To 'update' an order, the user must first 'leave' then join again with the new values.
      *
      * @dev State variables manipulated by this function:
      *
@@ -278,16 +283,15 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities,
         bool _enableReferral,
         address _referrer
-    ) external 
-      onlyAddress(owner)
-      onlyInState(CrowdtainerState.Funding)
-      onlyActive
-      nonReentrant
+    )
+        external
+        onlyAddress(owner)
+        onlyInState(CrowdtainerState.Funding)
+        onlyActive
+        nonReentrant
     {
-
         // @dev Check if wallet didn't already join
-        if(costForWallet[_wallet] != 0)
-            revert Errors.UserAlreadyJoined();
+        if (costForWallet[_wallet] != 0) revert Errors.UserAlreadyJoined();
 
         // @dev Calculate cost
         uint256 finalCost;
@@ -302,22 +306,21 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
 
             finalCost += unitPricePerType[i] * _quantities[i];
 
-            if ( i+1 > numberOfItems)
-                break; // reached end of product list
+            if (i + 1 > numberOfItems) break; // reached end of product list
         }
 
         // @dev Apply discounts to `finalCost` if applicable.
         bool eligibleForDiscount;
         // @dev Verify validity of given `referrer`
-        if (_referrer != 0x0) {
+        if (_referrer != address(0)) {
             // @dev Check if referrer participated
-            if (costForWallet[_referrer] <= 0) revert Errors.ReferralInexistent();
+            if (costForWallet[_referrer] == 0)
+                revert Errors.ReferralInexistent();
 
-            // @dev Check if account is not referencing itself
-            if (_referrer == _wallet) revert Errors.CannotReferItself();
+            // // @dev Check if account is not referencing itself
+            // if (_referrer == _wallet) revert Errors.CannotReferItself();
 
-            if(!enableReferral[_referrer])
-                revert Errors.ReferralDisabled();
+            if (!enableReferral[_referrer]) revert Errors.ReferralDisabled();
 
             eligibleForDiscount = true;
         }
@@ -357,17 +360,13 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         // @dev transfer required funds into this contract
         token.safeTransferFrom(_wallet, address(this), finalCost);
 
-        emit Joined(
-            _wallet,
-            _quantities,
-            _referrer,
-            finalCost
-        );
+        emit Joined(_wallet, _quantities, _referrer, finalCost);
     }
 
     /*
      * @dev Leave the Crowdtainer and withdraw deposited funds given when joining.
      * @note Calling this method signals that the user is no longer interested in participating.
+     * @note Only allowed if the respective Crowdtainer is in active funding state.
      * @param _wallet The wallet that is leaving the Crowdtainer.
      */
     function leave(address _wallet)
@@ -388,7 +387,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
          *        E.g.: A user uses two different wallets, the first joins to generate a discount code for him/herself to be used in
          *        the second wallet, and then immediatelly leaves the pool from the first wallet, leaving the second wallet with a full discount.
          */
-        if(accumulatedRewardsOf[_wallet] > 0) {
+        if (accumulatedRewardsOf[_wallet] > 0) {
             withdrawalTotal -= discountForUser[_wallet];
             accumulatedRewards -= discountForUser[_wallet];
         }
@@ -406,14 +405,6 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     }
 
     /**
-     * @notice Get the metadata uri
-     * @return String uri of the metadata service
-     */
-    function uri(uint256) public view override returns (string memory) {
-        return uri_;
-    }
-
-    /**
      * @notice Function used by project deployer to signal intent to ship service or product
      * by withdrawing the funds.
      */
@@ -423,7 +414,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         onlyInState(CrowdtainerState.Funding)
         onlyActive
     {
-        if(totalValue < targetMinimum) {
+        if (totalValue < targetMinimum) {
             revert Errors.MinimumTargetNotReached(targetMinimum, totalValue);
         }
 
@@ -438,22 +429,18 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     /**
      * @notice Function used by participants to withdrawl funds from a failed/expired project.
      */
-    function claimFunds()
-        public
-    {
+    function claimFunds() public {
         if (crowdtainerState == CrowdtainerState.Uninitialized)
             revert Errors.InvalidOperationFor({state: crowdtainerState});
-        
+
         if (crowdtainerState == CrowdtainerState.Delivery)
             revert Errors.InvalidOperationFor({state: crowdtainerState});
 
-        // The first person interacting with this function 'nudges' the state to Failed if
+        // The first person interacting with this function 'nudges' the state to `Failed` if
         // the project didn't reach the goal in time.
-        if(block.timestamp > expireTime && totalValue < targetMinimum)
-        {
+        if (block.timestamp > expireTime && totalValue < targetMinimum) {
             crowdtainerState = CrowdtainerState.Failed;
-        }
-        else {
+        } else {
             revert Errors.CantClaimFundsOnActiveProject();
         }
 
@@ -472,10 +459,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     /**
      * @notice Function used by participants to withdrawl referral rewards from a successful project.
      */
-    function claimRewards()
-        public
-        onlyInState(CrowdtainerState.Delivery)
-    {
+    function claimRewards() public onlyInState(CrowdtainerState.Delivery) {
         uint256 totalRewards = accumulatedRewardsOf[msg.sender];
         accumulatedRewardsOf[msg.sender] = 0;
 

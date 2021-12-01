@@ -5,8 +5,7 @@ pragma solidity ^0.8.9;
 import "../lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../lib/openzeppelin-contracts/contracts/interfaces/IERC1155.sol";
-import "../lib/openzeppelin-contracts/contracts/proxy/Clones.sol";
-import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
+// import "../lib/openzeppelin-contracts/contracts/proxy/Clones.sol";
 
 // @dev Internal dependencies
 import "./Crowdtainer.sol";
@@ -17,12 +16,16 @@ import "./Constants.sol";
 /**
  * @title Crowdtainer factory with ERC1155 compliance
  */
-contract Harbor is ERC1155, ReentrancyGuard, Ownable {
-
-    using Clones for address;
+contract Harbor is ERC1155, ReentrancyGuard {
+    //using Clones for address;
 
     // @dev The next available id from the ERC1159 implementation.
-    uint256 private tokenIdStartIndex;
+    // @note It is incremented by `MAX_NUMBER_OF_PRODUCTS` per Crowdtainer project.
+    // @note This allows us to easily pinpoint any product/service id to its respective Crowdtainer project as follows:
+    // @note crowdtainer_id = tokenId / MAX_NUMBER_OF_PRODUCTS (division will truncate). The specific product index position is: tokenId - crowdtainer_id.
+    uint256 private nextTokenIdStartIndex;
+
+    address private immutable implementation;
 
     // @dev Mapping of tokenId to Crowdtainer contract address.
     mapping(uint256 => address) public crowdtainerForId;
@@ -32,7 +35,7 @@ contract Harbor is ERC1155, ReentrancyGuard, Ownable {
     // -----------------------------------------------
 
     // @note Emmited when this contract is created.
-    event HarborCreated(address indexed owner);
+    event HarborCreated(address indexed crowdtainer);
 
     // -----------------------------------------------
     //  Modifiers
@@ -54,11 +57,10 @@ contract Harbor is ERC1155, ReentrancyGuard, Ownable {
     //  Contract functions
     // -----------------------------------------------
 
-    // @param _owner Owner of this contract.
-    constructor(address _owner) {
-        if (_owner == address(0)) revert Errors.OwnerAddressIsZero();
-        owner = _owner;
-        emit HarborCreated(owner);
+    // @param Deploy a new Crowdtainer, and use its implementation for new instances.
+    constructor() {
+        implementation = address(new Crowdtainer(address(this)));
+        emit HarborCreated(implementation);
     }
 
     /**
@@ -73,10 +75,10 @@ contract Harbor is ERC1155, ReentrancyGuard, Ownable {
      * @param _referralRate Percentage used for incentivising participation. Half the amount goes to the referee, and the other half to the referrer.
      * @param _token Address of the ERC20 token used for payment.
      */
-     //     * @param _uri URI used to fetch metadata details. See `IERC1155MetadataURI`.
+    //     * @param _uri URI used to fetch metadata details. See `IERC1155MetadataURI`.
     function createCrowdtainer(
         address _shippingAgent,
-        uint256 _numberOfItems,
+        uint128 _numberOfItems,
         uint256 _openingTime,
         uint256 _expireTime,
         uint256 _targetMinimum,
@@ -85,67 +87,76 @@ contract Harbor is ERC1155, ReentrancyGuard, Ownable {
         uint256 _referralRate,
         IERC20 _token
     ) public {
-        // TODO: Create new Crowdtainer and save its address
-        crowdtainer = address(new Crowdtainer());
-        crowdtainer.initialize(address(this),
-                              _shippingAgent,
-                              tokenIdStartIndex,
-                              _numberOfItems,
-                              _openingTime, 
-                              _expireTime, 
-                              _targetMinimum,
-                              _targetMaximum,
-                              _unitPricePerType,
-                              _referralRate,
-                              _token);
-        crowdtainerForId[tokenIdStartIndex] = crowdtainer;
-        tokenIdStartIndex++;
+        //Crowdtainer crowdtainer = clone(Crowdtainer);
+        Crowdtainer crowdtainer = new Crowdtainer(address(this));
+        crowdtainer.initialize(
+            _shippingAgent,
+            nextTokenIdStartIndex,
+            _numberOfItems,
+            _openingTime,
+            _expireTime,
+            _targetMinimum,
+            _targetMaximum,
+            _unitPricePerType,
+            _referralRate,
+            _token
+        );
+        crowdtainerForId[nextTokenIdStartIndex] = address(crowdtainer);
+        nextTokenIdStartIndex = nextTokenIdStartIndex + MAX_NUMBER_OF_PRODUCTS;
     }
 
     /*
      * @dev Join the pool.
-     * @param quantities Array with the number of units desired for each product.
-     * @param referralCode Optional referral code to be used to claim a discount.
-     * @param newReferralCode Optional identifier to generate a new referral code.
+     * @param _crowdtainerId Crowdtainer project id.
+     * @param _quantities Array with the number of units desired for each product.
+     * @param _enableReferral Informs whether the user would like to be elible to collect rewards for being referred.
+     * @param _referrer Optional referral code to be used to claim a discount.
      *
-     * @note referralCode and newReferralCode both accept values of 0x0, which means no current or future
-     * discounts will be available for the participant joining the pool.
+     * @note referrer is the wallet address of a previous participant.
      *
-     * @note referralCode and newReferralCode are expected to only contain printable ASCII characters,
-     * which means the characters between and including 0x1F .. 0x7E, and be in total up to 32 characters.
-     * The frontend can normalize all characters to lower-case before interacting with this contract to
-     * avoid user typing mistakes.
+     * @note if `enableReferral` is true, and the user decides to leave after the wallet has been used to claim a discount,
+     *       then the full value can't be claimed if deciding to leave the project.
      *
-     * @note A same user is allowed to increase the order amounts (i.e., by calling join multiple times).
-     *       However, a second call to join() can't provide yet a new referral code (newReferralCode parameter) if
-     *       the previous referral code has already been claimed by another account.
+     * @note A same user is not allowed to increase the order amounts (i.e., by calling join multiple times).
+     *       To 'update' an order, the user must first 'leave' then join again with the new values.
      *
-     * @dev State variables manipulated by this function:
-     *
-     *       ownerOfReferralCode[newReferralCode]   (msg.sender)
-     *       balanceOf[msg.sender][i]               (+= quantities[i])
-     *       accumulatedRewardsOf[referrer]         (+= discount)
-     *       discountAndRewards                     (+= discount * 2)
-     *       discountForUser[msg.sender]            (+= discount)
-     *       totalRaised                            (+= finalCost)
      */
     function join(
         uint256 _crowdtainerId,
-        address _wallet,
         uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities,
+        bool _enableReferral,
         address _referrer
     ) external {
-        Crowdtainer(crowdtainerForId[_crowdtainerId]).join(_wallet, _quantities, _referrer);
+        Crowdtainer(crowdtainerForId[_crowdtainerId]).join(
+            msg.sender,
+            _quantities,
+            _enableReferral,
+            _referrer
+        );
+
+        // Mint respective products and transfer ownership
+        for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
+            if (_quantities[i] > 0) {
+                _mint(msg.sender, _crowdtainerId + i, _quantities[i]); // params: to, id, amount
+            }
+        }
     }
 
     /*
-     * @dev Leave the pool and withdraw deposited funds given when joining.
+     * @dev Leave the specified Crowdtainer and withdraw all deposited funds given when joining.
      * @note Calling this method signals that the user is no longer interested in participating.
+     * @note Only allowed if the respective Crowdtainer is in active funding state.
      */
-    function leave()
-        external
-    {
+    function leave(uint256 _crowdtainerId) external {
         Crowdtainer(crowdtainerForId[_crowdtainerId]).leave(msg.sender);
+
+        // Set product balances to zero for the current user
+        for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
+            uint256 amount = balanceOf(msg.sender, _crowdtainerId + i);
+            if (amount > 0) {
+                _burn(msg.sender, _crowdtainerId + i, amount); // params: from, id, amount
+            }
+        }
     }
 
     /**
@@ -153,28 +164,25 @@ contract Harbor is ERC1155, ReentrancyGuard, Ownable {
      * @return String uri of the metadata service
      */
     function uri(uint256) public view override returns (string memory) {
-        return uri_;
-    }
-
-    function _beforeTokenTransfer(
-        address operator,
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
-    ) private override {
-        // super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
-        // Transfers are only allowed after funding either succeeded (or failed).
-        if (crowdtainerState != CrowdtainerState.Delivery || crowdtainerState != CrowdtainerState.Failed)
-            revert Errors.InvalidOperationFor({state: crowdtainerState});
+        // return uri_;
+        return "dummy";
     }
 
     /**************************************************************************
      * Internal/private methods
      *************************************************************************/
-
-    function _canTransfer(uint256 tokenId) internal virtual override returns (bool) {
-        return false;
+    function _revertIfNotTransferable(uint256 tokenId) internal view override {
+        // Transfers are only allowed after funding either succeeded or failed.
+        uint256 crowdtainerId = tokenId / MAX_NUMBER_OF_PRODUCTS;
+        Crowdtainer crowdtainer = Crowdtainer(crowdtainerForId[crowdtainerId]);
+        if (
+            crowdtainer.crowdtainerState() != CrowdtainerState.Delivery &&
+            crowdtainer.crowdtainerState() != CrowdtainerState.Failed
+        ) {
+            revert Errors.TransferNotAllowed({
+                crowdtainer: address(crowdtainer),
+                state: crowdtainer.crowdtainerState()
+            });
+        }
     }
 }
