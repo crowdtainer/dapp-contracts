@@ -33,12 +33,6 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     // @notice Allowed to call getPaidAndDeliver().
     address private shippingAgent;
 
-    // // @dev Starting token id claimed by this Crowdtainer.
-    // uint256 private tokenId;
-
-    // // @dev Equals the number of products or services available to choose from when joining the project.
-    // uint256 private numberOfItems;
-
     // @dev Maps wallets that joined this Crowdtainer to the values they paid to join.
     mapping(address => uint256) private costForWallet;
 
@@ -152,16 +146,21 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         address indexed wallet,
         uint256[MAX_NUMBER_OF_PRODUCTS] quantities,
         address indexed referrer,
-        uint256 finalCost // @dev with discount applied
+        uint256 finalCost, // @dev with discount applied
+        uint256 appliedDiscount,
+        bool referralEnabled
     );
 
     event Left(address indexed wallet, uint256 withdrawnAmount);
 
-    event PaidRewards(address indexed wallet, uint256 withdrawnAmount);
+    event RewardsClaimed(address indexed wallet, uint256 withdrawnAmount);
 
     event FundsClaimed(address indexed wallet, uint256 withdrawnAmount);
 
-    event CrowdtainerInDeliveryStage();
+    event CrowdtainerInDeliveryStage(
+        address indexed shippingAgent,
+        uint256 totalValue
+    );
 
     // -----------------------------------------------
     // Contract functions
@@ -215,8 +214,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         // Ensure that there are no prices set to zero and input lengths are correct
         for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
             // @dev The first price of zero indicates the end of price list.
-            if (_unitPricePerType[i] == 0)
-                break;
+            if (_unitPricePerType[i] == 0) break;
         }
 
         if (_referralRate > SAFETY_MAX_REFERRAL_RATE)
@@ -287,7 +285,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
 
         for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
             // @dev The first price of zero indicates the end of price list.
-            if(unitPricePerType[i] == 0) {
+            if (unitPricePerType[i] == 0) {
                 break;
             }
 
@@ -316,13 +314,15 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
             eligibleForDiscount = true;
         }
 
+        uint256 discount;
+
         if (eligibleForDiscount) {
             // @dev Two things happens when a valid referral code is given:
             //       1 - Half of the referral rate is applied as a discount to the current order.
             //       2 - Half of the referral rate is credited to the referrer.
 
             // @dev Calculate the discount value
-            uint256 discount = finalCost * ((referralRate / 100) / 2);
+            discount = finalCost * ((referralRate / 100) / 2);
 
             // @dev 1- Apply discount
             finalCost -= discount;
@@ -351,7 +351,14 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         // @dev transfer required funds into this contract
         token.safeTransferFrom(_wallet, address(this), finalCost);
 
-        emit Joined(_wallet, _quantities, _referrer, finalCost);
+        emit Joined(
+            _wallet,
+            _quantities,
+            _referrer,
+            finalCost,
+            discount,
+            _enableReferral
+        );
     }
 
     /*
@@ -414,7 +421,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         // @dev transfer the owed funds from this contract back to the service provider.
         token.safeTransferFrom(address(this), shippingAgent, totalValue);
 
-        emit CrowdtainerInDeliveryStage();
+        emit CrowdtainerInDeliveryStage(shippingAgent, totalValue);
     }
 
     /**
@@ -456,7 +463,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
 
         token.safeTransferFrom(address(this), msg.sender, totalRewards);
 
-        emit PaidRewards(msg.sender, totalRewards);
+        emit RewardsClaimed(msg.sender, totalRewards);
     }
 
     // @dev This method is only used for Formal Verification with SMTChecker

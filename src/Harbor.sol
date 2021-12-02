@@ -14,7 +14,8 @@ import "./Errors.sol";
 import "./Constants.sol";
 
 /**
- * @title Crowdtainer factory with ERC1155 compliance
+ * @title Manages multiple Crowdtainer projects and ownership of its product/services by participants.
+ * @dev Essentially, a Crowdtainer factory with ERC1155 compliance.
  */
 contract Harbor is ERC1155, ReentrancyGuard {
     //using Clones for address;
@@ -25,10 +26,13 @@ contract Harbor is ERC1155, ReentrancyGuard {
     // @note crowdtainer_id = tokenId / MAX_NUMBER_OF_PRODUCTS (division will truncate). The specific product index position is: tokenId - crowdtainer_id.
     uint256 private nextTokenIdStartIndex;
 
-    address private immutable implementation;
+    //address private immutable implementation;
 
-    // @dev Mapping of tokenId to Crowdtainer contract address.
+    // @dev Mapping of token id to Crowdtainer contract address.
     mapping(uint256 => address) public crowdtainerForId;
+
+    // @dev Mapping of deployed Crowdtainer contract addresses to its initial token id.
+    mapping(address => uint256) public idForCrowdtainer;
 
     // -----------------------------------------------
     //  Events
@@ -36,6 +40,12 @@ contract Harbor is ERC1155, ReentrancyGuard {
 
     // @note Emmited when this contract is created.
     event HarborCreated(address indexed crowdtainer);
+
+    // @note Emmited when a new Crowdtainer is deployed and initialized by this contract.
+    event CrowdtainerDeployed(
+        address indexed _crowdtainerAddress,
+        uint256 _tokenIdStartIndex
+    );
 
     // -----------------------------------------------
     //  Modifiers
@@ -57,14 +67,14 @@ contract Harbor is ERC1155, ReentrancyGuard {
     //  Contract functions
     // -----------------------------------------------
 
-    // @param Deploy a new Crowdtainer, and use its implementation for new instances.
+    // @param Deploy a new Harbor.
     constructor() {
-        implementation = address(new Crowdtainer(address(this)));
-        emit HarborCreated(implementation);
+        // implementation = address(new Crowdtainer(address(this)));
+        emit HarborCreated(address(this));
     }
 
     /**
-     * @dev Deploy a new Crowdtainer.
+     * @dev Create and deploy a new Crowdtainer.
      * @param _shippingAgent Address that represents the product or service provider.
      * @param _openingTime Funding opening time.
      * @param _expireTime Time after which the owner can no longer withdraw funds.
@@ -97,7 +107,12 @@ contract Harbor is ERC1155, ReentrancyGuard {
             _referralRate,
             _token
         );
+
+        emit CrowdtainerDeployed(address(crowdtainer), nextTokenIdStartIndex);
+
+        idForCrowdtainer[address(crowdtainer)] = nextTokenIdStartIndex;
         crowdtainerForId[nextTokenIdStartIndex] = address(crowdtainer);
+
         nextTokenIdStartIndex = nextTokenIdStartIndex + MAX_NUMBER_OF_PRODUCTS;
     }
 
@@ -144,8 +159,6 @@ contract Harbor is ERC1155, ReentrancyGuard {
      * @note Only allowed if the respective Crowdtainer is in active funding state.
      */
     function leave(uint256 _crowdtainerId) external {
-        Crowdtainer(crowdtainerForId[_crowdtainerId]).leave(msg.sender);
-
         // Set product balances to zero for the current user
         for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
             uint256 amount = balanceOf(msg.sender, _crowdtainerId + i);
@@ -153,6 +166,8 @@ contract Harbor is ERC1155, ReentrancyGuard {
                 _burn(msg.sender, _crowdtainerId + i, amount); // params: from, id, amount
             }
         }
+
+        Crowdtainer(crowdtainerForId[_crowdtainerId]).leave(msg.sender);
     }
 
     /**
@@ -167,6 +182,12 @@ contract Harbor is ERC1155, ReentrancyGuard {
     /**************************************************************************
      * Internal/private methods
      *************************************************************************/
+
+    /**
+     * @notice Function used to apply restrictions of states where transfers are disabled.
+     * @param tokenId Token id of the item being transfered.
+     * @dev Tranfers are only allowed in `Delivery` or `Failed` states, but not e.g. during `Funding`.
+     */
     function _revertIfNotTransferable(uint256 tokenId) internal view override {
         // Transfers are only allowed after funding either succeeded or failed.
         uint256 crowdtainerId = tokenId / MAX_NUMBER_OF_PRODUCTS;

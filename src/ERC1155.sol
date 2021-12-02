@@ -14,7 +14,7 @@ import "./Errors.sol";
 /**
  * A simple implementation of ERC1155 for Crowdtainer. Based on OpenZeppelin implementation,
  * with the following modifications:
- * - Use of custom errors instead of revert with string
+ * - Use of custom errors instead of revert with strings.
  * - Added method _revertIfNotTransferable(tokenId) instead of OpenZeppelin "hooks".
  */
 abstract contract ERC1155 is ERC165, IERC1155, IERC1155MetadataURI {
