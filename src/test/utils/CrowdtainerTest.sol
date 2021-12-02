@@ -58,8 +58,6 @@ contract BaseTest is CrowdtainerTestHelpers {
     User internal bob;
 
     // Default valid constructor values
-    uint256 internal tokenIdStartIndex = 0;
-    uint128 internal numberOfItems = 3;
     uint256 internal openingTime;
     uint256 internal closingTime;
     uint256 internal targetMinimum = 20000;
@@ -82,8 +80,6 @@ contract BaseTest is CrowdtainerTestHelpers {
     function init() internal {
         crowdtainer.initialize(
             address(agent),
-            tokenIdStartIndex,
-            numberOfItems,
             openingTime,
             closingTime,
             targetMinimum,

@@ -33,11 +33,11 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     // @notice Allowed to call getPaidAndDeliver().
     address private shippingAgent;
 
-    // @dev Starting token id claimed by this Crowdtainer.
-    uint256 private tokenId;
+    // // @dev Starting token id claimed by this Crowdtainer.
+    // uint256 private tokenId;
 
-    // @dev Equals the number of products or services available to choose from when joining the project.
-    uint256 private numberOfItems;
+    // // @dev Equals the number of products or services available to choose from when joining the project.
+    // uint256 private numberOfItems;
 
     // @dev Maps wallets that joined this Crowdtainer to the values they paid to join.
     mapping(address => uint256) private costForWallet;
@@ -170,20 +170,16 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     /**
      * @dev Initializes a Crowdtainer.
      * @param _shippingAgent Address that represents the product or service provider.
-     * @param _tokenIdStartIndex The starting id used to represent this Crowdtainer's products or services.
-     * @param _numberOfItems The number of ids used by this Crowdtainer. The last id will be at `_tokenIdStartIndex` + `_numberOfItems`.
      * @param _openingTime Funding opening time.
      * @param _expireTime Time after which the owner can no longer withdraw funds.
      * @param _targetMinimum Amount in ERC20 units required for the Crowdtainer to be considered to be successful.
      * @param _targetMaximum Amount in ERC20 units after which no further participation is possible.
-     * @param _unitPricePerType Array with price of each item, in ERC2O units. Zero is an invalid value and will throw.
+     * @param _unitPricePerType Array with price of each item, in ERC2O units. Zero indicates end of product list.
      * @param _referralRate Percentage used for incentivising participation. Half the amount goes to the referee, and the other half to the referrer.
      * @param _token Address of the ERC20 token used for payment.
      */
     function initialize(
         address _shippingAgent,
-        uint256 _tokenIdStartIndex,
-        uint128 _numberOfItems,
         uint256 _openingTime,
         uint256 _expireTime,
         uint256 _targetMinimum,
@@ -200,13 +196,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         // @dev: Sanity checks
         if (address(_token) == address(0)) revert Errors.TokenAddressIsZero();
 
-        if (_numberOfItems > MAX_NUMBER_OF_PRODUCTS) {
-            revert Errors.InvalidNumberOfProductTypes();
-        }
-
         shippingAgent = _shippingAgent;
-        tokenId = _tokenIdStartIndex;
-        numberOfItems = _numberOfItems;
 
         if (_referralRate % 2 != 0)
             revert Errors.ReferralRateNotMultipleOfTwo();
@@ -224,10 +214,9 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
 
         // Ensure that there are no prices set to zero and input lengths are correct
         for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
-            // @dev Check if number of items isn't beyond the allowed.
+            // @dev The first price of zero indicates the end of price list.
             if (_unitPricePerType[i] == 0)
-                revert Errors.InvalidPriceSpecified();
-            if (i + 1 > numberOfItems) revert Errors.TokenIdRangeMismatch();
+                break;
         }
 
         if (_referralRate > SAFETY_MAX_REFERRAL_RATE)
@@ -297,7 +286,11 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         uint256 finalCost;
 
         for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
-            // @dev Check if number of items isn't beyond the allowed.
+            // @dev The first price of zero indicates the end of price list.
+            if(unitPricePerType[i] == 0) {
+                break;
+            }
+
             if (_quantities[i] > MAX_NUMBER_OF_PURCHASED_ITEMS)
                 revert Errors.ExceededNumberOfItemsAllowed({
                     received: _quantities[i],
@@ -305,8 +298,6 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
                 });
 
             finalCost += unitPricePerType[i] * _quantities[i];
-
-            if (i + 1 > numberOfItems) break; // reached end of product list
         }
 
         // @dev Apply discounts to `finalCost` if applicable.

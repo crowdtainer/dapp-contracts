@@ -20,8 +20,6 @@ contract CrowdtainerStateTransitionTester is BaseTest {
         uint256 _targetMaximum = 4000;
         crowdtainer.initialize(
             address(agent),
-            tokenIdStartIndex,
-            numberOfItems,
             openingTime,
             closingTime,
             _targetMinimum,

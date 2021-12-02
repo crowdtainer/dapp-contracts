@@ -39,16 +39,10 @@ library Errors {
     error InvalidMaximumTarget();
     // @notice: Initialize called with invalid number of minimum units to be sold (less than maximum sold units)
     error InvalidMinimumTarget();
-    // @notice: Initialize called with invalid number of product types: must be > 0 and <= `MAX_NUMBER_OF_PRODUCTS`.
-    error InvalidNumberOfProductTypes();
     // @notice: Initialize called with invalid referral rate.
     error InvalidReferralRate(uint256 received, uint256 maximum);
     // @notice: Referral rate not multiple of 2.
     error ReferralRateNotMultipleOfTwo();
-    // @notice: An invalid price was set (zero).
-    error InvalidPriceSpecified();
-    // @notice: Number of products (derived from non-zero prices does not match reserved token id ranges).
-    error TokenIdRangeMismatch();
 
     // -----------------------------------------------
     //  Authorization

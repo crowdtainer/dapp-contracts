@@ -66,7 +66,6 @@ contract Harbor is ERC1155, ReentrancyGuard {
     /**
      * @dev Deploy a new Crowdtainer.
      * @param _shippingAgent Address that represents the product or service provider.
-     * @param _numberOfItems The number of item variations avaiable to choose from.
      * @param _openingTime Funding opening time.
      * @param _expireTime Time after which the owner can no longer withdraw funds.
      * @param _targetMinimum Amount in ERC20 units required for project to be considered to be successful.
@@ -78,7 +77,6 @@ contract Harbor is ERC1155, ReentrancyGuard {
     //     * @param _uri URI used to fetch metadata details. See `IERC1155MetadataURI`.
     function createCrowdtainer(
         address _shippingAgent,
-        uint128 _numberOfItems,
         uint256 _openingTime,
         uint256 _expireTime,
         uint256 _targetMinimum,
@@ -91,8 +89,6 @@ contract Harbor is ERC1155, ReentrancyGuard {
         Crowdtainer crowdtainer = new Crowdtainer(address(this));
         crowdtainer.initialize(
             _shippingAgent,
-            nextTokenIdStartIndex,
-            _numberOfItems,
             _openingTime,
             _expireTime,
             _targetMinimum,

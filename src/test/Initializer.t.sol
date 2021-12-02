@@ -10,8 +10,6 @@ contract ValidInitializeTester is BaseTest {
     function testValidValuesMustSucceed() public {
         crowdtainer.initialize(
             address(agent),
-            tokenIdStartIndex,
-            numberOfItems,
             openingTime,
             closingTime,
             targetMinimum,
@@ -29,8 +27,6 @@ contract InvalidInitializeTester is BaseTest {
         try
             crowdtainer.initialize(
                 address(agent),
-                tokenIdStartIndex,
-                numberOfItems,
                 openingTime,
                 closingTime,
                 targetMinimum,
@@ -51,8 +47,6 @@ contract InvalidInitializeTester is BaseTest {
         try
             crowdtainer.initialize(
                 address(agent),
-                tokenIdStartIndex,
-                numberOfItems,
                 openingTime,
                 openingTime,
                 targetMinimum,
@@ -73,8 +67,6 @@ contract InvalidInitializeTester is BaseTest {
         try
             crowdtainer.initialize(
                 address(agent),
-                tokenIdStartIndex,
-                numberOfItems,
                 openingTime,
                 openingTime,
                 targetMaximum + 1,
@@ -95,8 +87,6 @@ contract InvalidInitializeTester is BaseTest {
         try
             crowdtainer.initialize(
                 address(agent),
-                tokenIdStartIndex,
-                numberOfItems,
                 openingTime,
                 closingTime,
                 0,
@@ -117,8 +107,6 @@ contract InvalidInitializeTester is BaseTest {
         try
             crowdtainer.initialize(
                 address(agent),
-                tokenIdStartIndex,
-                numberOfItems,
                 openingTime,
                 closingTime,
                 targetMinimum,
@@ -139,8 +127,6 @@ contract InvalidInitializeTester is BaseTest {
         try
             crowdtainer.initialize(
                 address(agent),
-                tokenIdStartIndex,
-                numberOfItems,
                 openingTime,
                 closingTime,
                 targetMinimum,
@@ -161,8 +147,6 @@ contract InvalidInitializeTester is BaseTest {
         try
             crowdtainer.initialize(
                 address(agent),
-                tokenIdStartIndex,
-                numberOfItems,
                 openingTime,
                 closingTime,
                 targetMinimum,
@@ -178,33 +162,6 @@ contract InvalidInitializeTester is BaseTest {
             );
         }
     }
-
-    function testFailWhenInvalidPriceOfZero() public {
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
-            uint256(10),
-            0,
-            25
-        ];
-        try
-            crowdtainer.initialize(
-                address(agent),
-                tokenIdStartIndex,
-                numberOfItems,
-                openingTime,
-                closingTime,
-                targetMinimum,
-                targetMaximum,
-                _unitPricePerType,
-                referralRate,
-                erc20Token
-            )
-        {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
-                makeError(Errors.InvalidPriceSpecified.selector),
-                lowLevelData
-            );
-        }
-    }
 }
 
 //   ----------------------
@@ -213,8 +170,6 @@ contract InvalidInitializeTester is BaseTest {
 contract InitializeFuzzer is BaseTest {
     function testAllSanityChecks(
         address _agent,
-        uint256 _tokenIdStartIndex,
-        uint128 _numberOfItems,
         uint256 _openingTime,
         uint256 _closingTime,
         uint256 _targetMinimum,
@@ -242,8 +197,6 @@ contract InitializeFuzzer is BaseTest {
 
         crowdtainer.initialize(
             _agent,
-            _tokenIdStartIndex,
-            _numberOfItems,
             _openingTime,
             _closingTime,
             _targetMinimum,
