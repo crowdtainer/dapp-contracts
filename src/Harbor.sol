@@ -48,22 +48,6 @@ contract Harbor is ERC1155, ReentrancyGuard {
     );
 
     // -----------------------------------------------
-    //  Modifiers
-    // -----------------------------------------------
-    /**
-     * @dev Throws if called by any account other than the specified.
-     */
-    modifier onlyAddress(address requiredAddress) {
-        if (msg.sender != requiredAddress)
-            revert Errors.CallerNotAllowed({
-                expected: msg.sender,
-                actual: requiredAddress
-            });
-        require(msg.sender == requiredAddress);
-        _;
-    }
-
-    // -----------------------------------------------
     //  Contract functions
     // -----------------------------------------------
 
@@ -165,6 +149,8 @@ contract Harbor is ERC1155, ReentrancyGuard {
 
         Crowdtainer crowdtainer = Crowdtainer(crowdtainerForId[_crowdtainerId]);
 
+        crowdtainer.leave(msg.sender);
+
         // Set product balances to zero for the current user
         for (uint256 i = 0; i < crowdtainer.numberOfProducts(); i++) {
             uint256 amount = balanceOf(msg.sender, _crowdtainerId + i);
@@ -173,7 +159,6 @@ contract Harbor is ERC1155, ReentrancyGuard {
             }
         }
 
-        crowdtainer.leave(msg.sender);
     }
 
     /**
@@ -199,8 +184,8 @@ contract Harbor is ERC1155, ReentrancyGuard {
         uint256 crowdtainerId = tokenId / MAX_NUMBER_OF_PRODUCTS;
         Crowdtainer crowdtainer = Crowdtainer(crowdtainerForId[crowdtainerId]);
         if (
-            crowdtainer.crowdtainerState() != CrowdtainerState.Delivery &&
-            crowdtainer.crowdtainerState() != CrowdtainerState.Failed
+            crowdtainer.crowdtainerState() == CrowdtainerState.Delivery ||
+            crowdtainer.crowdtainerState() == CrowdtainerState.Failed
         ) {
             revert Errors.TransferNotAllowed({
                 crowdtainer: address(crowdtainer),

@@ -406,6 +406,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         onlyAddress(shippingAgent)
         onlyInState(CrowdtainerState.Funding)
         onlyActive
+        nonReentrant
     {
         if (totalValue < targetMinimum) {
             revert Errors.MinimumTargetNotReached(targetMinimum, totalValue);
@@ -422,7 +423,10 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     /**
      * @notice Function used by participants to withdrawl funds from a failed/expired project.
      */
-    function claimFunds() public {
+    function claimFunds()
+        public
+        nonReentrant
+    {
         if (crowdtainerState == CrowdtainerState.Uninitialized)
             revert Errors.InvalidOperationFor({state: crowdtainerState});
 
@@ -452,7 +456,11 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     /**
      * @notice Function used by participants to withdrawl referral rewards from a successful project.
      */
-    function claimRewards() public onlyInState(CrowdtainerState.Delivery) {
+    function claimRewards()
+        public
+        nonReentrant
+        onlyInState(CrowdtainerState.Delivery)
+    {
         uint256 totalRewards = accumulatedRewardsOf[msg.sender];
         accumulatedRewardsOf[msg.sender] = 0;
 
