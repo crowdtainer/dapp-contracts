@@ -106,6 +106,8 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     uint256 public targetMinimum;
     // @note Amount in ERC20 units after which no further participation is possible.
     uint256 public targetMaximum;
+    // @note Number of products/services variations offered by this project.
+    uint256 public numberOfProducts;
     // @note The price for each unit type.
     // @dev The price should be given in the number of smallest unit for precision (e.g 10^18 == 1 DAI).
     uint256[MAX_NUMBER_OF_PRODUCTS] public unitPricePerType;
@@ -214,7 +216,10 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         // Ensure that there are no prices set to zero and input lengths are correct
         for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
             // @dev The first price of zero indicates the end of price list.
-            if (_unitPricePerType[i] == 0) break;
+            if (_unitPricePerType[i] == 0)
+                break;
+
+            numberOfProducts++;
         }
 
         if (_referralRate > SAFETY_MAX_REFERRAL_RATE)
@@ -258,12 +263,6 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
      *
      * @note A same user is not allowed to increase the order amounts (i.e., by calling join multiple times).
      *       To 'update' an order, the user must first 'leave' then join again with the new values.
-     *
-     * @dev State variables manipulated by this function:
-     *
-     *       accumulatedRewardsOf[referrer]         (+= discount)
-     *       discountForUser[msg.sender]            (+= discount)
-     *       totalValue                            (+= finalCost)
      */
     function join(
         address _wallet,
@@ -283,11 +282,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         // @dev Calculate cost
         uint256 finalCost;
 
-        for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
-            // @dev The first price of zero indicates the end of price list.
-            if (unitPricePerType[i] == 0) {
-                break;
-            }
+        for (uint256 i = 0; i < numberOfProducts; i++) {
 
             if (_quantities[i] > MAX_NUMBER_OF_PURCHASED_ITEMS)
                 revert Errors.ExceededNumberOfItemsAllowed({

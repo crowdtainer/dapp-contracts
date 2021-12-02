@@ -138,7 +138,10 @@ contract Harbor is ERC1155, ReentrancyGuard {
         bool _enableReferral,
         address _referrer
     ) external {
-        Crowdtainer(crowdtainerForId[_crowdtainerId]).join(
+
+        Crowdtainer crowdtainer = Crowdtainer(crowdtainerForId[_crowdtainerId]);
+
+        crowdtainer.join(
             msg.sender,
             _quantities,
             _enableReferral,
@@ -146,7 +149,7 @@ contract Harbor is ERC1155, ReentrancyGuard {
         );
 
         // Mint respective products and transfer ownership
-        for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
+        for (uint256 i = 0; i < crowdtainer.numberOfProducts(); i++) {
             if (_quantities[i] > 0) {
                 _mint(msg.sender, _crowdtainerId + i, _quantities[i]); // params: to, id, amount
             }
@@ -159,15 +162,18 @@ contract Harbor is ERC1155, ReentrancyGuard {
      * @note Only allowed if the respective Crowdtainer is in active funding state.
      */
     function leave(uint256 _crowdtainerId) external {
+
+        Crowdtainer crowdtainer = Crowdtainer(crowdtainerForId[_crowdtainerId]);
+
         // Set product balances to zero for the current user
-        for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
+        for (uint256 i = 0; i < crowdtainer.numberOfProducts(); i++) {
             uint256 amount = balanceOf(msg.sender, _crowdtainerId + i);
             if (amount > 0) {
                 _burn(msg.sender, _crowdtainerId + i, amount); // params: from, id, amount
             }
         }
 
-        Crowdtainer(crowdtainerForId[_crowdtainerId]).leave(msg.sender);
+        crowdtainer.leave(msg.sender);
     }
 
     /**
