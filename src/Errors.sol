@@ -39,6 +39,8 @@ library Errors {
     error InvalidMaximumTarget();
     // @notice: Initialize called with invalid number of minimum units to be sold (less than maximum sold units)
     error InvalidMinimumTarget();
+    // @notice: Initialize called with invalid minimum and maximum targets (minimum value higher than maximum)
+    error MinimumTargetHigherThanMaximum();
     // @notice: Initialize called with invalid referral rate.
     error InvalidReferralRate(uint256 received, uint256 maximum);
     // @notice: Referral rate not multiple of 2.

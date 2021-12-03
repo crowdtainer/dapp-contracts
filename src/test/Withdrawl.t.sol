@@ -8,13 +8,14 @@ import {Errors} from "../Crowdtainer.sol";
 
 contract CrowdtainerStateTransitionTester is BaseTest {
     function testGetPaidAndDeliverCalledByShippingAgentMustSucceed() public {
+
         // Create a crowdtainer where targetMinimum is small enough that a single user could
         // make the project succeed with a single join() call.
-
         uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
             uint256(100),
             200,
-            300
+            300,
+            0
         ];
         uint256 _targetMinimum = 3000;
         uint256 _targetMaximum = 4000;
@@ -30,7 +31,7 @@ contract CrowdtainerStateTransitionTester is BaseTest {
         );
 
         // one user buys enough to succeed the crowdtainer project
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 0, 10];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 0, 10, 0];
         alice.doJoin(quantities, false, address(0));
 
         agent.getPaidAndDeliver();

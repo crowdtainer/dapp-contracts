@@ -103,6 +103,26 @@ contract InvalidInitializeTester is BaseTest {
         }
     }
 
+    function testFailMinimumTargetHigherThanMaximum() public {
+        try
+            crowdtainer.initialize(
+                address(agent),
+                openingTime,
+                closingTime,
+                targetMaximum + 1,
+                targetMaximum,
+                unitPricePerType,
+                referralRate,
+                erc20Token
+            )
+        {} catch (bytes memory lowLevelData) {
+            failed = this.assertEqSignature(
+                makeError(Errors.MinimumTargetHigherThanMaximum.selector),
+                lowLevelData
+            );
+        }
+    }
+
     function testFailInvalidMaximumTarget() public {
         try
             crowdtainer.initialize(

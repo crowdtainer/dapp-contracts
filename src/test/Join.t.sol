@@ -7,12 +7,12 @@ import {Errors} from "../Crowdtainer.sol";
 /* solhint-disable no-empty-blocks */
 
 contract CrowdtainerValidJoinTester is BaseTest {
-    function testNoDiscountAndNoNewCodeMustSucceed() public {
+    function testNoDiscountAndNoReferralCodeMustSucceed() public {
         init();
 
         uint256 previousBalance = erc20Token.balanceOf(address(bob));
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 10];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 10, 0];
 
         bob.doJoin(quantities, false, address(0));
 
@@ -27,17 +27,18 @@ contract CrowdtainerValidJoinTester is BaseTest {
 
     function testUsageOfValidReferralCodeMustSucceed() public {
         init();
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 10];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(1), 2, 10, 0];
 
         bob.doJoin(quantities, true, address(0));
 
-        uint256 totalCost = quantities[1] * unitPricePerType[1];
+        uint256 totalCost = quantities[0] * unitPricePerType[0];
+        totalCost += quantities[1] * unitPricePerType[1];
         totalCost += quantities[2] * unitPricePerType[2];
         uint256 discount = totalCost * ((referralRate / 2) / 100);
 
         uint256 previousAliceBalance = erc20Token.balanceOf(address(alice));
 
-        alice.doJoin(quantities, true, address(bob));
+        alice.doJoin(quantities, false, address(bob));
 
         assertEq(
             erc20Token.balanceOf(address(alice)),
@@ -52,7 +53,7 @@ contract CrowdtainerValidJoinTester is BaseTest {
 contract CrowdtainerInvalidJoinTester is BaseTest {
     function testFailUseOwnReferralCode() public {
         init();
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 10];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(1), 2, 10, 0];
 
         // join with enabled referral code
         bob.doJoin(quantities, true, address(0));
@@ -70,7 +71,7 @@ contract CrowdtainerInvalidJoinTester is BaseTest {
 
     function testFailUseOfInvalidReferralCode() public {
         init();
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 10];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(1), 2, 10, 0];
 
         //bob.doJoin(quantities, true, address(0)); // not registered
 
@@ -89,7 +90,8 @@ contract CrowdtainerInvalidJoinTester is BaseTest {
         uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
             uint256(2),
             MAX_NUMBER_OF_PURCHASED_ITEMS + 1,
-            10
+            10,
+            0
         ];
 
         try alice.doJoin(quantities, false, address(0)) {} catch (
@@ -104,26 +106,35 @@ contract CrowdtainerInvalidJoinTester is BaseTest {
     }
 
     function testFailPurchaseExceedsMaximumTarget() public {
-        init();
+
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [uint256(10), 20, 25, 5000];
+
+        crowdtainer.initialize(
+            address(agent),
+            openingTime,
+            closingTime,
+            20000,
+            30000,
+            _unitPricePerType,
+            referralRate,
+            iERC20Token
+        );
+
         uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities;
         quantities = [
             uint256(MAX_NUMBER_OF_PURCHASED_ITEMS),
             MAX_NUMBER_OF_PURCHASED_ITEMS,
+            MAX_NUMBER_OF_PURCHASED_ITEMS,
             MAX_NUMBER_OF_PURCHASED_ITEMS
         ];
-
-        for (uint256 i = 0; i < 9999; i++) {
-            try alice.doJoin(quantities, false, address(0)) {} catch (
-                bytes memory lowLevelData
-            ) {
-                failed = this.assertEqSignature(
-                    makeError(Errors.PurchaseExceedsMaximumTarget.selector),
-                    lowLevelData
-                );
-                this.printTwoUint256(lowLevelData);
-                emit log_named_uint("Required purchases to exceed target:", i);
-                break;
-            }
+        try alice.doJoin(quantities, false, address(0)) {} catch (
+            bytes memory lowLevelData
+        ) {
+            failed = this.assertEqSignature(
+                makeError(Errors.PurchaseExceedsMaximumTarget.selector),
+                lowLevelData
+            );
+            this.printTwoUint256(lowLevelData);
         }
     }
 }
@@ -148,7 +159,8 @@ contract JoinFuzzer is BaseTest {
         uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
             amountA,
             amountB,
-            amountC
+            amountC,
+            0
         ];
 
         uint256 totalCost = 0;

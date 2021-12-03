@@ -211,13 +211,13 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         if (_targetMinimum == 0) revert Errors.InvalidMinimumTarget();
 
         if (_targetMinimum > _targetMaximum)
-            revert Errors.InvalidMinimumTarget();
+            revert Errors.MinimumTargetHigherThanMaximum();
 
-        // Ensure that there are no prices set to zero and input lengths are correct
+        // @dev The first price of zero indicates the end of price list.
         for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
-            // @dev The first price of zero indicates the end of price list.
-            if (_unitPricePerType[i] == 0)
+            if (_unitPricePerType[i] == 0) {
                 break;
+            }
 
             numberOfProducts++;
         }
@@ -283,7 +283,6 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         uint256 finalCost;
 
         for (uint256 i = 0; i < numberOfProducts; i++) {
-
             if (_quantities[i] > MAX_NUMBER_OF_PURCHASED_ITEMS)
                 revert Errors.ExceededNumberOfItemsAllowed({
                     received: _quantities[i],
@@ -300,9 +299,6 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
             // @dev Check if referrer participated
             if (costForWallet[_referrer] == 0)
                 revert Errors.ReferralInexistent();
-
-            // // @dev Check if account is not referencing itself
-            // if (_referrer == _wallet) revert Errors.CannotReferItself();
 
             if (!enableReferral[_referrer]) revert Errors.ReferralDisabled();
 
@@ -423,17 +419,14 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     /**
      * @notice Function used by participants to withdrawl funds from a failed/expired project.
      */
-    function claimFunds()
-        public
-        nonReentrant
-    {
+    function claimFunds() public nonReentrant {
         if (crowdtainerState == CrowdtainerState.Uninitialized)
             revert Errors.InvalidOperationFor({state: crowdtainerState});
 
         if (crowdtainerState == CrowdtainerState.Delivery)
             revert Errors.InvalidOperationFor({state: crowdtainerState});
 
-        // The first person interacting with this function 'nudges' the state to `Failed` if
+        // The first interaction with this function 'nudges' the state to `Failed` if
         // the project didn't reach the goal in time.
         if (block.timestamp > expireTime && totalValue < targetMinimum) {
             crowdtainerState = CrowdtainerState.Failed;

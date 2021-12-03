@@ -122,15 +122,9 @@ contract Harbor is ERC1155, ReentrancyGuard {
         bool _enableReferral,
         address _referrer
     ) external {
-
         Crowdtainer crowdtainer = Crowdtainer(crowdtainerForId[_crowdtainerId]);
 
-        crowdtainer.join(
-            msg.sender,
-            _quantities,
-            _enableReferral,
-            _referrer
-        );
+        crowdtainer.join(msg.sender, _quantities, _enableReferral, _referrer);
 
         // Mint respective products and transfer ownership
         for (uint256 i = 0; i < crowdtainer.numberOfProducts(); i++) {
@@ -146,7 +140,6 @@ contract Harbor is ERC1155, ReentrancyGuard {
      * @note Only allowed if the respective Crowdtainer is in active funding state.
      */
     function leave(uint256 _crowdtainerId) external {
-
         Crowdtainer crowdtainer = Crowdtainer(crowdtainerForId[_crowdtainerId]);
 
         crowdtainer.leave(msg.sender);
@@ -158,7 +151,6 @@ contract Harbor is ERC1155, ReentrancyGuard {
                 _burn(msg.sender, _crowdtainerId + i, amount); // params: from, id, amount
             }
         }
-
     }
 
     /**
