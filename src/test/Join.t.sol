@@ -34,7 +34,9 @@ contract CrowdtainerValidJoinTester is BaseTest {
         uint256 totalCost = quantities[0] * unitPricePerType[0];
         totalCost += quantities[1] * unitPricePerType[1];
         totalCost += quantities[2] * unitPricePerType[2];
-        uint256 discount = totalCost * ((referralRate / 2) / 100);
+
+        uint256 discount = ((totalCost * referralRate) / 100 ) / 2;
+        assert(discount != 0);
 
         uint256 previousAliceBalance = erc20Token.balanceOf(address(alice));
 
@@ -117,6 +119,7 @@ contract CrowdtainerInvalidJoinTester is BaseTest {
             30000,
             _unitPricePerType,
             referralRate,
+            referralEligibilityValue,
             iERC20Token
         );
 
@@ -135,6 +138,56 @@ contract CrowdtainerInvalidJoinTester is BaseTest {
                 lowLevelData
             );
             this.printTwoUint256(lowLevelData);
+        }
+    }
+
+    function testFailJoinWithReferralEnabledAndTotalCostLowerThanMinimum() public {
+
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [uint256(10), 20, 25, 50];
+
+        crowdtainer.initialize(
+            address(agent),
+            openingTime,
+            closingTime,
+            20000,
+            30000,
+            _unitPricePerType,
+            referralRate,
+            20,
+            iERC20Token
+        );
+
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities;
+        quantities = [uint256(1), 0, 0, 0];
+        try alice.doJoin(quantities, true, address(0)) {} catch (
+            bytes memory lowLevelData
+        ) {
+            failed = this.assertEqSignature(
+                makeError(Errors.MinimumPurchaseValueForReferralNotMet.selector),
+                lowLevelData
+            );
+            this.printTwoUint256(lowLevelData);
+        }
+    }
+
+    function testFailUserJoinWithReferralCodeThatIsNotEnabled() public {
+        init();
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
+            uint256(2),
+            MAX_NUMBER_OF_PURCHASED_ITEMS,
+            10,
+            0
+        ];
+
+        alice.doJoin(quantities, false, address(0));
+
+        try bob.doJoin(quantities, true, address(alice)) {} catch (
+            bytes memory lowLevelData
+        ) {
+            failed = this.assertEqSignature(
+                makeError(Errors.ReferralDisabledForProvidedCode.selector),
+                lowLevelData
+            );
         }
     }
 }

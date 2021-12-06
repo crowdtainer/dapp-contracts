@@ -25,8 +25,21 @@ contract User {
         crowdtainer.join(address(this), quantities, enableReferral, referrer);
     }
 
-    function getPaidAndDeliver() public {
+    function doLeave() public {
+        crowdtainer.leave(address(this));
+    }
+
+    // Only for testing, function not allowed for participants
+    function doGetPaidAndDeliver() public {
         crowdtainer.getPaidAndDeliver();
+    }
+
+    function doClaimFunds() public {
+        crowdtainer.claimFunds();
+    }
+
+    function doClaimRewards() public {
+        crowdtainer.claimRewards();
     }
 
     function doApprove(address _contract, uint256 amount) public {
@@ -41,8 +54,21 @@ contract ShippingAgent {
         crowdtainer = Crowdtainer(_crowdtainer);
     }
 
-    function getPaidAndDeliver() public {
+    function doGetPaidAndDeliver() public {
         crowdtainer.getPaidAndDeliver();
+    }
+
+    function doAbortProject() public {
+        crowdtainer.abortProject();
+    }
+
+    // Only for testing, function not allowed for shippingAgent
+    function doJoin(
+        uint256[MAX_NUMBER_OF_PRODUCTS] calldata quantities,
+        bool enableReferral,
+        address referrer
+    ) public {
+        crowdtainer.join(address(this), quantities, enableReferral, referrer);
     }
 }
 
@@ -67,6 +93,7 @@ contract BaseTest is CrowdtainerTestHelpers {
 
     uint256 internal discountRate = 10;
     uint256 internal referralRate = 10;
+    uint256 internal referralEligibilityValue = 50;
 
     // Create a token
     uint8 internal numberOfDecimals = 18;
@@ -86,6 +113,7 @@ contract BaseTest is CrowdtainerTestHelpers {
             targetMaximum,
             unitPricePerType,
             referralRate,
+            referralEligibilityValue,
             iERC20Token
         );
     }

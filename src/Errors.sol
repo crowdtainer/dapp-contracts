@@ -33,6 +33,8 @@ library Errors {
     error OwnerAddressIsZero();
     // @notice: Cannot initialize with token of address(0)
     error TokenAddressIsZero();
+    // @notice: Shipping agent can't have address(0)
+    error ShippingAgentAddressIsZero();
     // @notice: Initialize called with closing time is less than one hour away from the opening time
     error ClosingTimeTooEarly();
     // @notice: Initialize called with invalid number of maximum units to be sold (0)
@@ -45,6 +47,8 @@ library Errors {
     error InvalidReferralRate(uint256 received, uint256 maximum);
     // @notice: Referral rate not multiple of 2.
     error ReferralRateNotMultipleOfTwo();
+    // @notice: Refferal minimum value for participation can't be higher than project's minimum target.
+    error ReferralMinimumValueTooHigh(uint256 received, uint256 maximum);
 
     // -----------------------------------------------
     //  Authorization
@@ -63,8 +67,16 @@ library Errors {
     error ExceededNumberOfItemsAllowed(uint256 received, uint256 maximum);
     // @notice: Wallet already used to join project.
     error UserAlreadyJoined();
-    // @notice: Referral is not enabled for the given wallet.
-    error ReferralDisabled();
+    // @notice: Referral is not enabled for the given code/wallet.
+    error ReferralDisabledForProvidedCode();
+    // @notice: Participant can't participate in referral if the minimum purchase value specified by the service provider is not met.
+    error MinimumPurchaseValueForReferralNotMet(uint256 received, uint256 minimum);
+
+    // -----------------------------------------------
+    //  Leave() operation
+    // -----------------------------------------------
+    // @notice: It is not possible to leave when the user has referrals enabled, has been referred and gained rewards.
+    error CannotLeaveDueAccumulatedReferralCredits();
 
     // -----------------------------------------------
     //  GetPaidAndDeliver() operation

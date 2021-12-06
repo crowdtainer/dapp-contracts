@@ -45,6 +45,8 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     // @dev Maps referee to referrer.
     mapping(address => address) public referrerOfReferee;
 
+    uint256 public referralEligibilityValue;
+
     // @dev Wether an account has opted into being elibible for referral rewards
     mapping(address => bool) private enableReferral;
 
@@ -170,13 +172,15 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
 
     /**
      * @dev Initializes a Crowdtainer.
+     * @dev A referral rate of `20`, means 20%: 10% goes to referrer and 10% as discount applied when joining.
      * @param _shippingAgent Address that represents the product or service provider.
      * @param _openingTime Funding opening time.
-     * @param _expireTime Time after which the owner can no longer withdraw funds.
+     * @param _expireTime Time after which the shipping agent can no longer withdraw funds.
      * @param _targetMinimum Amount in ERC20 units required for the Crowdtainer to be considered to be successful.
      * @param _targetMaximum Amount in ERC20 units after which no further participation is possible.
      * @param _unitPricePerType Array with price of each item, in ERC2O units. Zero indicates end of product list.
      * @param _referralRate Percentage used for incentivising participation. Half the amount goes to the referee, and the other half to the referrer.
+     * @param _referralEligibilityValue The minimum purchase value required to be eligible to participate in referral rewards.
      * @param _token Address of the ERC20 token used for payment.
      */
     function initialize(
@@ -187,6 +191,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         uint256 _targetMaximum,
         uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType,
         uint256 _referralRate,
+        uint256 _referralEligibilityValue,
         IERC20 _token
     )
         public
@@ -197,7 +202,11 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         // @dev: Sanity checks
         if (address(_token) == address(0)) revert Errors.TokenAddressIsZero();
 
-        shippingAgent = _shippingAgent;
+        if (address(_shippingAgent) == address(0)) 
+            revert Errors.ShippingAgentAddressIsZero();
+
+        if(_referralEligibilityValue > _targetMinimum)
+            revert Errors.ReferralMinimumValueTooHigh({received: _referralEligibilityValue, maximum: _targetMinimum});
 
         if (_referralRate % 2 != 0)
             revert Errors.ReferralRateNotMultipleOfTwo();
@@ -228,12 +237,14 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
                 maximum: SAFETY_MAX_REFERRAL_RATE
             });
 
+        shippingAgent = _shippingAgent;
         openingTime = _openingTime;
         expireTime = _expireTime;
         targetMinimum = _targetMinimum;
         targetMaximum = _targetMaximum;
         unitPricePerType = _unitPricePerType;
         referralRate = _referralRate;
+        referralEligibilityValue = _referralEligibilityValue;
         token = _token;
 
         crowdtainerState = CrowdtainerState.Funding;
@@ -258,8 +269,8 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
      *
      * @note referrer is the wallet address of a previous participant.
      *
-     * @note if `enableReferral` is true, and the user decides to leave after the wallet has been used to claim a discount,
-     *       then the full value can't be claimed if deciding to leave the project.
+     * @note if `enableReferral` is true, and the account has been used to claim a discount, then 
+     *       it is no longer possible to leave() during the funding phase.
      *
      * @note A same user is not allowed to increase the order amounts (i.e., by calling join multiple times).
      *       To 'update' an order, the user must first 'leave' then join again with the new values.
@@ -276,6 +287,8 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         onlyActive
         nonReentrant
     {
+        enableReferral[_wallet] = _enableReferral;
+
         // @dev Check if wallet didn't already join
         if (costForWallet[_wallet] != 0) revert Errors.UserAlreadyJoined();
 
@@ -292,15 +305,19 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
             finalCost += unitPricePerType[i] * _quantities[i];
         }
 
+        if (_enableReferral && finalCost < referralEligibilityValue)
+            revert Errors.MinimumPurchaseValueForReferralNotMet({received:finalCost, minimum:referralEligibilityValue});
+
         // @dev Apply discounts to `finalCost` if applicable.
         bool eligibleForDiscount;
         // @dev Verify validity of given `referrer`
         if (_referrer != address(0)) {
             // @dev Check if referrer participated
             if (costForWallet[_referrer] == 0)
-                revert Errors.ReferralInexistent();
+                { revert Errors.ReferralInexistent(); }
 
-            if (!enableReferral[_referrer]) revert Errors.ReferralDisabled();
+            if (!enableReferral[_referrer])
+                { revert Errors.ReferralDisabledForProvidedCode(); }
 
             eligibleForDiscount = true;
         }
@@ -309,11 +326,11 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
 
         if (eligibleForDiscount) {
             // @dev Two things happens when a valid referral code is given:
-            //       1 - Half of the referral rate is applied as a discount to the current order.
-            //       2 - Half of the referral rate is credited to the referrer.
+            //    1 - Half of the referral rate is applied as a discount to the current order.
+            //    2 - Half of the referral rate is credited to the referrer.
 
             // @dev Calculate the discount value
-            discount = finalCost * ((referralRate / 100) / 2);
+            discount = ((finalCost * referralRate) / 100 ) / 2;
 
             // @dev 1- Apply discount
             finalCost -= discount;
@@ -324,13 +341,14 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
             accumulatedRewards += discount;
 
             referrerOfReferee[_wallet] = _referrer;
+
+            assert(discount != 0);
         }
 
         costForWallet[_wallet] = finalCost;
 
+        // increase total value accumulated by this contract
         totalValue += finalCost;
-
-        enableReferral[_wallet] = _enableReferral;
 
         // @dev Check if the purchase order doesn't exceed the goal's `targetMaximum`.
         if ((totalValue - accumulatedRewards) > targetMaximum)
@@ -355,7 +373,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     /*
      * @dev Leave the Crowdtainer and withdraw deposited funds given when joining.
      * @note Calling this method signals that the user is no longer interested in participating.
-     * @note Only allowed if the respective Crowdtainer is in active funding state.
+     * @note Only allowed if the respective Crowdtainer is in active `Funding` state.
      * @param _wallet The wallet that is leaving the Crowdtainer.
      */
     function leave(address _wallet)
@@ -371,14 +389,12 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         address referrer = referrerOfReferee[_wallet];
         accumulatedRewardsOf[referrer] -= discountForUser[_wallet];
 
-        /* @dev   If this wallet's referral was used, then a value equal to the discount is kept.
-         *        This is to discourage users from joining just to generate discount codes.
-         *        E.g.: A user uses two different wallets, the first joins to generate a discount code for him/herself to be used in
-         *        the second wallet, and then immediatelly leaves the pool from the first wallet, leaving the second wallet with a full discount.
-         */
+        /* @dev If this wallet's referral was used, then it is no longer possible to leave().
+         *      This is to discourage users from joining just to generate discount codes.
+         *      E.g.: A user uses two different wallets, the first joins to generate a discount code for him/herself to be used in
+         *      the second wallet, and then immediatelly leaves the pool from the first wallet, leaving the second wallet with a full discount. */
         if (accumulatedRewardsOf[_wallet] > 0) {
-            withdrawalTotal -= discountForUser[_wallet];
-            accumulatedRewards -= discountForUser[_wallet];
+            revert Errors.CannotLeaveDueAccumulatedReferralCredits();
         }
 
         totalValue -= costForWallet[_wallet];
@@ -394,8 +410,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     }
 
     /**
-     * @notice Function used by project deployer to signal intent to ship service or product
-     * by withdrawing the funds.
+     * @notice Function used by project deployer to signal commitment to ship service or product by withdrawing the funds.
      */
     function getPaidAndDeliver()
         public
@@ -404,16 +419,29 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         onlyActive
         nonReentrant
     {
-        if (totalValue < targetMinimum) {
+        if (totalValue < (targetMinimum + accumulatedRewards)) {
             revert Errors.MinimumTargetNotReached(targetMinimum, totalValue);
         }
 
         crowdtainerState = CrowdtainerState.Delivery;
 
         // @dev transfer the owed funds from this contract back to the service provider.
-        token.safeTransferFrom(address(this), shippingAgent, totalValue);
+        token.safeTransferFrom(address(this), shippingAgent, totalValue - accumulatedRewards);
 
         emit CrowdtainerInDeliveryStage(shippingAgent, totalValue);
+    }
+
+    /**
+     * @notice Function used by project deployer to signal that it is no longer possible to the ship service or product.
+     *         This puts the project into `Failed` state and participants can withdraw their funds.
+     */
+    function abortProject()
+        public
+        onlyAddress(shippingAgent)
+        onlyInState(CrowdtainerState.Funding)
+        nonReentrant
+    {
+        crowdtainerState = CrowdtainerState.Failed;
     }
 
     /**
@@ -428,12 +456,13 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
 
         // The first interaction with this function 'nudges' the state to `Failed` if
         // the project didn't reach the goal in time.
-        if (block.timestamp > expireTime && totalValue < targetMinimum) {
-            crowdtainerState = CrowdtainerState.Failed;
-        } else {
-            revert Errors.CantClaimFundsOnActiveProject();
-        }
+        if  (block.timestamp > expireTime && totalValue < (targetMinimum + accumulatedRewards))
+                crowdtainerState = CrowdtainerState.Failed;
 
+        if(crowdtainerState != CrowdtainerState.Failed)
+                revert Errors.CantClaimFundsOnActiveProject();
+
+        // Reaching this line means the project failed either due expiration or explicit transition from `abortProject()`
         uint256 withdrawalTotal = costForWallet[msg.sender];
 
         costForWallet[msg.sender] = 0;

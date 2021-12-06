@@ -11,9 +11,12 @@ The main goal of the contract is help people with similar interests to coordinat
 The idea is not far away, but there are some crucial implementation differences: 
 
 - The lack of yet another company between the seller and buyer, since coordination happens via smart contract.
+- Competitive/low fees: the theoretical minimum fee possible is the blockchain transaction fee.
 - Allows for more flexible design and transparency of the incentive mechanims, example:
  - In Crowdtainer, the person that indicates a friend with a referral code is rewarded proportionally to the number of people using the given code. This doesn't happen with most crowdfunding platforms (if any).
-- Here (at least to start) there is an actual legal sales agreement for delivering the promised products. We are starting with simpler/safer products/services, and not things that are ultra high risk of not being delivered.
+- Here (at least to start) there is an actual legal sales agreement for delivering the promised products. We are starting with simpler/safer products/services, and not product or services that have a high risk of not being delivered.
+- Generic implementation, allowing a variety of applications ranging from bulk purchases to crowdfunding donations.
+- Permisionless: anyone can deploy and start their own project. The reputation and worthiness of each project however lays on the participant to analyse and judge, and it is upon the service provider to write their sale contracts deliver on the promises. Competitive interfaces may then be built around the smart contracts, providing the full range of choices from the most permissionless all the way to a curated version where only audited service providers can join.
 
 ### Example:
 
@@ -31,8 +34,8 @@ There are two possibilities that can now happen:
 
 There are 2 main actor types involved:
 
-- *Group Buying side*: a collective of people willing to coordinate in group buying.
-- *Selling side*: A company or person willing to sell a service or product.
+- *Group Buying side*: a collective of people willing to coordinate in group buying. This group is referred as "participants".
+- *Selling side*: A company or person willing to sell a service or product. This group is referred as "shipping agent" or "service provider".
 
 The contract has the following possible states:
 
@@ -42,9 +45,9 @@ The contract has the following possible states:
 
 Only the *selling side* (deployer of the contract, i.e. service/product provider) is able to switch the contract into "Delivery" state. This is used to simultaneously withdraw the funds and signal that the provider agrees with the orders and represents her/his "signature" of the agreement to the sale terms.
 
-If the deployer/service provider for whatever reason is no longer interested or able to provide the service/products (by not switching the contract to this state), it eventually enter into "Expired" state.
+If the deployer/service provider for whatever reason is no longer interested or able to provide the service/products it is possible for the provider to manually signal this via smart contract method, or it eventually enter into "Expired" state if no action is taken. Both these conditions put the project state to `Failed` mode, in which participants may withdraw their contributed funds.
 
-Once the smart contract is in "Delivery" state, it is no longer possible for participants to withdraw their funds. Should an event happen where the provider can't deliver the promised services, dispute resolution happens via normal means, and the provider needs to return the funds manually.
+Once the smart contract is in "Delivery" state however, it is no longer possible for participants to withdraw their funds. Should an event happen where the provider can't deliver the promised services, dispute resolution happens via normal means, and the provider needs to return the funds manually.
 
 > Note: Future versions will add an oracle and other verification methods, so that funds are withdrawn in steps over time (upon confirmation of milestones) and not up-front all at once, thus reducing the need to trust in the local existing legal system for disputes related to the contractual sale.
 
@@ -58,11 +61,11 @@ For the *group buying side*, the smart contract contains two incentive mechanism
 
 Example:
 
-For a Crowdtainer setup with a single product at 50 DAI per unit, and referral rate of 20%:
+For a Crowdtainer setup with a single product at 50 USD per unit, and referral rate of 20%:
 
-* User A joins a Crowdtainer (spending 50 DAI) and publishes her referral code in her blog. 100 people then use her referral code to get a discount on a new purchase. User A's rewards will then be 950 DAI: 100 (units) x 50 (product price in DAI) x 0.2 (reward rate) - 50 (cost of joining the Crowdtainer with one product unit).
+* User A joins a Crowdtainer (spending 50 USD) and publishes her referral code in her blog. 20 people then use her referral code to get a discount on a new purchase. User A's rewards will then be 180 USD: 100 (units) x 20 (product price in USD) x 0.2 (reward rate) - 20 (cost of joining the Crowdtainer with one product unit).
 
-> Note: All rewards are redeemable only if a project has its minimum funding goals met.
+> Note: All rewards are redeemable only if a project has its minimum funding goals met and entered `Delivery` state.
 
 ## User Stories
 
@@ -73,17 +76,19 @@ What follows is a detailed description of the smart contract expectations in Use
 
 ```
     /**
+     * @param _shippingAgent Address that represents the product or service provider.
      * @param _openingTime Funding opening time.
-     * @param _expireTime Time after which the owner can no longer withdraw funds.
-     * @param _minimumSoldUnits The amount of sales required for funding to be considered to be successful.
-     * @param _maximumSoldUnits A limit after which no further purchases are possible.
-     * @param _unitPricePerType Array with price of each item, in ERC2O units.
-     * @param _referralRate Percentage used for incentivising participation.
+     * @param _expireTime Time after which the shipping agent can no longer withdraw funds.
+     * @param _targetMinimum Amount in ERC20 units required for the Crowdtainer to be considered to be successful.
+     * @param _targetMaximum Amount in ERC20 units after which no further participation is possible.
+     * @param _unitPricePerType Array with price of each item, in ERC2O units. Zero indicates end of product list.
+     * @param _referralRate Percentage used for incentivising participation. Half the amount goes to the referee, and the other half to the referrer.
+     * @param _referralMinimumValue The minimum purchase value required to be eligible to participate in referral rewards.
      * @param _token Address of the ERC20 token used for payment.
-     */
 ```
 
 - I need tooling to deploy the contract at a deterministic address, so that I can reference the contract address in the legal agreement document even before the contract has been deployed.
+    - TBD if needed on first version.
 
 - I must be able to withdraw the funds if the minimum target is reached, so that I can signal that no more sales are available, and start working on shipping the sold products.
 
@@ -91,7 +96,10 @@ What follows is a detailed description of the smart contract expectations in Use
     - This allows for getting signal of intent from participants, even before the exact final cost can be calculated, by guessing the cost by a higher margin. E.g.: Estimate unit meal cost of 15 eur per person for price to pool money, but return overpayment once the exact final price was calculated by the restaurant (discounting for shipping savings etc).
     - The withdrawl function needs to provide the final prices array, so that each participant is correctly assigned the remainder value.
 
-- I need a 2-way communication channel, so that once a Crowdtainer is successful, I can communicate with them regarding their delivery.
+- I need a 2-way communication channel, so that once a Crowdtainer is successful, I can communicate with them regarding their delivery. 
+    - Ideas: An NFT-gated discord channel.
+
+- I need a method to cancel a project, so that I can signal participants that the project will no longer be possible, and participants are therefore able to leave taking their money without waiting for expiration.
 
 ### As a buyer
 
@@ -100,7 +108,8 @@ What follows is a detailed description of the smart contract expectations in Use
 - I'd like to specify my details of order and sign such transaction, so that I can participate in a group buying.
 
 - Optionally, when joining a buying group, I'd like to additionally specify:
-    - a *custom personal referral code*, so that I can share it and get rewards for my friend's purchases.
+    - whether I'd like to be eligible to share referral code and get rewards for my friend's purchases:
+        - If the user opts into the program and the referral code is used, it is no longer possible to leave the project and get refungs (at the "Funding" stage). This is to prevent users getting the discount then leaving.
     - a friend's referral code, so that I can get a discount on my own purchase.
 
 - I’d like an API to view and withdrawl my deposits in a running project, so that I can quit if no longer interested, or if the crowdfunding failed.

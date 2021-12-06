@@ -16,6 +16,7 @@ contract ValidInitializeTester is BaseTest {
             targetMaximum,
             unitPricePerType,
             referralRate,
+            referralEligibilityValue,
             erc20Token
         );
     }
@@ -33,11 +34,55 @@ contract InvalidInitializeTester is BaseTest {
                 targetMaximum,
                 unitPricePerType,
                 referralRate,
+                referralEligibilityValue,
                 invalidTokenAddress
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
                 makeError(Errors.TokenAddressIsZero.selector),
+                lowLevelData
+            );
+        }
+    }
+
+    function testFailWithInvalidShippingAgentAddress() public {
+        IERC20 invalidTokenAddress = IERC20(address(0));
+        try
+            crowdtainer.initialize(
+                address(invalidTokenAddress),
+                openingTime,
+                closingTime,
+                targetMinimum,
+                targetMaximum,
+                unitPricePerType,
+                referralRate,
+                referralEligibilityValue,
+                erc20Token
+            )
+        {} catch (bytes memory lowLevelData) {
+            failed = this.assertEqSignature(
+                makeError(Errors.ShippingAgentAddressIsZero.selector),
+                lowLevelData
+            );
+        }
+    }
+
+    function testFailWithInvalidReferralEligibilityValue() public {
+        try
+            crowdtainer.initialize(
+                address(agent),
+                openingTime,
+                closingTime,
+                targetMinimum,
+                targetMaximum,
+                unitPricePerType,
+                referralRate,
+                targetMinimum + 1,
+                erc20Token
+            )
+        {} catch (bytes memory lowLevelData) {
+            failed = this.assertEqSignature(
+                makeError(Errors.ReferralMinimumValueTooHigh.selector),
                 lowLevelData
             );
         }
@@ -53,6 +98,7 @@ contract InvalidInitializeTester is BaseTest {
                 targetMaximum,
                 unitPricePerType,
                 referralRate,
+                referralEligibilityValue,
                 erc20Token
             )
         {} catch (bytes memory lowLevelData) {
@@ -73,6 +119,7 @@ contract InvalidInitializeTester is BaseTest {
                 targetMaximum,
                 unitPricePerType,
                 referralRate,
+                referralEligibilityValue,
                 erc20Token
             )
         {} catch (bytes memory lowLevelData) {
@@ -93,6 +140,7 @@ contract InvalidInitializeTester is BaseTest {
                 targetMaximum,
                 unitPricePerType,
                 referralRate,
+                0,
                 erc20Token
             )
         {} catch (bytes memory lowLevelData) {
@@ -113,6 +161,7 @@ contract InvalidInitializeTester is BaseTest {
                 targetMaximum,
                 unitPricePerType,
                 referralRate,
+                referralEligibilityValue,
                 erc20Token
             )
         {} catch (bytes memory lowLevelData) {
@@ -133,6 +182,7 @@ contract InvalidInitializeTester is BaseTest {
                 0,
                 unitPricePerType,
                 referralRate,
+                referralEligibilityValue,
                 erc20Token
             )
         {} catch (bytes memory lowLevelData) {
@@ -153,6 +203,7 @@ contract InvalidInitializeTester is BaseTest {
                 targetMaximum,
                 unitPricePerType,
                 160,
+                referralEligibilityValue,
                 erc20Token
             )
         {} catch (bytes memory lowLevelData) {
@@ -173,6 +224,7 @@ contract InvalidInitializeTester is BaseTest {
                 targetMaximum,
                 unitPricePerType,
                 3,
+                referralEligibilityValue,
                 erc20Token
             )
         {} catch (bytes memory lowLevelData) {
@@ -196,6 +248,7 @@ contract InitializeFuzzer is BaseTest {
         uint256 _targetMaximum,
         uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType,
         uint256 _referralRate,
+        uint256 _referralEligibilityValue,
         IERC20 _token
     ) public {
         // Discard initialize() invariants
@@ -223,6 +276,7 @@ contract InitializeFuzzer is BaseTest {
             _targetMaximum,
             _unitPricePerType,
             _referralRate,
+            _referralEligibilityValue,
             _token
         );
 
@@ -249,6 +303,7 @@ contract InitializeProver is BaseTest {
         uint256 _targetMaximum,
         uint256[10] memory _unitPricePerType,
         uint256 _referralRate,
+        uint256 _referralEligibilityValue,
         IERC20 _token
     ) public {
 
@@ -266,6 +321,7 @@ contract InitializeProver is BaseTest {
             _targetMaximum,
             _unitPricePerType,
             _referralRate,
+            _referralEligibilityValue,
             _token
         );
 

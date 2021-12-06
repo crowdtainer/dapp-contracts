@@ -3,11 +3,36 @@ pragma solidity ^0.8.10;
 
 import "./utils/CrowdtainerTest.sol";
 import {Errors} from "../Crowdtainer.sol";
+import "../States.sol";
 
 /* solhint-disable no-empty-blocks */
 
-contract CrowdtainerStateTransitionTester is BaseTest {
-    function testGetPaidAndDeliverCalledByShippingAgentMustSucceed() public {
+contract CrowdtainerValidProjectTerminationTester is BaseTest {
+    function testAbortDuringFundingPhaseMustSucceed() public {
+        init();
+
+        uint256 previousBalance = erc20Token.balanceOf(address(bob));
+
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 10, 0];
+
+        bob.doJoin(quantities, false, address(0));
+
+        uint256 totalCost = quantities[1] * unitPricePerType[1];
+        totalCost += quantities[2] * unitPricePerType[2];
+
+        agent.doAbortProject();
+
+        assert(crowdtainer.crowdtainerState() == CrowdtainerState.Failed);
+
+        bob.doClaimFunds();
+
+        assertEq(erc20Token.balanceOf(address(bob)), previousBalance);
+    }
+}
+
+contract CrowdtainerInvalidProjectTerminationTester is BaseTest {
+
+        function testFailAbortDuringDeliveryPhase() public {
 
         // Create a crowdtainer where targetMinimum is small enough that a single user could
         // make the project succeed with a single join() call.
@@ -37,18 +62,14 @@ contract CrowdtainerStateTransitionTester is BaseTest {
 
         agent.doGetPaidAndDeliver();
         assert(crowdtainer.crowdtainerState() == CrowdtainerState.Delivery);
-    }
-}
 
-contract CrowdtainerAuthorizationTester is BaseTest {
-    function testGetPaidAndDeliverCalledByNonAgentMustFail() public {
-        failed = true; // @dev: specific error must be thrown
-        try bob.doGetPaidAndDeliver() {} catch (bytes memory lowLevelData) {
-            this.assertEqSignature(
-                makeError(Errors.CallerNotAllowed.selector),
+        try agent.doAbortProject() {} catch (
+            bytes memory lowLevelData
+        ) {
+            failed = this.assertEqSignature(
+                makeError(Errors.InvalidOperationFor.selector),
                 lowLevelData
             );
-            failed = false;
         }
     }
 }

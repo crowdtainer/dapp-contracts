@@ -66,6 +66,7 @@ contract Harbor is ERC1155, ReentrancyGuard {
      * @param _targetMaximum Amount in ERC20 units after which no further participation is possible.
      * @param _unitPricePerType Array with price of each item, in ERC2O units. Zero is an invalid value and will throw.
      * @param _referralRate Percentage used for incentivising participation. Half the amount goes to the referee, and the other half to the referrer.
+     * @param _referralEligibilityValue The minimum purchase value required to be eligible to participate in referral rewards.
      * @param _token Address of the ERC20 token used for payment.
      */
     //     * @param _uri URI used to fetch metadata details. See `IERC1155MetadataURI`.
@@ -77,6 +78,7 @@ contract Harbor is ERC1155, ReentrancyGuard {
         uint256 _targetMaximum,
         uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType,
         uint256 _referralRate,
+        uint256 _referralEligibilityValue,
         IERC20 _token
     ) public {
         //Crowdtainer crowdtainer = clone(Crowdtainer);
@@ -89,6 +91,7 @@ contract Harbor is ERC1155, ReentrancyGuard {
             _targetMaximum,
             _unitPricePerType,
             _referralRate,
+            _referralEligibilityValue,
             _token
         );
 
