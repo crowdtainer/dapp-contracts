@@ -28,6 +28,69 @@ contract CrowdtainerValidProjectTerminationTester is BaseTest {
 
         assertEq(erc20Token.balanceOf(address(bob)), previousBalance);
     }
+
+    function testFailClaimFundsBeforeOpeningTime() public {
+        init();
+
+        uint256 previousBalance = erc20Token.balanceOf(address(bob));
+
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 0, 0];
+        uint256 totalCost = quantities[1] * unitPricePerType[1];
+
+        bob.doJoin(quantities, false, address(0));
+
+        hevm.warp(openingTime - 1 seconds);
+
+        try bob.doClaimFunds() {} catch (
+            bytes memory lowLevelData
+        ) {
+            failed = this.assertEqSignature(
+                makeError(Errors.OpeningTimeNotReachedYet.selector),
+                lowLevelData
+            ) && (erc20Token.balanceOf(address(bob)) == (previousBalance - totalCost));
+        }
+    }
+
+    function testFailClaimFundsOnActiveProject() public {
+        init();
+
+        uint256 previousBalance = erc20Token.balanceOf(address(bob));
+
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 0, 0];
+        uint256 totalCost = quantities[1] * unitPricePerType[1];
+
+        bob.doJoin(quantities, false, address(0));
+
+        try bob.doClaimFunds() {} catch (
+            bytes memory lowLevelData
+        ) {
+            failed = this.assertEqSignature(
+                makeError(Errors.CantClaimFundsOnActiveProject.selector),
+                lowLevelData
+            ) && (erc20Token.balanceOf(address(bob)) == (previousBalance - totalCost));
+        }
+    }
+
+    function testClaimFundsOnFailedProject() public {
+        init();
+
+        assert(crowdtainer.crowdtainerState() == CrowdtainerState.Funding);
+
+        uint256 previousBalance = erc20Token.balanceOf(address(bob));
+
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 0, 0];
+        uint256 totalCost = quantities[1] * unitPricePerType[1];
+
+        bob.doJoin(quantities, false, address(0));
+
+        assertEq(erc20Token.balanceOf(address(bob)), previousBalance - totalCost);
+
+        hevm.warp(closingTime + 1 seconds);
+
+        bob.doClaimFunds();
+
+        assertEq(erc20Token.balanceOf(address(bob)), previousBalance);
+    }
 }
 
 contract CrowdtainerInvalidProjectTerminationTester is BaseTest {

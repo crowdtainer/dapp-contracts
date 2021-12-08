@@ -410,13 +410,12 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     }
 
     /**
-     * @notice Function used by project deployer to signal commitment to ship service or product by withdrawing the funds.
+     * @notice Function used by project deployer to signal commitment to ship service or product by withdrawing/receiving the payment.
      */
     function getPaidAndDeliver()
         public
         onlyAddress(shippingAgent)
         onlyInState(CrowdtainerState.Funding)
-        onlyActive
         nonReentrant
     {
         if (totalValue < (targetMinimum + accumulatedRewards)) {
@@ -448,6 +447,12 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
      * @notice Function used by participants to withdrawl funds from a failed/expired project.
      */
     function claimFunds() public nonReentrant {
+        if (block.timestamp < openingTime)
+            revert Errors.OpeningTimeNotReachedYet(
+                block.timestamp,
+                openingTime
+            );
+
         if (crowdtainerState == CrowdtainerState.Uninitialized)
             revert Errors.InvalidOperationFor({state: crowdtainerState});
 
