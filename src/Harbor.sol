@@ -179,8 +179,8 @@ contract Harbor is ERC1155, ReentrancyGuard {
         uint256 crowdtainerId = tokenId / MAX_NUMBER_OF_PRODUCTS;
         Crowdtainer crowdtainer = Crowdtainer(crowdtainerForId[crowdtainerId]);
         if (
-            crowdtainer.crowdtainerState() == CrowdtainerState.Delivery ||
-            crowdtainer.crowdtainerState() == CrowdtainerState.Failed
+            crowdtainer.crowdtainerState() == CrowdtainerState.Funding ||
+            crowdtainer.crowdtainerState() == CrowdtainerState.Uninitialized
         ) {
             revert Errors.TransferNotAllowed({
                 crowdtainer: address(crowdtainer),
