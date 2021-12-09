@@ -20,6 +20,8 @@ contract CrowdtainerValidProjectTerminationTester is BaseTest {
         uint256 totalCost = quantities[1] * unitPricePerType[1];
         totalCost += quantities[2] * unitPricePerType[2];
 
+        assertEq(erc20Token.balanceOf(address(bob)), previousBalance - totalCost);
+
         agent.doAbortProject();
 
         assert(crowdtainer.crowdtainerState() == CrowdtainerState.Failed);

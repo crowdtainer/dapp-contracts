@@ -107,7 +107,7 @@ contract Harbor is ERC1155, ReentrancyGuard {
      * @dev Join the pool.
      * @param _crowdtainerId Crowdtainer project id.
      * @param _quantities Array with the number of units desired for each product.
-     * @param _enableReferral Informs whether the user would like to be elible to collect rewards for being referred.
+     * @param _enableReferral Informs whether the user would like to be eligible to collect rewards for being referred.
      * @param _referrer Optional referral code to be used to claim a discount.
      *
      * @note referrer is the wallet address of a previous participant.

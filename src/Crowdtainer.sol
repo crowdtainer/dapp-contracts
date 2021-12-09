@@ -47,14 +47,14 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
 
     uint256 public referralEligibilityValue;
 
-    // @dev Wether an account has opted into being elibible for referral rewards
+    // @dev Wether an account has opted into being elibible for referral rewards.
     mapping(address => bool) private enableReferral;
 
     // @dev Maps the total discount for each user.
     mapping(address => uint256) public discountForUser;
 
-    // @dev The total value raised or accumulated by this contract.
-    uint256 public totalValue;
+    // @dev The total value raised/accumulated by this contract.
+    uint256 public totalValueRaised;
 
     // -----------------------------------------------
     //  Modifiers
@@ -163,7 +163,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
 
     event CrowdtainerInDeliveryStage(
         address indexed shippingAgent,
-        uint256 totalValue
+        uint256 totalValueRaised
     );
 
     // -----------------------------------------------
@@ -227,7 +227,6 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
             if (_unitPricePerType[i] == 0) {
                 break;
             }
-
             numberOfProducts++;
         }
 
@@ -264,7 +263,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
      * @dev Join the Crowdtainer project.
      * @param _wallet The wallet that is joining the Crowdtainer.
      * @param _quantities Array with the number of units desired for each product.
-     * @param _enableReferral Informs whether the user would like to be elible to collect rewards for being referred.
+     * @param _enableReferral Informs whether the user would like to be eligible to collect rewards for being referred.
      * @param _referrer Optional referral code to be used to claim a discount.
      *
      * @note referrer is the wallet address of a previous participant.
@@ -333,6 +332,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
             discount = ((finalCost * referralRate) / 100 ) / 2;
 
             // @dev 1- Apply discount
+            assert(discount < finalCost);
             finalCost -= discount;
             discountForUser[_wallet] += discount;
 
@@ -348,12 +348,12 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         costForWallet[_wallet] = finalCost;
 
         // increase total value accumulated by this contract
-        totalValue += finalCost;
+        totalValueRaised += finalCost;
 
         // @dev Check if the purchase order doesn't exceed the goal's `targetMaximum`.
-        if ((totalValue - accumulatedRewards) > targetMaximum)
+        if ((totalValueRaised - accumulatedRewards) > targetMaximum)
             revert Errors.PurchaseExceedsMaximumTarget({
-                received: totalValue,
+                received: totalValueRaised,
                 maximum: targetMaximum
             });
 
@@ -385,7 +385,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     {
         uint256 withdrawalTotal = costForWallet[_wallet];
 
-        // @dev Subtract formerly given referral rewards originating from this account
+        // @dev Subtract formerly given referral rewards originating from this account.
         address referrer = referrerOfReferee[_wallet];
         accumulatedRewardsOf[referrer] -= discountForUser[_wallet];
 
@@ -397,7 +397,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
             revert Errors.CannotLeaveDueAccumulatedReferralCredits();
         }
 
-        totalValue -= costForWallet[_wallet];
+        totalValueRaised -= costForWallet[_wallet];
         costForWallet[_wallet] = 0;
         discountForUser[_wallet] = 0;
         referrerOfReferee[_wallet] = address(0);
@@ -418,16 +418,20 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         onlyInState(CrowdtainerState.Funding)
         nonReentrant
     {
-        if (totalValue < (targetMinimum + accumulatedRewards)) {
-            revert Errors.MinimumTargetNotReached(targetMinimum, totalValue);
+        assert(accumulatedRewards < totalValueRaised);
+
+        uint256 availableForAgent = totalValueRaised - accumulatedRewards;
+
+        if (availableForAgent < targetMinimum ) {
+            revert Errors.MinimumTargetNotReached(targetMinimum, totalValueRaised);
         }
 
         crowdtainerState = CrowdtainerState.Delivery;
 
-        // @dev transfer the owed funds from this contract back to the service provider.
-        token.safeTransferFrom(address(this), shippingAgent, totalValue - accumulatedRewards);
+        // @dev transfer the owed funds from this contract to the service provider.
+        token.safeTransferFrom(address(this), shippingAgent, availableForAgent);
 
-        emit CrowdtainerInDeliveryStage(shippingAgent, totalValue);
+        emit CrowdtainerInDeliveryStage(shippingAgent, availableForAgent);
     }
 
     /**
@@ -459,15 +463,17 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         if (crowdtainerState == CrowdtainerState.Delivery)
             revert Errors.InvalidOperationFor({state: crowdtainerState});
 
+        assert(accumulatedRewards < totalValueRaised);
+
         // The first interaction with this function 'nudges' the state to `Failed` if
         // the project didn't reach the goal in time.
-        if  (block.timestamp > expireTime && totalValue < (targetMinimum + accumulatedRewards))
+        if  (block.timestamp > expireTime && (totalValueRaised - accumulatedRewards) < targetMinimum)
                 crowdtainerState = CrowdtainerState.Failed;
 
         if(crowdtainerState != CrowdtainerState.Failed)
                 revert Errors.CantClaimFundsOnActiveProject();
 
-        // Reaching this line means the project failed either due expiration or explicit transition from `abortProject()`
+        // Reaching this line means the project failed either due expiration or explicit transition from `abortProject()`.
         uint256 withdrawalTotal = costForWallet[msg.sender];
 
         costForWallet[msg.sender] = 0;
@@ -496,8 +502,8 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         emit RewardsClaimed(msg.sender, totalRewards);
     }
 
-    // @dev This method is only used for Formal Verification with SMTChecker
-    // @dev It is executed with `make solcheck` command provided with the project's scripts
+    // @dev This method is only used for Formal Verification with SMTChecker.
+    // @dev It is executed with `make solcheck` command provided with the project's scripts.
     function invariant() public view {
         if (crowdtainerState != CrowdtainerState.Uninitialized) {
             assert(expireTime >= (openingTime + SAFETY_TIME_RANGE));

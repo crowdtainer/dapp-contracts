@@ -49,23 +49,42 @@ If the deployer/service provider for whatever reason is no longer interested or 
 
 Once the smart contract is in "Delivery" state however, it is no longer possible for participants to withdraw their funds. Should an event happen where the provider can't deliver the promised services, dispute resolution happens via normal means, and the provider needs to return the funds manually.
 
-> Note: Future versions will add an oracle and other verification methods, so that funds are withdrawn in steps over time (upon confirmation of milestones) and not up-front all at once, thus reducing the need to trust in the local existing legal system for disputes related to the contractual sale.
+> Note: Future versions may add an oracle and other verification methods, so that funds are withdrawn in steps over time (e.g., upon confirmation of milestones) and not up-front all at once, thus reducing the need to trust in the local existing legal system for disputes related to the contractual sale.
 
-## Smart contract incentive mechanism 
+## Participation incentive mechanism
 
-For the *group buying side*, the smart contract contains two incentive mechanisms (described below) in order to reward participants that provably helped the group to achieve their minimum goal. This is similar to referral codes available in apps like Uber or Airbnb, but it is different in that usually those credits are restricted for usage within those apps themselves, while here, one can withdraw the credits and do whatever is desired with it, since it is redeemed in stablecoin. It also has no limits and is proportional to the number of times it was referred to.
+For the *group buying side*, the smart contract contains two incentive mechanisms (described below) in order to reward participants that provably helped the group to achieve the project goal. This is similar to referral codes available in apps like Uber or Airbnb, but it is different in that usually those credits are restricted for usage within those apps themselves, while here, one can withdraw the credits and do whatever is desired with it, since it is redeemed in ERC20 tokens (e.g., a 'stablecoin'). Such indication rewards have no caps and is proportional to the number of times it was referred to. Furthermore, to incentivize another user to use a referral code, a discount is applied to the new purchase.
 
-- *Referral code sharing*: Participants are given a referral code after a purchase. If a new purchase refers to this given code, this entitles the referral code owner to a percentage of the sale - redeemable directly in the smart contract.
+The following main parameters are given by the user when joining:
 
-- *Buy with referral code*: Participants that uses a referral code during a purchase, get a discount in their purchase - also redeemable directly in the smart contract.
+* `quantities`: Array with the number of units desired for each product or service.
+* `enableReferral`: Informs whether the user would like to be eligible to collect rewards for being referred. The participant's wallet address becomes the "referral/voucher code" that can be given to other people. If a subsequent new purchase refers to this given code, it entitles the referrer user a percentage of the 'sale' - redeemable directly in the smart contract if the funding is successful.
+* `referrer`: Optional referral code to be used to claim a discount. If not specified, the participant pays the full product price times their respective quantities. If specified, half the referral value is credited to the referral code owner (the user which joined with `enableReferral` set to true), and another half becomes a discount applied to the total cost of the user joining ((sum of product quantities * prices) * discount).
 
 Example:
 
-For a Crowdtainer setup with a single product at 50 USD per unit, and referral rate of 20%:
+- For a Crowdtainer setup with a single product at 50 USD price per unit, and referral rate of 20%, and a minimum target of 500 USD. Recall that the referral rate is divided by 2, where half is used to apply a discount for a user joining, the other half as reward for the referrer (10% each in this example).
 
-* User A joins a Crowdtainer (spending 50 USD) and publishes her referral code in her blog. 20 people then use her referral code to get a discount on a new purchase. User A's rewards will then be 180 USD: 100 (units) x 20 (product price in USD) x 0.2 (reward rate) - 20 (cost of joining the Crowdtainer with one product unit).
+- Alice joins requesting one unit (thus spending 50 USD), with referrals enabled for her account. She publishes her referral code in her blog.
 
-> Note: All rewards are redeemable only if a project has its minimum funding goals met and entered `Delivery` state.
+- 20 other new participants use Alice's referral code to request one product unit each when joining. These new participants get a discount of 10% on their purchase (each new participant therefore pays 45 USD).
+
+- Alice's rewards will be: 100 USD. Explanation: 20 (units) x 50 (product price in USD) x 10% (reward rate / 2). If we now subtract her cost of joining, Alice gets one unit of product "for free" while effectively receiving 50 USD as a compensation for referral of 20 participants: 100 USD in rewards minus cost of joining of 50 USD.
+
+- Finally, given the minimum funding target is reached, the service provider / agent is able to withdraw:
+```
+        + 50            (Alice's payment to join)
+        + (45 * 18)     (Total value accrued from 20 participants)
+        - 100           (Alice's rewards)
+        ------------
+        760 USD         (payment for supplying/delivering all products or services)
+```
+
+> All rewards are redeemable only if a project has its minimum funding goals met and entered `Delivery` state.
+
+> The minimum target is set by the project creator (when deploying a new Crowdtainer). Also, the project deployer may set the referral rate to zero, which effectively disables the referral system altogether.
+
+> Front-ends / UI's should enable ENS resolution to make sharing/typing these codes easier.
 
 ## User Stories
 
@@ -83,7 +102,7 @@ What follows is a detailed description of the smart contract expectations in Use
      * @param _targetMaximum Amount in ERC20 units after which no further participation is possible.
      * @param _unitPricePerType Array with price of each item, in ERC2O units. Zero indicates end of product list.
      * @param _referralRate Percentage used for incentivising participation. Half the amount goes to the referee, and the other half to the referrer.
-     * @param _referralMinimumValue The minimum purchase value required to be eligible to participate in referral rewards.
+     * @param _referralEligibilityValue The minimum purchase value required to be eligible to participate in referral rewards.
      * @param _token Address of the ERC20 token used for payment.
 ```
 
@@ -97,7 +116,7 @@ What follows is a detailed description of the smart contract expectations in Use
     - The withdrawl function needs to provide the final prices array, so that each participant is correctly assigned the remainder value.
 
 - I need a 2-way communication channel, so that once a Crowdtainer is successful, I can communicate with them regarding their delivery. 
-    - Ideas: An NFT-gated discord channel.
+    - Ideas: NFT-gated discord channel per Crowdtainer project.
 
 - I need a method to cancel a project, so that I can signal participants that the project will no longer be possible, and participants are therefore able to leave taking their money without waiting for expiration.
 
@@ -109,7 +128,7 @@ What follows is a detailed description of the smart contract expectations in Use
 
 - Optionally, when joining a buying group, I'd like to additionally specify:
     - whether I'd like to be eligible to share referral code and get rewards for my friend's purchases:
-        - If the user opts into the program and the referral code is used, it is no longer possible to leave the project and get refungs (at the "Funding" stage). This is to prevent users getting the discount then leaving.
+        - If the user opts into the program and the referral code is used, it is no longer possible to leave the project and get refunds (at the "Funding" stage). This is to prevent users getting the discount then leaving.
     - a friend's referral code, so that I can get a discount on my own purchase.
 
 - I’d like an API to view and withdrawl my deposits in a running project, so that I can quit if no longer interested, or if the crowdfunding failed.
@@ -129,6 +148,6 @@ What follows is a detailed description of the smart contract expectations in Use
 ### As an observer (user, deployer or anyone)
 
 - I'd like to be able to get basic information of a crowdtainer project deployed, such as:
-    - All information used during deploy (opening and closing time, etc).
-    - Check if contract status (Funding, Expired, Delivery, Finalized).
-    - IPFS/Swarm hash which points to the legal contract documents.
+    - All information used during deployment (opening and closing time, etc).
+    - Check the contract status (Funding, Expired, Delivery, Finalized).
+    - To be decided: IPFS/Swarm hash which points to the legal contract documents.
