@@ -1,24 +1,36 @@
 # Crowdtainer smart contracts system description (v1)
 
 > This evolving document describes and drives development of the initial version of Crowdtainer, so that any interested parties working on it have a central point to refer and make improvements to the system.
-> Non-developers are also welcome to read this document to make consious decisions about how the system works and set expectations accordingly. Eventually development should be frozen (together with this document) before an initial version is released.
+> Non-developers are also welcome to read this document to make decisions about how the system works and set expectations accordingly. Eventually development should be frozen (together with this document) before an initial version is released.
 ## Problem statement
 
-The main goal of the contract is help people with similar interests to coordinate and form a bulk purchase. This helps reduce costs for the whole group due improved logistics, and might enable otherwise impossible projects to actually happen. Buyers then have more diversity of products to choose from, at a potentially lower cost. At the supply side, projects that were formerly impossible due low economies of scale or tragedy of common goods problems, now become a possibility.
+The main goal of these smart contracts is help people with similar interests to coordinate and form a bulk purchase. This helps reduce costs for the whole group due improved logistics, and might enable otherwise impossible projects to actually happen due improved social coordination. Buyers then have more diversity of products and services to choose from, at a potentially lower cost. At the supply side, projects that were formerly impossible due low economies of scale or tragedy of common goods problems, may now become a possibility. The main focus of this project is to empower the many small entrepreneurs or small communities that has been marginalized by monopolies.
 
-### How is this different than other existing crowdfunding platform?
+If we imagine a very generic way to categorize project types based on quantity and cost per unit delivered, we envision Crowdtainer projects in its current version to be a good fit (or not), according to the following table:
+
+| Unitary value     |  Sale quantity    | Applicability |
+| -------------     | :-------------:   |         -----:|
+| Low               | Large             |           Yes |
+| Low               | Small             |           Yes |
+| High              | Small             |            No |
+| High              | Large             |         Maybe |
+
+### How is this different than other existing crowdfunding platforms?
 
 The idea is not far away, but there are some crucial implementation differences: 
 
 - The lack of yet another company between the seller and buyer, since coordination happens via smart contract.
-- Competitive/low fees: the theoretical minimum fee possible is the blockchain transaction fee.
-- Allows for more flexible design and transparency of the incentive mechanims, example:
- - In Crowdtainer, the person that indicates a friend with a referral code is rewarded proportionally to the number of people using the given code. This doesn't happen with most crowdfunding platforms (if any).
-- Here (at least to start) there is an actual legal sales agreement for delivering the promised products. We are starting with simpler/safer products/services, and not product or services that have a high risk of not being delivered.
-- Generic implementation, allowing a variety of applications ranging from bulk purchases to crowdfunding donations.
-- Permisionless: anyone can deploy and start their own project. The reputation and worthiness of each project however lays on the participant to analyse and judge, and it is upon the service provider to write their sale contracts deliver on the promises. Competitive interfaces may then be built around the smart contracts, providing the full range of choices from the most permissionless all the way to a curated version where only audited service providers can join.
+- Competitive/low fees: the theoretical minimum fee possible is the blockchain or rollup transaction fee.
+- Allows for more flexible design and transparency of the incentive mechanims, for example: In Crowdtainer, the person that indicates a friend with a referral code is rewarded proportionally to the number of people using the given code. This doesn't happen with most crowdfunding platforms (if any).
+- Here (at least to start) we envision usage to have a normal legal sales agreement for delivering the promised products if the funding is successful, making it a normal product sale in legal terms. The initial users plan to start/bootstrap with simpler/safer products/services, and not product or services that have a high risk of not being delivered. Though, that is up to the users of smart contract.
+- Generic implementation, allowing a variety of applications ranging from bulk purchases to crowdfunding donations or aid missions.
+- Permisionless: anyone can deploy and start their own project. The reputation and worthiness of each project however lays on the participant to analyse and judge, and it is upon the service provider to write their sale contracts, websites, and finally deliver on the promises. Competitive interfaces may then be built around the smart contracts, providing the full range of choices from the most permissionless all the way to a curated version where only audited service providers can join.
 
-### Example:
+### What these smart contracts *do not* provide?
+
+- There are no curation / KYC mechanism at the core / smart contract level. We hope people will build systems on top of this basic layer, to curate high quality projects and help avoid scams while keeping those raising funds accountable in their respective juridsdictions.
+
+### Example use case:
 
 An innovative farmer discovered a way to produce fresh, organic, and climate neutral vegetables with less chemicals by protecting his crop in a smart and natural way. He would like to bring this innovation to his whole town, but to do so, he'd need some upfront capital to plant more. However he doesn't know if the future sales would be enough to pay for the investment.
 
@@ -37,11 +49,12 @@ There are 2 main actor types involved:
 - *Group Buying side*: a collective of people willing to coordinate in group buying. This group is referred as "participants".
 - *Selling side*: A company or person willing to sell a service or product. This group is referred as "shipping agent" or "service provider".
 
-The contract has the following possible states:
+The smart contract has the following possible states:
 
-- *Funding*:  The project started and is collecting interested people's funds. Any participant is allowed to change their mind and withdraw their funds at this stage. The service provider is not allowed to withdraw any funds.
-- *Failed*:  The project's goal has not been reached in time. Any participant can widraw their funds back. The service provider however is not allowed to withdraw any funds.
-- *Delivery*: Successfully funded and the products or services will be delivered per legal contract terms. Funds are made available for the service/product provider.
+- *Uninitialized*: The Crowdtainer contract was deployed but has not been initialized yet.
+- *Funding*: The project started and is collecting interested participant's funds. Any participant is allowed to change their mind and withdraw their funds at this stage. The service provider is not allowed to withdraw any funds.
+- *Failed*: The project's goal has not been reached in time. Any participant can widraw their funds back. The service provider is not allowed to withdraw any funds.
+- *Delivery*: Successfully funded and the service provider withdrew the funds to signal commitment to deliver the products or services.
 
 Only the *selling side* (deployer of the contract, i.e. service/product provider) is able to switch the contract into "Delivery" state. This is used to simultaneously withdraw the funds and signal that the provider agrees with the orders and represents her/his "signature" of the agreement to the sale terms.
 
@@ -120,7 +133,7 @@ What follows is a detailed description of the smart contract expectations in Use
 
 - I need a method to cancel a project, so that I can signal participants that the project will no longer be possible, and participants are therefore able to leave taking their money without waiting for expiration.
 
-### As a buyer
+### As a buyer/participant
 
 - I'd like way to read the IPFS/HASH data so that I can verify that the legal term is the same as provided in a frontend interface.
 
@@ -145,9 +158,36 @@ What follows is a detailed description of the smart contract expectations in Use
 
 - I'd like the contract to not allow Ether (payable function disabled), so that I don't accidently send Ether to it (since the contract only accepts a certain ERC20 token).
 
-### As an observer (user, deployer or anyone)
+### As an observer (anyone)
 
 - I'd like to be able to get basic information of a crowdtainer project deployed, such as:
     - All information used during deployment (opening and closing time, etc).
     - Check the contract status (Funding, Expired, Delivery, Finalized).
     - To be decided: IPFS/Swarm hash which points to the legal contract documents.
+
+## Periphery contracts
+
+In addition to the core "Crowdtainer" contract, a wrapper EIP-1155 contract can be used to manage Crowdtainer projects.
+
+Being EIP-1155 compliant provides the following benefits:
+- User interfaces can more easily manage multiple projects, keep track of ownership, and allow for easy transferability of ownership/claims in projects.
+- Interoperability with other platforms that understand the EIP-1155 interface.
+- Allow service/product providers to authenticate messages for communication and delivery, based on the token owner. E.g.: gated discord channel for chat support, which only buyers can enter, thus solving the spam/bot problem without requiring KYC.
+- Allow service providers to ask the customer's personal data (if needed), only when needed (upon successful project funding). This makes the token act as a voucher that is used to redeem the given products. Only when the redeem period arrives, the customer may provide any personal data required for service fulfillment.
+- With the token, it becomes possible to easily "gift" someone a product/service, without knowing anything but the person's Ethereum wallet address:
+    - E.g.: Alice wants to give a bottle of fine wine to Bob. Usually, Alice would have to ask Bob for his physical home address, then put Bob's address in the service provider website. In that case both she and the service provider knows Bob's home address. Having a token allows Alice instead to simply send the token to Bob's Ethereum wallet address, and this allows Bob to claim the wine bottle in the service provider website to be shipped to him. In the latter case, only who needs to know Bob's address knows it: the service/product provider.
+- The project can enter a temporary "redeem period", where token transfers are paused. This gives time to allow participants to prove their participation in order to claim the products or services with the service provider (off-chain), providing any further information as required (off-chain).
+
+## Potential ideas or features to be decided for inclusion
+
+- Implement partial/milestones-based withdrawls, based on weighted delegate voting (weight proportional to referral amount)
+    - If payment doesn't pass through voting, switch to Failed mode and allow participants to withdrawl the remainder amounts.
+    - TBD:
+        - how to decide on ratios / threshold values that defines vote quorum (?)
+        - any potential negative/unintended side-effects? I.e., think about possible collusion, lack of privacy etc.
+- Add parameter where the Crowdtainer deployer (agent) can specify an "agent fee", from zero up to a certain maximum reasonable value.
+- Allow Agent / service provider partial withdrawl + provide a merkle root, which is used to allow certain participants to take their money back. This can be used to easily return funds to people that failed i.e. to provide a shipping address to complete the purchase.
+- Meta transaction support? https://docs.opengsn.org/javascript-client/tutorial.html#converting-a-contract-to-support-gsn 
+
+
+
