@@ -71,7 +71,7 @@ contract Harbor is ERC1155, ReentrancyGuard {
      * @param _referralRate Percentage used for incentivising participation. Half the amount goes to the referee, and the other half to the referrer.
      * @param _referralEligibilityValue The minimum purchase value required to be eligible to participate in referral rewards.
      * @param _token Address of the ERC20 token used for payment.
-     * @param _uri Base string / URI used as metadata for the project tokens. Any '||id||' string found is replaced with the token id when reading.
+     * @param _uri Base string / URI used to fetch metadata about the token.
      */
     function createCrowdtainer(
         address _shippingAgent,
