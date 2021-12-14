@@ -19,6 +19,7 @@ solc:; nix-env -f https://github.com/dapphub/dapptools/archive/master.tar.gz -iA
 build  		:; dapp build
 test   		:; dapp test # --ffi # enable if you need the `ffi` cheat code on HEVM
 coverage   	:; dapp test --coverage --cov-match Crowdtainer.sol
+coverage2 	:; dapp test --coverage --cov-match Harbor.sol
 clean  		:; dapp clean
 lint   		:; yarn run lint
 estimate 	:; ./scripts/estimate-gas.sh ${contract}
@@ -40,7 +41,7 @@ ifndef ALCHEMY_API_KEY
 	$(error ALCHEMY_API_KEY is undefined)
 endif
 
-solcheck:; solc src/Crowdtainer.sol --model-checker-targets constantCondition,divByZero,balance,assert,popEmptyArray,outOfBounds --model-checker-show-unproved --model-checker-timeout 0 --model-checker-engine chc
+solcheck:; solc src/Crowdtainer.sol --model-checker-targets constantCondition,divByZero,balance,assert,popEmptyArray,outOfBounds --model-checker-show-unproved --model-checker-timeout 100 --model-checker-engine chc
 
 # Returns the URL to deploy to a hosted node.
 # Requires the ALCHEMY_API_KEY env var to be set.

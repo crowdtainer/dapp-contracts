@@ -34,6 +34,9 @@ contract Harbor is ERC1155, ReentrancyGuard {
     // @dev Mapping of deployed Crowdtainer contract addresses to its initial token id.
     mapping(address => uint256) public idForCrowdtainer;
 
+    // @dev Mapping of token ID => string, used as return value for URI method.
+    mapping(uint256 => string) private uriForCrowdatinerId;
+
     // -----------------------------------------------
     //  Events
     // -----------------------------------------------
@@ -68,8 +71,8 @@ contract Harbor is ERC1155, ReentrancyGuard {
      * @param _referralRate Percentage used for incentivising participation. Half the amount goes to the referee, and the other half to the referrer.
      * @param _referralEligibilityValue The minimum purchase value required to be eligible to participate in referral rewards.
      * @param _token Address of the ERC20 token used for payment.
+     * @param _uri Base string / URI used as metadata for the project tokens. Any '||id||' string found is replaced with the token id when reading.
      */
-    //     * @param _uri URI used to fetch metadata details. See `IERC1155MetadataURI`.
     function createCrowdtainer(
         address _shippingAgent,
         uint256 _openingTime,
@@ -79,7 +82,8 @@ contract Harbor is ERC1155, ReentrancyGuard {
         uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType,
         uint256 _referralRate,
         uint256 _referralEligibilityValue,
-        IERC20 _token
+        IERC20 _token,
+        string memory _uri
     ) public {
         //Crowdtainer crowdtainer = clone(Crowdtainer);
         Crowdtainer crowdtainer = new Crowdtainer(address(this));
@@ -95,12 +99,12 @@ contract Harbor is ERC1155, ReentrancyGuard {
             _token
         );
 
-        emit CrowdtainerDeployed(address(crowdtainer), nextTokenIdStartIndex);
-
         idForCrowdtainer[address(crowdtainer)] = nextTokenIdStartIndex;
         crowdtainerForId[nextTokenIdStartIndex] = address(crowdtainer);
-
+        uriForCrowdatinerId[nextTokenIdStartIndex] = _uri;
         nextTokenIdStartIndex = nextTokenIdStartIndex + MAX_NUMBER_OF_PRODUCTS;
+
+        emit CrowdtainerDeployed(address(crowdtainer), nextTokenIdStartIndex);
     }
 
     /*
@@ -157,12 +161,12 @@ contract Harbor is ERC1155, ReentrancyGuard {
     }
 
     /**
-     * @notice Get the metadata uri
+     * @notice Get the metadata uri.
      * @return String uri of the metadata service
      */
-    function uri(uint256) public view override returns (string memory) {
-        // return uri_;
-        return "dummy";
+    function uri(uint256 tokenId) public view override returns (string memory) {
+        uint256 crowdtainerId = tokenId / MAX_NUMBER_OF_PRODUCTS;
+        return uriForCrowdatinerId[crowdtainerId];
     }
 
     /**************************************************************************
