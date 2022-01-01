@@ -64,6 +64,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
      */
     modifier onlyAddress(address requiredAddress) {
         if (owner == address(0)) {
+            // This branch means this contract is being used as a stand-alone contract (e.g., not managed by EIP-1155 owning it)
             _;
             return;
         }

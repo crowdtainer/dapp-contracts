@@ -187,7 +187,7 @@ Being EIP-1155 compliant provides the following benefits:
         - any potential negative/unintended side-effects? I.e., think about possible collusion, lack of privacy etc.
 - Add parameter where the Crowdtainer deployer (agent) can specify an "agent fee", from zero up to a certain maximum reasonable value.
 - Allow Agent / service provider partial withdrawl + provide a merkle root, which is used to allow certain participants to take their money back. This can be used to easily return funds to people that failed i.e. to provide a shipping address to complete the purchase.
-- Meta transaction support? https://docs.opengsn.org/javascript-client/tutorial.html#converting-a-contract-to-support-gsn 
+- "Native" Meta-transaction support
 
 
 

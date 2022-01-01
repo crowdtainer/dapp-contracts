@@ -17,13 +17,13 @@ import "./Constants.sol";
  * @title Manages multiple Crowdtainer projects and ownership of its product/services by participants.
  * @dev Essentially, a Crowdtainer factory with ERC1155 compliance.
  */
-contract Harbor is ERC1155, ReentrancyGuard {
+contract Vouchers is ERC1155, ReentrancyGuard {
     //using Clones for address;
 
     // @dev The next available id from the ERC1159 implementation.
     // @note It is incremented by `MAX_NUMBER_OF_PRODUCTS` per Crowdtainer project.
     // @note This allows us to easily pinpoint any product/service id to its respective Crowdtainer project as follows:
-    // @note crowdtainer_id = tokenId / MAX_NUMBER_OF_PRODUCTS (division will truncate). The specific product index position is: tokenId - crowdtainer_id.
+    // @note crowdtainer_id = tokenId / MAX_NUMBER_OF_PRODUCTS (division will truncate). The specific product index position is: (tokenId + 1) - crowdtainer_id.
     uint256 private nextTokenIdStartIndex;
 
     //address private immutable implementation;
@@ -42,7 +42,7 @@ contract Harbor is ERC1155, ReentrancyGuard {
     // -----------------------------------------------
 
     // @note Emmited when this contract is created.
-    event HarborCreated(address indexed crowdtainer);
+    event VouchersCreated(address indexed crowdtainer);
 
     // @note Emmited when a new Crowdtainer is deployed and initialized by this contract.
     event CrowdtainerDeployed(
@@ -52,12 +52,10 @@ contract Harbor is ERC1155, ReentrancyGuard {
 
     // -----------------------------------------------
     //  Contract functions
-    // -----------------------------------------------
 
-    // @param Deploy a new Harbor.
     constructor() {
         // implementation = address(new Crowdtainer(address(this)));
-        emit HarborCreated(address(this));
+        emit VouchersCreated(address(this));
     }
 
     /**
@@ -172,6 +170,13 @@ contract Harbor is ERC1155, ReentrancyGuard {
     /**************************************************************************
      * Internal/private methods
      *************************************************************************/
+
+    // Safe gas by removing unused function
+    function _mintBatch(
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts
+    ) internal override {}
 
     /**
      * @notice Function used to apply restrictions of states where transfers are disabled.
