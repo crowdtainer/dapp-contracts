@@ -19,7 +19,8 @@ solc:; nix-env -f https://github.com/dapphub/dapptools/archive/master.tar.gz -iA
 build  		:; dapp build
 test   		:; dapp test # --ffi # enable if you need the `ffi` cheat code on HEVM
 coverage   	:; dapp test --coverage --cov-match Crowdtainer.sol
-coverage2 	:; dapp test --coverage --cov-match Vouchers.sol
+coverage2 	:; dapp test --coverage --cov-match Vouchers721.sol
+coverage3 	:; dapp test --coverage --cov-match Vouchers1155.sol
 clean  		:; dapp clean
 lint   		:; yarn run lint
 estimate 	:; ./scripts/estimate-gas.sh ${contract}
