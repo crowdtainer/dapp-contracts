@@ -5,8 +5,10 @@ import "./States.sol";
 
 library Errors {
     // -----------------------------------------------
-    //  EIP-1155
+    //  Vouchers
     // -----------------------------------------------
+    // @notice: The provided crowdtainer id does not exist.
+    error CrowdtainerInexistent();
     // @notice: Account cannot be of address(0).
     error AccountAddressIsZero();
     // @notice: Accounts and ids lengths do not match.

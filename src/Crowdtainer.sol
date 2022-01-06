@@ -25,7 +25,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
 
     // @dev Owner of this contract.
     // @notice Has permissions to call: initialize(), join() and leave() functions. These functions are gated so
-    // that an owner contract can do special accounting (such as for being EIP1155 compatible).
+    // that an owner contract can do special accounting (such as an EIP1155 compliant contract).
     // If set to address(0), no restriction is applied.
     address public immutable owner;
 
@@ -65,6 +65,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     modifier onlyAddress(address requiredAddress) {
         if (owner == address(0)) {
             // This branch means this contract is being used as a stand-alone contract (e.g., not managed by EIP-1155 owning it)
+            // E.g.: A Crowdtainer instance interacted directly by an EOA.
             _;
             return;
         }
