@@ -12,6 +12,28 @@ import "./States.sol";
 import "./Errors.sol";
 import "./Constants.sol";
 
+// Data defining all rules and values of a Crowdtainer instance.
+struct CampaignData {
+    // Address that represents the product or service provider.
+    address shippingAgent;
+    // Funding opening time.
+    uint256 openingTime;
+    // Time after which the owner can no longer withdraw funds.
+    uint256 expireTime;
+    // Amount in ERC20 units required for project to be considered to be successful.
+    uint256 targetMinimum;
+    // Amount in ERC20 units after which no further participation is possible.
+    uint256 targetMaximum;
+    // Array with price of each item, in ERC2O units. Zero is an invalid value and will throw.
+    uint256[MAX_NUMBER_OF_PRODUCTS] unitPricePerType;
+    // Percentage used for incentivising participation. Half the amount goes to the referee, and the other half to the referrer.
+    uint256 referralRate;
+    // The minimum purchase value required to be eligible to participate in referral rewards.
+    uint256 referralEligibilityValue;
+    // Address of the ERC20 token used for payment.
+    IERC20 token;
+}
+
 /**
  * @title Crowdtainer contract
  */
@@ -174,79 +196,70 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
 
     /**
      * @dev Initializes a Crowdtainer.
-     * @dev A referral rate of `20`, means 20%: 10% goes to referrer and 10% as discount applied when joining.
-     * @param _shippingAgent Address that represents the product or service provider.
-     * @param _openingTime Funding opening time.
-     * @param _expireTime Time after which the shipping agent can no longer withdraw funds.
-     * @param _targetMinimum Amount in ERC20 units required for the Crowdtainer to be considered to be successful.
-     * @param _targetMaximum Amount in ERC20 units after which no further participation is possible.
-     * @param _unitPricePerType Array with price of each item, in ERC2O units. Zero indicates end of product list.
-     * @param _referralRate Percentage used for incentivising participation. Half the amount goes to the referee, and the other half to the referrer.
-     * @param _referralEligibilityValue The minimum purchase value required to be eligible to participate in referral rewards.
-     * @param _token Address of the ERC20 token used for payment.
+     * @param _campaignData Data defining all rules and values of this Crowdtainer instance.
      */
-    function initialize(
-        address _shippingAgent,
-        uint256 _openingTime,
-        uint256 _expireTime,
-        uint256 _targetMinimum,
-        uint256 _targetMaximum,
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType,
-        uint256 _referralRate,
-        uint256 _referralEligibilityValue,
-        IERC20 _token
-    )
+    function initialize(CampaignData calldata _campaignData)
         public
         initializer
         onlyAddress(owner)
         onlyInState(CrowdtainerState.Uninitialized)
     {
         // @dev: Sanity checks
-        if (address(_token) == address(0)) revert Errors.TokenAddressIsZero();
+        if (address(_campaignData.token) == address(0))
+            revert Errors.TokenAddressIsZero();
 
-        if (address(_shippingAgent) == address(0)) 
+        if (address(_campaignData.shippingAgent) == address(0))
             revert Errors.ShippingAgentAddressIsZero();
 
-        if(_referralEligibilityValue > _targetMinimum)
-            revert Errors.ReferralMinimumValueTooHigh({received: _referralEligibilityValue, maximum: _targetMinimum});
+        if (
+            _campaignData.referralEligibilityValue > _campaignData.targetMinimum
+        )
+            revert Errors.ReferralMinimumValueTooHigh({
+                received: _campaignData.referralEligibilityValue,
+                maximum: _campaignData.targetMinimum
+            });
 
-        if (_referralRate % 2 != 0)
+        if (_campaignData.referralRate % 2 != 0)
             revert Errors.ReferralRateNotMultipleOfTwo();
 
         // @dev: Expiration time should not be too close to the opening time
-        if (_expireTime < _openingTime + SAFETY_TIME_RANGE)
-            revert Errors.ClosingTimeTooEarly();
+        if (
+            _campaignData.expireTime <
+            _campaignData.openingTime + SAFETY_TIME_RANGE
+        ) revert Errors.ClosingTimeTooEarly();
 
-        if (_targetMaximum == 0) revert Errors.InvalidMaximumTarget();
+        if (_campaignData.targetMaximum == 0)
+            revert Errors.InvalidMaximumTarget();
 
-        if (_targetMinimum == 0) revert Errors.InvalidMinimumTarget();
+        if (_campaignData.targetMinimum == 0)
+            revert Errors.InvalidMinimumTarget();
 
-        if (_targetMinimum > _targetMaximum)
+        if (_campaignData.targetMinimum > _campaignData.targetMaximum)
             revert Errors.MinimumTargetHigherThanMaximum();
 
         // @dev The first price of zero indicates the end of price list.
         for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
-            if (_unitPricePerType[i] == 0) {
+            if (_campaignData.unitPricePerType[i] == 0) {
                 break;
             }
             numberOfProducts++;
         }
 
-        if (_referralRate > SAFETY_MAX_REFERRAL_RATE)
+        if (_campaignData.referralRate > SAFETY_MAX_REFERRAL_RATE)
             revert Errors.InvalidReferralRate({
-                received: _referralRate,
+                received: _campaignData.referralRate,
                 maximum: SAFETY_MAX_REFERRAL_RATE
             });
 
-        shippingAgent = _shippingAgent;
-        openingTime = _openingTime;
-        expireTime = _expireTime;
-        targetMinimum = _targetMinimum;
-        targetMaximum = _targetMaximum;
-        unitPricePerType = _unitPricePerType;
-        referralRate = _referralRate;
-        referralEligibilityValue = _referralEligibilityValue;
-        token = _token;
+        shippingAgent = _campaignData.shippingAgent;
+        openingTime = _campaignData.openingTime;
+        expireTime = _campaignData.expireTime;
+        targetMinimum = _campaignData.targetMinimum;
+        targetMaximum = _campaignData.targetMaximum;
+        unitPricePerType = _campaignData.unitPricePerType;
+        referralRate = _campaignData.referralRate;
+        referralEligibilityValue = _campaignData.referralEligibilityValue;
+        token = _campaignData.token;
 
         crowdtainerState = CrowdtainerState.Funding;
 
@@ -270,7 +283,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
      *
      * @note referrer is the wallet address of a previous participant.
      *
-     * @note if `enableReferral` is true, and the account has been used to claim a discount, then 
+     * @note if `enableReferral` is true, and the account has been used to claim a discount, then
      *       it is no longer possible to leave() during the funding phase.
      *
      * @note A same user is not allowed to increase the order amounts (i.e., by calling join multiple times).
@@ -307,18 +320,23 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
         }
 
         if (_enableReferral && finalCost < referralEligibilityValue)
-            revert Errors.MinimumPurchaseValueForReferralNotMet({received:finalCost, minimum:referralEligibilityValue});
+            revert Errors.MinimumPurchaseValueForReferralNotMet({
+                received: finalCost,
+                minimum: referralEligibilityValue
+            });
 
         // @dev Apply discounts to `finalCost` if applicable.
         bool eligibleForDiscount;
         // @dev Verify validity of given `referrer`
         if (_referrer != address(0)) {
             // @dev Check if referrer participated
-            if (costForWallet[_referrer] == 0)
-                { revert Errors.ReferralInexistent(); }
+            if (costForWallet[_referrer] == 0) {
+                revert Errors.ReferralInexistent();
+            }
 
-            if (!enableReferral[_referrer])
-                { revert Errors.ReferralDisabledForProvidedCode(); }
+            if (!enableReferral[_referrer]) {
+                revert Errors.ReferralDisabledForProvidedCode();
+            }
 
             eligibleForDiscount = true;
         }
@@ -331,7 +349,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
             //    2 - Half of the referral rate is credited to the referrer.
 
             // @dev Calculate the discount value
-            discount = ((finalCost * referralRate) / 100 ) / 2;
+            discount = ((finalCost * referralRate) / 100) / 2;
 
             // @dev 1- Apply discount
             assert(discount < finalCost);
@@ -424,8 +442,11 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
 
         uint256 availableForAgent = totalValueRaised - accumulatedRewards;
 
-        if (availableForAgent < targetMinimum ) {
-            revert Errors.MinimumTargetNotReached(targetMinimum, totalValueRaised);
+        if (availableForAgent < targetMinimum) {
+            revert Errors.MinimumTargetNotReached(
+                targetMinimum,
+                totalValueRaised
+            );
         }
 
         crowdtainerState = CrowdtainerState.Delivery;
@@ -469,11 +490,13 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
 
         // The first interaction with this function 'nudges' the state to `Failed` if
         // the project didn't reach the goal in time.
-        if  (block.timestamp > expireTime && (totalValueRaised - accumulatedRewards) < targetMinimum)
-                crowdtainerState = CrowdtainerState.Failed;
+        if (
+            block.timestamp > expireTime &&
+            (totalValueRaised - accumulatedRewards) < targetMinimum
+        ) crowdtainerState = CrowdtainerState.Failed;
 
-        if(crowdtainerState != CrowdtainerState.Failed)
-                revert Errors.CantClaimFundsOnActiveProject();
+        if (crowdtainerState != CrowdtainerState.Failed)
+            revert Errors.CantClaimFundsOnActiveProject();
 
         // Reaching this line means the project failed either due expiration or explicit transition from `abortProject()`.
         uint256 withdrawalTotal = costForWallet[msg.sender];

@@ -12,7 +12,12 @@ contract CrowdtainerValidJoinTester is BaseTest {
 
         uint256 previousBalance = erc20Token.balanceOf(address(bob));
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 10, 0];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
+            uint256(0),
+            2,
+            10,
+            0
+        ];
 
         bob.doJoin(quantities, false, address(0));
 
@@ -27,7 +32,12 @@ contract CrowdtainerValidJoinTester is BaseTest {
 
     function testUsageOfValidReferralCodeMustSucceed() public {
         init();
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(1), 2, 10, 0];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
+            uint256(1),
+            2,
+            10,
+            0
+        ];
 
         bob.doJoin(quantities, true, address(0));
 
@@ -35,7 +45,7 @@ contract CrowdtainerValidJoinTester is BaseTest {
         totalCost += quantities[1] * unitPricePerType[1];
         totalCost += quantities[2] * unitPricePerType[2];
 
-        uint256 discount = ((totalCost * referralRate) / 100 ) / 2;
+        uint256 discount = ((totalCost * referralRate) / 100) / 2;
         assert(discount != 0);
 
         uint256 previousAliceBalance = erc20Token.balanceOf(address(alice));
@@ -55,7 +65,12 @@ contract CrowdtainerValidJoinTester is BaseTest {
 contract CrowdtainerInvalidJoinTester is BaseTest {
     function testFailUseOwnReferralCode() public {
         init();
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(1), 2, 10, 0];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
+            uint256(1),
+            2,
+            10,
+            0
+        ];
 
         // join with enabled referral code
         bob.doJoin(quantities, true, address(0));
@@ -73,7 +88,12 @@ contract CrowdtainerInvalidJoinTester is BaseTest {
 
     function testFailUseOfInvalidReferralCode() public {
         init();
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(1), 2, 10, 0];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
+            uint256(1),
+            2,
+            10,
+            0
+        ];
 
         //bob.doJoin(quantities, true, address(0)); // not registered
 
@@ -108,19 +128,25 @@ contract CrowdtainerInvalidJoinTester is BaseTest {
     }
 
     function testFailPurchaseExceedsMaximumTarget() public {
-
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [uint256(10), 20, 25, 5000];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
+            uint256(10),
+            20,
+            25,
+            5000
+        ];
 
         crowdtainer.initialize(
-            address(agent),
-            openingTime,
-            closingTime,
-            20000,
-            30000,
-            _unitPricePerType,
-            referralRate,
-            referralEligibilityValue,
-            iERC20Token
+            CampaignData(
+                address(agent),
+                openingTime,
+                closingTime,
+                20000,
+                30000,
+                _unitPricePerType,
+                referralRate,
+                referralEligibilityValue,
+                iERC20Token
+            )
         );
 
         uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities;
@@ -141,20 +167,28 @@ contract CrowdtainerInvalidJoinTester is BaseTest {
         }
     }
 
-    function testFailJoinWithReferralEnabledAndTotalCostLowerThanMinimum() public {
-
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [uint256(10), 20, 25, 50];
+    function testFailJoinWithReferralEnabledAndTotalCostLowerThanMinimum()
+        public
+    {
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
+            uint256(10),
+            20,
+            25,
+            50
+        ];
 
         crowdtainer.initialize(
-            address(agent),
-            openingTime,
-            closingTime,
-            20000,
-            30000,
-            _unitPricePerType,
-            referralRate,
-            20,
-            iERC20Token
+            CampaignData(
+                address(agent),
+                openingTime,
+                closingTime,
+                20000,
+                30000,
+                _unitPricePerType,
+                referralRate,
+                20,
+                iERC20Token
+            )
         );
 
         uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities;
@@ -163,7 +197,9 @@ contract CrowdtainerInvalidJoinTester is BaseTest {
             bytes memory lowLevelData
         ) {
             failed = this.assertEqSignature(
-                makeError(Errors.MinimumPurchaseValueForReferralNotMet.selector),
+                makeError(
+                    Errors.MinimumPurchaseValueForReferralNotMet.selector
+                ),
                 lowLevelData
             );
             this.printTwoUint256(lowLevelData);

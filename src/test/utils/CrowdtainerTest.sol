@@ -106,15 +106,17 @@ contract BaseTest is CrowdtainerTestHelpers {
 
     function init() internal {
         crowdtainer.initialize(
-            address(agent),
-            openingTime,
-            closingTime,
-            targetMinimum,
-            targetMaximum,
-            unitPricePerType,
-            referralRate,
-            referralEligibilityValue,
-            iERC20Token
+            CampaignData(
+                address(agent),
+                openingTime,
+                closingTime,
+                targetMinimum,
+                targetMaximum,
+                unitPricePerType,
+                referralRate,
+                referralEligibilityValue,
+                iERC20Token
+            )
         );
     }
 

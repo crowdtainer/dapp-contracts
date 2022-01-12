@@ -74,7 +74,10 @@ library Errors {
     // @notice: Referral is not enabled for the given code/wallet.
     error ReferralDisabledForProvidedCode();
     // @notice: Participant can't participate in referral if the minimum purchase value specified by the service provider is not met.
-    error MinimumPurchaseValueForReferralNotMet(uint256 received, uint256 minimum);
+    error MinimumPurchaseValueForReferralNotMet(
+        uint256 received,
+        uint256 minimum
+    );
 
     // -----------------------------------------------
     //  Leave() operation

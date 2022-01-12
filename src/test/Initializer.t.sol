@@ -9,15 +9,17 @@ import {Errors} from "../Crowdtainer.sol";
 contract ValidInitializeTester is BaseTest {
     function testValidValuesMustSucceed() public {
         crowdtainer.initialize(
-            address(agent),
-            openingTime,
-            closingTime,
-            targetMinimum,
-            targetMaximum,
-            unitPricePerType,
-            referralRate,
-            referralEligibilityValue,
-            erc20Token
+            CampaignData(
+                address(agent),
+                openingTime,
+                closingTime,
+                targetMinimum,
+                targetMaximum,
+                unitPricePerType,
+                referralRate,
+                referralEligibilityValue,
+                erc20Token
+            )
         );
     }
 }
@@ -27,15 +29,17 @@ contract InvalidInitializeTester is BaseTest {
         IERC20 invalidTokenAddress = IERC20(address(0));
         try
             crowdtainer.initialize(
-                address(agent),
-                openingTime,
-                closingTime,
-                targetMinimum,
-                targetMaximum,
-                unitPricePerType,
-                referralRate,
-                referralEligibilityValue,
-                invalidTokenAddress
+                CampaignData(
+                    address(agent),
+                    openingTime,
+                    closingTime,
+                    targetMinimum,
+                    targetMaximum,
+                    unitPricePerType,
+                    referralRate,
+                    referralEligibilityValue,
+                    invalidTokenAddress
+                )
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
@@ -49,15 +53,17 @@ contract InvalidInitializeTester is BaseTest {
         IERC20 invalidTokenAddress = IERC20(address(0));
         try
             crowdtainer.initialize(
-                address(invalidTokenAddress),
-                openingTime,
-                closingTime,
-                targetMinimum,
-                targetMaximum,
-                unitPricePerType,
-                referralRate,
-                referralEligibilityValue,
-                erc20Token
+                CampaignData(
+                    address(invalidTokenAddress),
+                    openingTime,
+                    closingTime,
+                    targetMinimum,
+                    targetMaximum,
+                    unitPricePerType,
+                    referralRate,
+                    referralEligibilityValue,
+                    erc20Token
+                )
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
@@ -70,15 +76,17 @@ contract InvalidInitializeTester is BaseTest {
     function testFailWithInvalidReferralEligibilityValue() public {
         try
             crowdtainer.initialize(
-                address(agent),
-                openingTime,
-                closingTime,
-                targetMinimum,
-                targetMaximum,
-                unitPricePerType,
-                referralRate,
-                targetMinimum + 1,
-                erc20Token
+                CampaignData(
+                    address(agent),
+                    openingTime,
+                    closingTime,
+                    targetMinimum,
+                    targetMaximum,
+                    unitPricePerType,
+                    referralRate,
+                    targetMinimum + 1,
+                    erc20Token
+                )
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
@@ -91,15 +99,17 @@ contract InvalidInitializeTester is BaseTest {
     function testFailInvalidClosingTime() public {
         try
             crowdtainer.initialize(
-                address(agent),
-                openingTime,
-                openingTime,
-                targetMinimum,
-                targetMaximum,
-                unitPricePerType,
-                referralRate,
-                referralEligibilityValue,
-                erc20Token
+                CampaignData(
+                    address(agent),
+                    openingTime,
+                    openingTime,
+                    targetMinimum,
+                    targetMaximum,
+                    unitPricePerType,
+                    referralRate,
+                    referralEligibilityValue,
+                    erc20Token
+                )
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
@@ -112,15 +122,17 @@ contract InvalidInitializeTester is BaseTest {
     function testFailMinimumTargetTooHigh() public {
         try
             crowdtainer.initialize(
-                address(agent),
-                openingTime,
-                openingTime,
-                targetMaximum + 1,
-                targetMaximum,
-                unitPricePerType,
-                referralRate,
-                referralEligibilityValue,
-                erc20Token
+                CampaignData(
+                    address(agent),
+                    openingTime,
+                    openingTime,
+                    targetMaximum + 1,
+                    targetMaximum,
+                    unitPricePerType,
+                    referralRate,
+                    referralEligibilityValue,
+                    erc20Token
+                )
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
@@ -133,15 +145,17 @@ contract InvalidInitializeTester is BaseTest {
     function testFailMinimumTargetTooLow() public {
         try
             crowdtainer.initialize(
-                address(agent),
-                openingTime,
-                closingTime,
-                0,
-                targetMaximum,
-                unitPricePerType,
-                referralRate,
-                0,
-                erc20Token
+                CampaignData(
+                    address(agent),
+                    openingTime,
+                    closingTime,
+                    0,
+                    targetMaximum,
+                    unitPricePerType,
+                    referralRate,
+                    0,
+                    erc20Token
+                )
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
@@ -154,15 +168,17 @@ contract InvalidInitializeTester is BaseTest {
     function testFailMinimumTargetHigherThanMaximum() public {
         try
             crowdtainer.initialize(
-                address(agent),
-                openingTime,
-                closingTime,
-                targetMaximum + 1,
-                targetMaximum,
-                unitPricePerType,
-                referralRate,
-                referralEligibilityValue,
-                erc20Token
+                CampaignData(
+                    address(agent),
+                    openingTime,
+                    closingTime,
+                    targetMaximum + 1,
+                    targetMaximum,
+                    unitPricePerType,
+                    referralRate,
+                    referralEligibilityValue,
+                    erc20Token
+                )
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
@@ -175,15 +191,17 @@ contract InvalidInitializeTester is BaseTest {
     function testFailInvalidMaximumTarget() public {
         try
             crowdtainer.initialize(
-                address(agent),
-                openingTime,
-                closingTime,
-                targetMinimum,
-                0,
-                unitPricePerType,
-                referralRate,
-                referralEligibilityValue,
-                erc20Token
+                CampaignData(
+                    address(agent),
+                    openingTime,
+                    closingTime,
+                    targetMinimum,
+                    0,
+                    unitPricePerType,
+                    referralRate,
+                    referralEligibilityValue,
+                    erc20Token
+                )
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
@@ -196,15 +214,17 @@ contract InvalidInitializeTester is BaseTest {
     function testFailInvalidReferralRate() public {
         try
             crowdtainer.initialize(
-                address(agent),
-                openingTime,
-                closingTime,
-                targetMinimum,
-                targetMaximum,
-                unitPricePerType,
-                160,
-                referralEligibilityValue,
-                erc20Token
+                CampaignData(
+                    address(agent),
+                    openingTime,
+                    closingTime,
+                    targetMinimum,
+                    targetMaximum,
+                    unitPricePerType,
+                    160,
+                    referralEligibilityValue,
+                    erc20Token
+                )
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
@@ -217,15 +237,17 @@ contract InvalidInitializeTester is BaseTest {
     function testFailInvalidReferralRateNotMultipleOfTwo() public {
         try
             crowdtainer.initialize(
-                address(agent),
-                openingTime,
-                closingTime,
-                targetMinimum,
-                targetMaximum,
-                unitPricePerType,
-                3,
-                referralEligibilityValue,
-                erc20Token
+                CampaignData(
+                    address(agent),
+                    openingTime,
+                    closingTime,
+                    targetMinimum,
+                    targetMaximum,
+                    unitPricePerType,
+                    3,
+                    referralEligibilityValue,
+                    erc20Token
+                )
             )
         {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
@@ -269,15 +291,17 @@ contract InitializeFuzzer is BaseTest {
         if (_referralRate > SAFETY_MAX_REFERRAL_RATE) return;
 
         crowdtainer.initialize(
-            _agent,
-            _openingTime,
-            _closingTime,
-            _targetMinimum,
-            _targetMaximum,
-            _unitPricePerType,
-            _referralRate,
-            _referralEligibilityValue,
-            _token
+            CampaignData(
+                _agent,
+                _openingTime,
+                _closingTime,
+                _targetMinimum,
+                _targetMaximum,
+                _unitPricePerType,
+                _referralRate,
+                _referralEligibilityValue,
+                _token
+            )
         );
 
         assert(address(_token) != address(0));
@@ -314,7 +338,7 @@ contract InitializeProver is BaseTest {
         if(_targetMinimum < _targetMaximum) return;
         if (_referralRate % 2 != 0) return;
 
-        crowdtainer.initialize(
+        crowdtainer.initialize(CampaignData(
             _openingTime,
             _expireTime,
             _targetMinimum,
@@ -322,7 +346,7 @@ contract InitializeProver is BaseTest {
             _unitPricePerType,
             _referralRate,
             _referralEligibilityValue,
-            _token
+            _token)
         );
 
         assert(true);

@@ -12,7 +12,12 @@ contract CrowdtainerValidLeaveTester is BaseTest {
 
         uint256 previousBalance = erc20Token.balanceOf(address(bob));
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 10, 0];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
+            uint256(0),
+            2,
+            10,
+            0
+        ];
 
         bob.doJoin(quantities, false, address(0));
 
@@ -26,14 +31,19 @@ contract CrowdtainerValidLeaveTester is BaseTest {
 
         bob.doLeave();
 
-        assertEq(
-            erc20Token.balanceOf(address(bob)), previousBalance
-        );
+        assertEq(erc20Token.balanceOf(address(bob)), previousBalance);
     }
 
-    function testJoinAndLeaveWithReferralEnabledButNoRewardsAccumulated() public {
+    function testJoinAndLeaveWithReferralEnabledButNoRewardsAccumulated()
+        public
+    {
         init();
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(1), 2, 10, 0];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
+            uint256(1),
+            2,
+            10,
+            0
+        ];
 
         uint256 totalCost = quantities[0] * unitPricePerType[0];
         totalCost += quantities[1] * unitPricePerType[1];
@@ -54,24 +64,24 @@ contract CrowdtainerValidLeaveTester is BaseTest {
         alice.doLeave();
 
         // alice is back with her initial funds.
-        assertEq(
-            erc20Token.balanceOf(address(alice)),
-            previousAliceBalance
-        );
+        assertEq(erc20Token.balanceOf(address(alice)), previousAliceBalance);
     }
 }
 
 contract CrowdtainerInvalidLeaveTester is BaseTest {
-
-        function testFailJoinUsingReferralThenLeaveWithAccumulatedRewards() public {
-
+    function testFailJoinUsingReferralThenLeaveWithAccumulatedRewards() public {
         init();
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(1), 2, 10, 0];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
+            uint256(1),
+            2,
+            10,
+            0
+        ];
 
         uint256 totalCost = quantities[0] * unitPricePerType[0];
         totalCost += quantities[1] * unitPricePerType[1];
         totalCost += quantities[2] * unitPricePerType[2];
-        uint256 discount = ((totalCost * referralRate) / 100 ) / 2;
+        uint256 discount = ((totalCost * referralRate) / 100) / 2;
 
         uint256 previousBobBalance = erc20Token.balanceOf(address(bob));
 

@@ -61,42 +61,16 @@ contract Vouchers1155 is ERC1155, ReentrancyGuard {
 
     /**
      * @dev Create and deploy a new Crowdtainer.
-     * @param _shippingAgent Address that represents the product or service provider.
-     * @param _openingTime Funding opening time.
-     * @param _expireTime Time after which the owner can no longer withdraw funds.
-     * @param _targetMinimum Amount in ERC20 units required for project to be considered to be successful.
-     * @param _targetMaximum Amount in ERC20 units after which no further participation is possible.
-     * @param _unitPricePerType Array with price of each item, in ERC2O units. Zero is an invalid value and will throw.
-     * @param _referralRate Percentage used for incentivising participation. Half the amount goes to the referee, and the other half to the referrer.
-     * @param _referralEligibilityValue The minimum purchase value required to be eligible to participate in referral rewards.
-     * @param _token Address of the ERC20 token used for payment.
+     * @param _campaignData Data defining all rules and values of this Crowdtainer instance.
      * @param _uri Base string / URI used to fetch metadata about the token.
      */
     function createCrowdtainer(
-        address _shippingAgent,
-        uint256 _openingTime,
-        uint256 _expireTime,
-        uint256 _targetMinimum,
-        uint256 _targetMaximum,
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType,
-        uint256 _referralRate,
-        uint256 _referralEligibilityValue,
-        IERC20 _token,
+        CampaignData memory _campaignData,
         string memory _uri
     ) public {
         //Crowdtainer crowdtainer = clone(Crowdtainer);
         Crowdtainer crowdtainer = new Crowdtainer(address(this));
-        crowdtainer.initialize(
-            _shippingAgent,
-            _openingTime,
-            _expireTime,
-            _targetMinimum,
-            _targetMaximum,
-            _unitPricePerType,
-            _referralRate,
-            _referralEligibilityValue,
-            _token
-        );
+        crowdtainer.initialize(_campaignData);
 
         idForCrowdtainer[address(crowdtainer)] = nextTokenIdStartIndex;
         crowdtainerForId[nextTokenIdStartIndex] = address(crowdtainer);
@@ -172,12 +146,15 @@ contract Vouchers1155 is ERC1155, ReentrancyGuard {
      * Internal/private methods
      *************************************************************************/
 
+    /* solhint-disable no-empty-blocks */
     // Save deploy gas cost by removing unused function
     function _mintBatch(
         address to,
         uint256[] memory ids,
         uint256[] memory amounts
     ) internal override {}
+
+    /* solhint-enable no-empty-blocks */
 
     /**
      * @notice Function used to apply restrictions of states where transfers are disabled.

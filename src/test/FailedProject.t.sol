@@ -13,14 +13,22 @@ contract CrowdtainerValidProjectTerminationTester is BaseTest {
 
         uint256 previousBalance = erc20Token.balanceOf(address(bob));
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 10, 0];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
+            uint256(0),
+            2,
+            10,
+            0
+        ];
 
         bob.doJoin(quantities, false, address(0));
 
         uint256 totalCost = quantities[1] * unitPricePerType[1];
         totalCost += quantities[2] * unitPricePerType[2];
 
-        assertEq(erc20Token.balanceOf(address(bob)), previousBalance - totalCost);
+        assertEq(
+            erc20Token.balanceOf(address(bob)),
+            previousBalance - totalCost
+        );
 
         agent.doAbortProject();
 
@@ -36,20 +44,26 @@ contract CrowdtainerValidProjectTerminationTester is BaseTest {
 
         uint256 previousBalance = erc20Token.balanceOf(address(bob));
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 0, 0];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
+            uint256(0),
+            2,
+            0,
+            0
+        ];
         uint256 totalCost = quantities[1] * unitPricePerType[1];
 
         bob.doJoin(quantities, false, address(0));
 
         hevm.warp(openingTime - 1 seconds);
 
-        try bob.doClaimFunds() {} catch (
-            bytes memory lowLevelData
-        ) {
-            failed = this.assertEqSignature(
-                makeError(Errors.OpeningTimeNotReachedYet.selector),
-                lowLevelData
-            ) && (erc20Token.balanceOf(address(bob)) == (previousBalance - totalCost));
+        try bob.doClaimFunds() {} catch (bytes memory lowLevelData) {
+            failed =
+                this.assertEqSignature(
+                    makeError(Errors.OpeningTimeNotReachedYet.selector),
+                    lowLevelData
+                ) &&
+                (erc20Token.balanceOf(address(bob)) ==
+                    (previousBalance - totalCost));
         }
     }
 
@@ -58,18 +72,24 @@ contract CrowdtainerValidProjectTerminationTester is BaseTest {
 
         uint256 previousBalance = erc20Token.balanceOf(address(bob));
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 0, 0];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
+            uint256(0),
+            2,
+            0,
+            0
+        ];
         uint256 totalCost = quantities[1] * unitPricePerType[1];
 
         bob.doJoin(quantities, false, address(0));
 
-        try bob.doClaimFunds() {} catch (
-            bytes memory lowLevelData
-        ) {
-            failed = this.assertEqSignature(
-                makeError(Errors.CantClaimFundsOnActiveProject.selector),
-                lowLevelData
-            ) && (erc20Token.balanceOf(address(bob)) == (previousBalance - totalCost));
+        try bob.doClaimFunds() {} catch (bytes memory lowLevelData) {
+            failed =
+                this.assertEqSignature(
+                    makeError(Errors.CantClaimFundsOnActiveProject.selector),
+                    lowLevelData
+                ) &&
+                (erc20Token.balanceOf(address(bob)) ==
+                    (previousBalance - totalCost));
         }
     }
 
@@ -80,12 +100,20 @@ contract CrowdtainerValidProjectTerminationTester is BaseTest {
 
         uint256 previousBalance = erc20Token.balanceOf(address(bob));
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 2, 0, 0];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
+            uint256(0),
+            2,
+            0,
+            0
+        ];
         uint256 totalCost = quantities[1] * unitPricePerType[1];
 
         bob.doJoin(quantities, false, address(0));
 
-        assertEq(erc20Token.balanceOf(address(bob)), previousBalance - totalCost);
+        assertEq(
+            erc20Token.balanceOf(address(bob)),
+            previousBalance - totalCost
+        );
 
         hevm.warp(closingTime + 1 seconds);
 
@@ -96,9 +124,7 @@ contract CrowdtainerValidProjectTerminationTester is BaseTest {
 }
 
 contract CrowdtainerInvalidProjectTerminationTester is BaseTest {
-
-        function testFailAbortDuringDeliveryPhase() public {
-
+    function testFailAbortDuringDeliveryPhase() public {
         // Create a crowdtainer where targetMinimum is small enough that a single user could
         // make the project succeed with a single join() call.
         uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
@@ -110,27 +136,32 @@ contract CrowdtainerInvalidProjectTerminationTester is BaseTest {
         uint256 _targetMinimum = 3000;
         uint256 _targetMaximum = 4000;
         crowdtainer.initialize(
-            address(agent),
-            openingTime,
-            closingTime,
-            _targetMinimum,
-            _targetMaximum,
-            _unitPricePerType,
-            referralRate,
-            referralEligibilityValue,
-            iERC20Token
+            CampaignData(
+                address(agent),
+                openingTime,
+                closingTime,
+                _targetMinimum,
+                _targetMaximum,
+                _unitPricePerType,
+                referralRate,
+                referralEligibilityValue,
+                iERC20Token
+            )
         );
 
         // one user buys enough to succeed the crowdtainer project
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(0), 0, 10, 0];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
+            uint256(0),
+            0,
+            10,
+            0
+        ];
         alice.doJoin(quantities, false, address(0));
 
         agent.doGetPaidAndDeliver();
         assert(crowdtainer.crowdtainerState() == CrowdtainerState.Delivery);
 
-        try agent.doAbortProject() {} catch (
-            bytes memory lowLevelData
-        ) {
+        try agent.doAbortProject() {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
                 makeError(Errors.InvalidOperationFor.selector),
                 lowLevelData

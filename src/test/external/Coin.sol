@@ -89,12 +89,14 @@ contract Coin is IERC20 {
         require((z = x - y) <= x, "Coin/sub-underflow");
     }
 
+    /* solhint-disable var-name-mixedcase */
     // --- EIP712 niceties ---
     bytes32 public DOMAIN_SEPARATOR;
     // bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address holder,address spender,uint256 nonce,uint256 expiry,bool allowed)");
     bytes32 public constant PERMIT_TYPEHASH =
         0xea2aa0a1be11a07ed86d755c93467f4f82362b452371d1ba94d1715123511acb;
 
+    /* solhint-enable var-name-mixedcase */
     constructor(
         string memory name_,
         string memory symbol_,

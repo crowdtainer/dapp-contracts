@@ -8,22 +8,33 @@ import {Errors} from "../Crowdtainer.sol";
 
 contract CrowdtainerRewardsTester is BaseTest {
     function testClaimRewardsMustSucceed() public {
-
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [uint256(10), 20, 25, 5000];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
+            uint256(10),
+            20,
+            25,
+            5000
+        ];
 
         crowdtainer.initialize(
-            address(agent),
-            openingTime,
-            closingTime,
-            20000,
-            30000,
-            _unitPricePerType,
-            referralRate,
-            referralEligibilityValue,
-            iERC20Token
+            CampaignData(
+                address(agent),
+                openingTime,
+                closingTime,
+                20000,
+                30000,
+                _unitPricePerType,
+                referralRate,
+                referralEligibilityValue,
+                iERC20Token
+            )
         );
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [uint256(1), 10, 0, 0];
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
+            uint256(1),
+            10,
+            0,
+            0
+        ];
 
         bob.doJoin(quantities, true, address(0));
 
@@ -33,7 +44,7 @@ contract CrowdtainerRewardsTester is BaseTest {
 
         uint256 totalCost = quantities[3] * _unitPricePerType[3];
 
-        uint256 discount = ((totalCost * referralRate) / 100 ) / 2;
+        uint256 discount = ((totalCost * referralRate) / 100) / 2;
         assert(discount != 0);
 
         uint256 previousAliceBalance = erc20Token.balanceOf(address(alice));
@@ -57,7 +68,6 @@ contract CrowdtainerRewardsTester is BaseTest {
             previousBobBalance + discount
         );
     }
-
 }
 
 /* solhint-enable no-empty-blocks */

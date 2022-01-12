@@ -42,10 +42,12 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
     mapping(uint128 => address) public metadataServiceForCrowdatinerId;
 
     // @dev Mapping of token ID => product quantities.
-    mapping(uint256 => uint256[MAX_NUMBER_OF_PRODUCTS]) public tokenIdQuantities ;
+    mapping(uint256 => uint256[MAX_NUMBER_OF_PRODUCTS])
+        public tokenIdQuantities;
 
     // @dev Mapping of crowdtainer id => array of product descriptions.
-    mapping(uint128 => string[MAX_NUMBER_OF_PRODUCTS]) public productDescription;
+    mapping(uint128 => string[MAX_NUMBER_OF_PRODUCTS])
+        public productDescription;
 
     // -----------------------------------------------
     //  Events
@@ -71,45 +73,19 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
 
     /**
      * @dev Create and deploy a new Crowdtainer.
-     * @param _shippingAgent Address that represents the product or service provider.
-     * @param _openingTime Funding opening time.
-     * @param _expireTime Time after which the owner can no longer withdraw funds.
-     * @param _targetMinimum Amount in ERC20 units required for project to be considered to be successful.
-     * @param _targetMaximum Amount in ERC20 units after which no further participation is possible.
-     * @param _unitPricePerType Array with price of each item, in ERC2O units. Zero is an invalid value and will throw.
-     * @param _productDescription Array with description of each item.
-     * @param _referralRate Percentage used for incentivising participation. Half the amount goes to the referee, and the other half to the referrer.
-     * @param _referralEligibilityValue The minimum purchase value required to be eligible to participate in referral rewards.
-     * @param _token Address of the ERC20 token used for payment.
+     * @param _campaignData Data defining all rules and values of this Crowdtainer instance.
+     * @param _productDescription An array with the description of each item.
      * @param _metadataService Contract address used to fetch metadata about the token.
      * @return crowdtainerId The identifier for the created Crowdtainer.
      */
     function createCrowdtainer(
-        address _shippingAgent,
-        uint256 _openingTime,
-        uint256 _expireTime,
-        uint256 _targetMinimum,
-        uint256 _targetMaximum,
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType,
+        CampaignData calldata _campaignData,
         string[MAX_NUMBER_OF_PRODUCTS] memory _productDescription,
-        uint256 _referralRate,
-        uint256 _referralEligibilityValue,
-        IERC20 _token,
         address _metadataService
     ) public returns (uint128) {
         //Crowdtainer crowdtainer = clone(Crowdtainer);
         Crowdtainer crowdtainer = new Crowdtainer(address(this));
-        crowdtainer.initialize(
-            _shippingAgent,
-            _openingTime,
-            _expireTime,
-            _targetMinimum,
-            _targetMaximum,
-            _unitPricePerType,
-            _referralRate,
-            _referralEligibilityValue,
-            _token
-        );
+        crowdtainer.initialize(_campaignData);
 
         idForCrowdtainer[address(crowdtainer)] = ++nextCrowdtainerId;
         crowdtainerForId[nextCrowdtainerId] = address(crowdtainer);
@@ -145,7 +121,7 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
         address _referrer
     ) external returns (uint256) {
         address crowdtainerAddress = crowdtainerForId[_crowdtainerId];
-        if(crowdtainerAddress == address(0)) {
+        if (crowdtainerAddress == address(0)) {
             revert Errors.CrowdtainerInexistent();
         }
 
@@ -153,7 +129,8 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
 
         crowdtainer.join(msg.sender, _quantities, _enableReferral, _referrer);
 
-        uint256 newTokenID = ++nextTokenIdForCrowdtainer[_crowdtainerId] + (_crowdtainerId << 128);
+        uint256 newTokenID = ++nextTokenIdForCrowdtainer[_crowdtainerId] +
+            (_crowdtainerId << 128);
 
         tokenIdQuantities[newTokenID] = _quantities;
 
@@ -169,7 +146,6 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
      * @note Only allowed if the respective Crowdtainer is in active funding state.
      */
     function leave(uint256 _tokenId) external {
-
         uint128 crowdtainerId = uint128(_tokenId >> 128);
         Crowdtainer crowdtainer = Crowdtainer(crowdtainerForId[crowdtainerId]);
 
@@ -185,28 +161,50 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
      * @param _tokenId The encoded voucher token id.
      * @return Token URI String.
      */
-    function tokenURI(uint256 _tokenId) public view override returns (string memory) {
+    function tokenURI(uint256 _tokenId)
+        public
+        view
+        override
+        returns (string memory)
+    {
         uint128 crowdtainerId = uint128(_tokenId >> 128);
         address crowdtainerAddress = crowdtainerForId[crowdtainerId];
-        if(crowdtainerAddress == address(0)) {
+        if (crowdtainerAddress == address(0)) {
             revert Errors.CrowdtainerInexistent();
         }
 
         Crowdtainer crowdtainer = Crowdtainer(crowdtainerAddress);
 
-        // Create dynamic array from fixed-sized array
+        // Create dynamic arrays from fixed-sized arrays
         string[] memory productDescriptions;
-        for (uint256 i = 0; i < crowdtainer.numberOfProducts(); i++) {
+        uint256 numberOfProducts = crowdtainer.numberOfProducts();
+
+        for (uint256 i = 0; i < numberOfProducts; i++) {
             productDescriptions[i] = productDescription[crowdtainerId][i];
         }
 
         uint256[] memory productQuantities;
-        for (uint256 i = 0; i < crowdtainer.numberOfProducts(); i++) {
+        for (uint256 i = 0; i < numberOfProducts; i++) {
             productQuantities[i] = tokenIdQuantities[_tokenId][i];
         }
 
-        IMetadataService metadataService = IMetadataService(metadataServiceForCrowdatinerId[crowdtainerId]);
-        Metadata memory metadata = Metadata(crowdtainerAddress, _tokenId,productDescriptions,productQuantities,ownerOf(_tokenId));
+        uint256[] memory unitPricePerType; //todo next
+        for (uint256 i = 0; i < numberOfProducts; i++) {
+            productQuantities[i] = crowdtainer.unitPricePerType(i);
+        }
+
+        IMetadataService metadataService = IMetadataService(
+            metadataServiceForCrowdatinerId[crowdtainerId]
+        );
+        Metadata memory metadata = Metadata(
+            crowdtainerAddress,
+            _tokenId,
+            numberOfProducts,
+            productDescriptions,
+            unitPricePerType,
+            productQuantities,
+            ownerOf(_tokenId)
+        );
 
         return metadataService.uri(metadata);
     }
@@ -234,8 +232,7 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
         uint256 tokenId
     ) internal view override {
         bool mintOrBurn = from == address(0) || to == address(0);
-        if(mintOrBurn)
-            return;
+        if (mintOrBurn) return;
 
         // Transfers are only allowed after funding either succeeded or failed.
         uint128 crowdtainerId = uint128(tokenId >> 128);
