@@ -10,13 +10,7 @@ library SVGRender {
     // using Strings for uint160;
 
     /*address crowdtainer, uint256 tokenId, string[] memory productDescription, uint256[] memory quantities, address owner*/
-    function generateImage()
-        internal
-        pure
-        returns (
-            string memory
-        )
-    {
+    function generateImage() internal pure returns (string memory) {
         /* solhint-disable quotes */
         return
             string(

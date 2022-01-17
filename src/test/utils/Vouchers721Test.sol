@@ -9,7 +9,7 @@ import "../../Constants.sol";
 
 // This file contains the basic setup to test the Vouchers721 contract.
 
-// VoucherParticipant represents a user that joins / interacts with a Crowdtainer 
+// VoucherParticipant represents a user that joins / interacts with a Crowdtainer
 // (created by the ShippingAgent) via the Voucher contract.
 contract VoucherParticipant {
     Vouchers721 internal vouchers;
@@ -22,18 +22,19 @@ contract VoucherParticipant {
 
     function doJoin(
         uint128 _crowdtainerId,
-        uint256[MAX_NUMBER_OF_PRODUCTS] calldata quantities,
-        bool enableReferral,
-        address referrer
+        uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities,
+        bool _enableReferral,
+        address _referrer
     ) public returns (uint256) {
-        return vouchers.join(_crowdtainerId, quantities, enableReferral, referrer);
+        return
+            vouchers.join(_crowdtainerId, _quantities, _enableReferral, _referrer);
     }
 
     function doLeave(uint128 _tokenId) public {
         vouchers.leave(_tokenId);
     }
 
-    function getTokenURI(uint256 _tokenId) public view  returns (string memory) {
+    function getTokenURI(uint256 _tokenId) public view returns (string memory) {
         return vouchers.tokenURI(_tokenId);
     }
 
@@ -74,23 +75,28 @@ contract VoucherShippingAgent {
         string[MAX_NUMBER_OF_PRODUCTS] memory _productDescription,
         address _metadataService
     ) public returns (uint128) {
-        crowdtainerId = vouchersContract.createCrowdtainer(_campaignData, _productDescription, _metadataService);
+        crowdtainerId = vouchersContract.createCrowdtainer(
+            _campaignData,
+            _productDescription,
+            _metadataService
+        );
     }
 
     function doGetPaidAndDeliver() public {
-        Crowdtainer(vouchersContract.crowdtainerForId(crowdtainerId)).getPaidAndDeliver();
+        Crowdtainer(vouchersContract.crowdtainerForId(crowdtainerId))
+            .getPaidAndDeliver();
     }
 
     function doAbortProject() public {
-        Crowdtainer(vouchersContract.crowdtainerForId(crowdtainerId)).abortProject();
+        Crowdtainer(vouchersContract.crowdtainerForId(crowdtainerId))
+            .abortProject();
     }
 }
 
 contract VouchersTest is CrowdtainerTestHelpers {
     // contracts
     Vouchers721 internal vouchers;
-    uint128[] internal createdCrowdtainerIds;
-    address internal metadatService;
+    IMetadataService internal metadataService;
 
     // shipping agent
     VoucherShippingAgent internal agent;
@@ -120,23 +126,25 @@ contract VouchersTest is CrowdtainerTestHelpers {
 
     address internal owner = address(this);
 
-    function createCrowdtainer(string[MAX_NUMBER_OF_PRODUCTS] memory _productDescription) internal {
-        createdCrowdtainerIds.push(vouchers.createCrowdtainer(
-            { _campaignData: CampaignData(
-                address(agent),
-                openingTime,
-                closingTime,
-                targetMinimum,
-                targetMaximum,
-                unitPricePerType,
-                referralRate,
-                referralEligibilityValue,
-                iERC20Token
-            ),
-            _productDescription: _productDescription,
-            _metadataService: metadatService
-            })
-        );
+    function createCrowdtainer(
+        string[MAX_NUMBER_OF_PRODUCTS] memory _productDescription
+    ) internal returns (uint128) {
+        return
+            vouchers.createCrowdtainer({
+                _campaignData: CampaignData(
+                    address(agent),
+                    openingTime,
+                    closingTime,
+                    targetMinimum,
+                    targetMaximum,
+                    unitPricePerType,
+                    referralRate,
+                    referralEligibilityValue,
+                    iERC20Token
+                ),
+                _productDescription: _productDescription,
+                _metadataService: metadataService
+            });
     }
 
     function setUp() public virtual {

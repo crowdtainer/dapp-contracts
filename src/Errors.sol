@@ -11,6 +11,8 @@ library Errors {
     error CrowdtainerInexistent();
     // @notice: Account cannot be of address(0).
     error AccountAddressIsZero();
+    // @notice: Metadata service contract cannot be of address(0).
+    error MetadataServiceAddressIsZero();
     // @notice: Accounts and ids lengths do not match.
     error AccountIdsLengthMismatch();
     // @notice: ID's and amounts lengths do not match.

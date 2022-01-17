@@ -82,7 +82,12 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
         CampaignData calldata _campaignData,
         string[MAX_NUMBER_OF_PRODUCTS] memory _productDescription,
         address _metadataService
-    ) public returns (uint128) {
+    ) external returns (uint128) {
+
+        if(_metadataService == address(0)) {
+            revert Errors.MetadataServiceAddressIsZero();
+        }
+
         //Crowdtainer crowdtainer = clone(Crowdtainer);
         Crowdtainer crowdtainer = new Crowdtainer(address(this));
         crowdtainer.initialize(_campaignData);
