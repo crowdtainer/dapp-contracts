@@ -6,7 +6,7 @@ import {Errors} from "../Crowdtainer.sol";
 
 /* solhint-disable no-empty-blocks */
 
-contract CrowdtainerStateTransitionTester is BaseTest {
+contract CrowdtainerStateTransitionTester is CrowdtainerTest {
     function testGetPaidAndDeliverCalledByShippingAgentMustSucceed() public {
         // Create a crowdtainer where targetMinimum is small enough that a single user could
         // make the project succeed with a single join() call.
@@ -214,7 +214,7 @@ contract CrowdtainerStateTransitionTester is BaseTest {
     }
 }
 
-contract CrowdtainerAuthorizationTester is BaseTest {
+contract CrowdtainerAuthorizationTester is CrowdtainerTest {
     function testGetPaidAndDeliverCalledByNonAgentMustFail() public {
         failed = true; // @dev: specific error must be thrown
         try bob.doGetPaidAndDeliver() {} catch (bytes memory lowLevelData) {

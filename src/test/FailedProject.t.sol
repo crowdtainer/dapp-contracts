@@ -7,7 +7,7 @@ import "../States.sol";
 
 /* solhint-disable no-empty-blocks */
 
-contract CrowdtainerValidProjectTerminationTester is BaseTest {
+contract CrowdtainerValidProjectTerminationTester is CrowdtainerTest {
     function testAbortDuringFundingPhaseMustSucceed() public {
         init();
 
@@ -123,7 +123,7 @@ contract CrowdtainerValidProjectTerminationTester is BaseTest {
     }
 }
 
-contract CrowdtainerInvalidProjectTerminationTester is BaseTest {
+contract CrowdtainerInvalidProjectTerminationTester is CrowdtainerTest {
     function testFailAbortDuringDeliveryPhase() public {
         // Create a crowdtainer where targetMinimum is small enough that a single user could
         // make the project succeed with a single join() call.

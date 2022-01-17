@@ -6,7 +6,7 @@ import {Errors} from "../Crowdtainer.sol";
 
 /* solhint-disable no-empty-blocks */
 
-contract ValidInitializeTester is BaseTest {
+contract ValidInitializeTester is CrowdtainerTest {
     function testValidValuesMustSucceed() public {
         crowdtainer.initialize(
             CampaignData(
@@ -24,7 +24,7 @@ contract ValidInitializeTester is BaseTest {
     }
 }
 
-contract InvalidInitializeTester is BaseTest {
+contract InvalidInitializeTester is CrowdtainerTest {
     function testFailWithInvalidTokenAddress() public {
         IERC20 invalidTokenAddress = IERC20(address(0));
         try
@@ -261,7 +261,7 @@ contract InvalidInitializeTester is BaseTest {
 //   ----------------------
 //  | Fuzz tests           |
 //   ----------------------
-contract InitializeFuzzer is BaseTest {
+contract InitializeFuzzer is CrowdtainerTest {
     function testAllSanityChecks(
         address _agent,
         uint256 _openingTime,
@@ -318,7 +318,7 @@ contract InitializeFuzzer is BaseTest {
 //   ----------------------
 //  | Symbolic Execution   |
 //   ----------------------
-contract InitializeProver is BaseTest {
+contract InitializeProver is CrowdtainerTest {
     /*
         function proveAllSanityChecks(
         uint256 _openingTime,

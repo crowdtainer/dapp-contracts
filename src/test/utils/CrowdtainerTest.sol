@@ -72,7 +72,7 @@ contract ShippingAgent {
     }
 }
 
-contract BaseTest is CrowdtainerTestHelpers {
+contract CrowdtainerTest is CrowdtainerTestHelpers {
     // contracts
     Crowdtainer internal crowdtainer;
 

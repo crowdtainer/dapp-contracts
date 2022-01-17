@@ -6,7 +6,7 @@ import {Errors} from "../Crowdtainer.sol";
 
 /* solhint-disable no-empty-blocks */
 
-contract CrowdtainerRewardsTester is BaseTest {
+contract CrowdtainerRewardsTester is CrowdtainerTest {
     function testClaimRewardsMustSucceed() public {
         uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
             uint256(10),

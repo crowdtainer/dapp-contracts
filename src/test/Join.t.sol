@@ -6,7 +6,7 @@ import {Errors} from "../Crowdtainer.sol";
 
 /* solhint-disable no-empty-blocks */
 
-contract CrowdtainerValidJoinTester is BaseTest {
+contract CrowdtainerValidJoinTester is CrowdtainerTest {
     function testNoDiscountAndNoReferralCodeMustSucceed() public {
         init();
 
@@ -62,7 +62,7 @@ contract CrowdtainerValidJoinTester is BaseTest {
     }
 }
 
-contract CrowdtainerInvalidJoinTester is BaseTest {
+contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
     function testFailUseOwnReferralCode() public {
         init();
         uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
@@ -231,7 +231,7 @@ contract CrowdtainerInvalidJoinTester is BaseTest {
 //   ----------------------
 //  | Fuzz tests           |
 //   ----------------------
-contract JoinFuzzer is BaseTest {
+contract JoinFuzzer is CrowdtainerTest {
     function testInvariantsHold(
         uint256 amountA,
         uint256 amountB,
@@ -269,7 +269,7 @@ contract JoinFuzzer is BaseTest {
 //   ----------------------
 //  | Symbolic Execution   |
 //   ----------------------
-contract JoinProver is BaseTest {
+contract JoinProver is CrowdtainerTest {
     /*function proveAllSanityChecks(
         uint256 amountA, uint256 amountB, uint256 amountC
     ) public {
