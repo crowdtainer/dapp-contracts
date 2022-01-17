@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.11;
 
-//import "@openzeppelin/contracts/mocks/ERC20Mock.sol";
 import "../external/Coin.sol";
-
 import "./CrowdtainerTestHelpers.sol";
 import "../../Crowdtainer.sol";
 import "../../Constants.sol";
 
-contract User {
+// Participant represents a user that joins / interacts directly with a Crowdtainer (created by the ShippingAgent)
+contract Participant {
     Crowdtainer internal crowdtainer;
     IERC20 internal token;
 
@@ -29,7 +28,6 @@ contract User {
         crowdtainer.leave(address(this));
     }
 
-    // Only for testing, function not allowed for participants
     function doGetPaidAndDeliver() public {
         crowdtainer.getPaidAndDeliver();
     }
@@ -42,11 +40,13 @@ contract User {
         crowdtainer.claimRewards();
     }
 
-    function doApprove(address _contract, uint256 amount) public {
+    // ERC20 (payment)
+    function doApprovePayment(address _contract, uint256 amount) public {
         token.approve(_contract, amount);
     }
 }
 
+// ShippingAgent represents the creator/responsible for a crowdtainer.
 contract ShippingAgent {
     Crowdtainer internal crowdtainer;
 
@@ -80,8 +80,8 @@ contract CrowdtainerTest is CrowdtainerTestHelpers {
     ShippingAgent internal agent;
 
     // users
-    User internal alice;
-    User internal bob;
+    Participant internal alice;
+    Participant internal bob;
 
     // Default valid constructor values
     uint256 internal openingTime;
@@ -131,17 +131,17 @@ contract CrowdtainerTest is CrowdtainerTestHelpers {
 
         agent = new ShippingAgent(address(crowdtainer));
 
-        alice = new User(address(crowdtainer), address(erc20Token));
-        bob = new User(address(crowdtainer), address(erc20Token));
+        alice = new Participant(address(crowdtainer), address(erc20Token));
+        bob = new Participant(address(crowdtainer), address(erc20Token));
 
         // Give lots of tokens to alice
         erc20Token.mint(address(alice), type(uint256).max - 1000);
         // Alice allows Crowdtainer to pull the value
-        alice.doApprove(address(crowdtainer), type(uint256).max - 1000);
+        alice.doApprovePayment(address(crowdtainer), type(uint256).max - 1000);
 
         // Give 1000 tokens to bob
         erc20Token.mint(address(bob), 1000);
         // Bob allows Crowdtainer to pull the value
-        bob.doApprove(address(crowdtainer), 1000);
+        bob.doApprovePayment(address(crowdtainer), 1000);
     }
 }
