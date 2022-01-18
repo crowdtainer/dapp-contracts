@@ -8,7 +8,7 @@ library Errors {
     //  Vouchers
     // -----------------------------------------------
     // @notice: The provided crowdtainer id does not exist.
-    error CrowdtainerInexistent();
+    error CrowdtainerInexistent(uint128 id);
     // @notice: Account cannot be of address(0).
     error AccountAddressIsZero();
     // @notice: Metadata service contract cannot be of address(0).

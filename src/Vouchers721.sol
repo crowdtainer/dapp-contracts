@@ -83,8 +83,7 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
         string[MAX_NUMBER_OF_PRODUCTS] memory _productDescription,
         address _metadataService
     ) external returns (uint128) {
-
-        if(_metadataService == address(0)) {
+        if (_metadataService == address(0)) {
             revert Errors.MetadataServiceAddressIsZero();
         }
 
@@ -127,7 +126,7 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
     ) external returns (uint256) {
         address crowdtainerAddress = crowdtainerForId[_crowdtainerId];
         if (crowdtainerAddress == address(0)) {
-            revert Errors.CrowdtainerInexistent();
+            revert Errors.CrowdtainerInexistent({id: _crowdtainerId});
         }
 
         Crowdtainer crowdtainer = Crowdtainer(crowdtainerAddress);
@@ -172,30 +171,32 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
         override
         returns (string memory)
     {
-        uint128 crowdtainerId = uint128(_tokenId >> 128);
+        uint128 crowdtainerId = (uint128(_tokenId >> 128)) + 1;
         address crowdtainerAddress = crowdtainerForId[crowdtainerId];
         if (crowdtainerAddress == address(0)) {
-            revert Errors.CrowdtainerInexistent();
+            revert Errors.CrowdtainerInexistent({id: crowdtainerId});
         }
 
         Crowdtainer crowdtainer = Crowdtainer(crowdtainerAddress);
 
         // Create dynamic arrays from fixed-sized arrays
-        string[] memory productDescriptions;
         uint256 numberOfProducts = crowdtainer.numberOfProducts();
-
-        for (uint256 i = 0; i < numberOfProducts; i++) {
-            productDescriptions[i] = productDescription[crowdtainerId][i];
-        }
-
-        uint256[] memory productQuantities;
+        
+        uint256[] memory productQuantities = new uint256[](0);
         for (uint256 i = 0; i < numberOfProducts; i++) {
             productQuantities[i] = tokenIdQuantities[_tokenId][i];
         }
 
         uint256[] memory unitPricePerType; //todo next
         for (uint256 i = 0; i < numberOfProducts; i++) {
-            productQuantities[i] = crowdtainer.unitPricePerType(i);
+            unitPricePerType[i] = crowdtainer.unitPricePerType(i);
+        }
+
+        string[] memory descriptions;
+
+        for (uint256 i = 0; i < numberOfProducts; i++) {
+            string memory temp = productDescription[crowdtainerId][i];
+            descriptions[i] = temp;
         }
 
         IMetadataService metadataService = IMetadataService(
@@ -205,7 +206,7 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
             crowdtainerAddress,
             _tokenId,
             numberOfProducts,
-            productDescriptions,
+            descriptions,
             unitPricePerType,
             productQuantities,
             ownerOf(_tokenId)

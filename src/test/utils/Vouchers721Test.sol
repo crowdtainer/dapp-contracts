@@ -20,6 +20,16 @@ contract VoucherParticipant {
         token = IERC20(_token);
     }
 
+    // Comply with IERC721Receiver
+    function onERC721Received(
+    address, 
+    address, 
+    uint256, 
+    bytes calldata
+    )external pure returns(bytes4) {
+        return bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"));
+    } 
+
     function doJoin(
         uint128 _crowdtainerId,
         uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities,
@@ -27,7 +37,12 @@ contract VoucherParticipant {
         address _referrer
     ) public returns (uint256) {
         return
-            vouchers.join(_crowdtainerId, _quantities, _enableReferral, _referrer);
+            vouchers.join(
+                _crowdtainerId,
+                _quantities,
+                _enableReferral,
+                _referrer
+            );
     }
 
     function doLeave(uint128 _tokenId) public {
@@ -129,22 +144,30 @@ contract VouchersTest is CrowdtainerTestHelpers {
     function createCrowdtainer(
         string[MAX_NUMBER_OF_PRODUCTS] memory _productDescription
     ) internal returns (uint128) {
-        return
-            vouchers.createCrowdtainer({
-                _campaignData: CampaignData(
-                    address(agent),
-                    openingTime,
-                    closingTime,
-                    targetMinimum,
-                    targetMaximum,
-                    unitPricePerType,
-                    referralRate,
-                    referralEligibilityValue,
-                    iERC20Token
-                ),
-                _productDescription: _productDescription,
-                _metadataService: metadataService
-            });
+        uint128 crowdtainerId = vouchers.createCrowdtainer({
+            _campaignData: CampaignData(
+                address(agent),
+                openingTime,
+                closingTime,
+                targetMinimum,
+                targetMaximum,
+                unitPricePerType,
+                referralRate,
+                referralEligibilityValue,
+                iERC20Token
+            ),
+            _productDescription: _productDescription,
+            _metadataService: address(metadataService)
+        });
+
+        // Alice allows Crowdtainer to pull the value
+        address crowdtainer = vouchers.crowdtainerForId(crowdtainerId);
+        alice.doApprovePayment(crowdtainer, type(uint256).max - 1000);
+
+        // Bob allows Crowdtainer to pull the value
+        bob.doApprovePayment(crowdtainer, 1000);
+
+        return crowdtainerId;
     }
 
     function setUp() public virtual {
@@ -163,12 +186,8 @@ contract VouchersTest is CrowdtainerTestHelpers {
 
         // Give lots of ERC20 tokens to alice
         erc20Token.mint(address(alice), type(uint256).max - 1000);
-        // Alice allows Crowdtainer to pull the value
-        alice.doApprovePayment(address(vouchers), type(uint256).max - 1000);
 
         // Give 1000 ERC20 tokens to bob
         erc20Token.mint(address(bob), 1000);
-        // Bob allows Crowdtainer to pull the value
-        bob.doApprovePayment(address(vouchers), 1000);
     }
 }
