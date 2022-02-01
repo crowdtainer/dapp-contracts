@@ -32,7 +32,7 @@ contract Vouchers721CreateTester is VouchersTest {
 
         uint256 tokenID = alice.doJoin({
             _crowdtainerId: crowdtainerId,
-            _quantities: [uint256(1), 1, 1, 1],
+            _quantities: [uint256(1), 2, 3, 4],
             _enableReferral: false,
             _referrer: address(0)
         });

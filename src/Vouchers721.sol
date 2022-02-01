@@ -8,6 +8,8 @@ import "../lib/openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import "../lib/openzeppelin-contracts/contracts/interfaces/IERC721.sol";
 // import "../lib/openzeppelin-contracts/contracts/proxy/Clones.sol";
 
+import "../lib/openzeppelin-contracts/contracts/utils/Strings.sol";
+
 // @dev Internal dependencies
 import "./Crowdtainer.sol";
 import "./Errors.sol";
@@ -20,6 +22,8 @@ import "./Metadata/IMetadataService.sol";
  * @dev Each token id represents a "sold voucher", a set of one or more products or services of a specific Crowdtainer.
  */
 contract Vouchers721 is ERC721, ReentrancyGuard {
+    using Strings for uint256;
+    using Strings for uint128;
     //using Clones for address;
 
     // @note In order to track which voucher belongs to which crowdtainer, we split the uint256 ID bits into two uint128 parts:
@@ -179,36 +183,26 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
 
         Crowdtainer crowdtainer = Crowdtainer(crowdtainerAddress);
 
-        // Create dynamic arrays from fixed-sized arrays
         uint256 numberOfProducts = crowdtainer.numberOfProducts();
-        
-        uint256[] memory productQuantities = new uint256[](0);
-        for (uint256 i = 0; i < numberOfProducts; i++) {
-            productQuantities[i] = tokenIdQuantities[_tokenId][i];
-        }
-
-        uint256[] memory unitPricePerType; //todo next
-        for (uint256 i = 0; i < numberOfProducts; i++) {
-            unitPricePerType[i] = crowdtainer.unitPricePerType(i);
-        }
-
-        string[] memory descriptions;
-
-        for (uint256 i = 0; i < numberOfProducts; i++) {
-            string memory temp = productDescription[crowdtainerId][i];
-            descriptions[i] = temp;
-        }
 
         IMetadataService metadataService = IMetadataService(
             metadataServiceForCrowdatinerId[crowdtainerId]
         );
+
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory prices = [
+            crowdtainer.unitPricePerType(0),
+            crowdtainer.unitPricePerType(1),
+            crowdtainer.unitPricePerType(2),
+            crowdtainer.unitPricePerType(3)
+        ];
+
         Metadata memory metadata = Metadata(
             crowdtainerAddress,
             _tokenId,
             numberOfProducts,
-            descriptions,
-            unitPricePerType,
-            productQuantities,
+            productDescription[crowdtainerId],
+            prices,
+            tokenIdQuantities[_tokenId],
             ownerOf(_tokenId)
         );
 

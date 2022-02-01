@@ -33,11 +33,12 @@ contract MetadataServiceV1 is IMetadataService {
         for (uint256 i = 0; i < _metadata.numberOfProducts; i++) {
             productList = string(
                 abi.encodePacked(
+                    '<text x="15" y="240" class="small">',
                     productList,
                     _metadata.productDescription[i],
                     " x ",
                     _metadata.quantities[i],
-                    "\n"
+                    '</text>'
                 )
             );
             totalCost +=
@@ -54,7 +55,18 @@ contract MetadataServiceV1 is IMetadataService {
             )
         );
 
-        string memory image = Base64.encode(bytes(SVGRender.generateImage()));
+        //address, uint256 tokenId, string[] memory productDescription, uint256[] memory quantities, address owner
+        string memory image = Base64.encode(
+            bytes(
+                SVGRender.generateImage(
+                    _metadata.crowdtainer,
+                    _metadata.tokenId,
+                    description,
+                    _metadata.quantities,
+                    _metadata.owner
+                )
+            )
+        );
         /* solhint-disable quotes */
         return
             string(

@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.11;
 
+import "../Constants.sol";
+
 struct Metadata {
     address crowdtainer;
     uint256 tokenId;
     uint256 numberOfProducts;
-    string[] productDescription;
-    uint256[] unitPricePerType;
-    uint256[] quantities;
+    string[MAX_NUMBER_OF_PRODUCTS] productDescription;
+    uint256[MAX_NUMBER_OF_PRODUCTS] unitPricePerType;
+    uint256[MAX_NUMBER_OF_PRODUCTS] quantities;
     address owner;
 }
 

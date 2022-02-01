@@ -22,13 +22,13 @@ contract VoucherParticipant {
 
     // Comply with IERC721Receiver
     function onERC721Received(
-    address, 
-    address, 
-    uint256, 
-    bytes memory
-    ) external pure returns(bytes4) {
+        address,
+        address,
+        uint256,
+        bytes memory
+    ) external pure returns (bytes4) {
         return this.onERC721Received.selector;
-    } 
+    }
 
     function doJoin(
         uint128 _crowdtainerId,
@@ -49,7 +49,7 @@ contract VoucherParticipant {
         vouchers.leave(_tokenId);
     }
 
-    function getTokenURI(uint256 _tokenId) public view returns (string memory) {
+    function getTokenURI(uint256 _tokenId) public returns (string memory) {
         return vouchers.tokenURI(_tokenId);
     }
 
