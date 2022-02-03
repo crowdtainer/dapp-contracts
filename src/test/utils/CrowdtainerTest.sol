@@ -89,7 +89,12 @@ contract CrowdtainerTest is CrowdtainerTestHelpers {
     uint256 internal targetMinimum = 20000;
     uint256 internal targetMaximum = 26000;
 
-    uint256[MAX_NUMBER_OF_PRODUCTS] internal unitPricePerType = [10, 20, 25];
+    uint256[MAX_NUMBER_OF_PRODUCTS] internal unitPricePerType = [
+        10,
+        20,
+        25,
+        30
+    ];
 
     uint256 internal discountRate = 10;
     uint256 internal referralRate = 10;

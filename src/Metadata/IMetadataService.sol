@@ -4,13 +4,14 @@ pragma solidity ^0.8.11;
 import "../Constants.sol";
 
 struct Metadata {
-    address crowdtainer;
+    uint256 crowdtainerId;
     uint256 tokenId;
+    bool claimed;
     uint256 numberOfProducts;
     string[MAX_NUMBER_OF_PRODUCTS] productDescription;
     uint256[MAX_NUMBER_OF_PRODUCTS] unitPricePerType;
     uint256[MAX_NUMBER_OF_PRODUCTS] quantities;
-    address owner;
+    address currentOwner;
 }
 
 /**

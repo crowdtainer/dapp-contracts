@@ -197,8 +197,9 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
         ];
 
         Metadata memory metadata = Metadata(
-            crowdtainerAddress,
+            crowdtainerId,
             _tokenId,
+            false, // claimed?
             numberOfProducts,
             productDescription[crowdtainerId],
             prices,
