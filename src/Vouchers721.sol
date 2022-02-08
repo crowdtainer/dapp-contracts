@@ -6,12 +6,10 @@ import "../lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import "../lib/openzeppelin-contracts/contracts/interfaces/IERC721.sol";
-// import "../lib/openzeppelin-contracts/contracts/proxy/Clones.sol";
-
-import "../lib/openzeppelin-contracts/contracts/utils/Strings.sol";
+import "../lib/openzeppelin-contracts/contracts/proxy/Clones.sol";
 
 // @dev Internal dependencies
-import "./Crowdtainer.sol";
+import "./ICrowdtainer.sol";
 import "./Errors.sol";
 import "./Constants.sol";
 import "./Metadata/IMetadataService.sol";
@@ -24,7 +22,7 @@ import "./Metadata/IMetadataService.sol";
 contract Vouchers721 is ERC721, ReentrancyGuard {
     using Strings for uint256;
     using Strings for uint128;
-    //using Clones for address;
+    // using Clones for address;
 
     // @note In order to track which voucher belongs to which crowdtainer, we split the uint256 ID bits into two uint128 parts:
     // @note <uint128: crowdtainer token id><uint128: index of non-fungible>.
@@ -35,7 +33,7 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
     // @dev The next available voucher id for the given crowdtainer.
     mapping(uint128 => uint128) public nextTokenIdForCrowdtainer;
 
-    //address private immutable implementation;
+    address private immutable crowdtainerImplementation;
 
     // @dev Mapping of id to Crowdtainer contract address.
     mapping(uint128 => address) public crowdtainerForId;
@@ -70,8 +68,11 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
     //  Contract functions
     // -----------------------------------------------
 
-    constructor() ERC721("Vouchers721", "VV1") {
+    constructor(address _crowdtainerImplementation)
+        ERC721("Vouchers721", "VV1")
+    {
         // implementation = address(new Crowdtainer(address(this)));
+        crowdtainerImplementation = _crowdtainerImplementation;
         emit Vouchers721Created(address(this));
     }
 
@@ -91,9 +92,12 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
             revert Errors.MetadataServiceAddressIsZero();
         }
 
-        //Crowdtainer crowdtainer = clone(Crowdtainer);
-        Crowdtainer crowdtainer = new Crowdtainer(address(this));
-        crowdtainer.initialize(_campaignData);
+        ICrowdtainer crowdtainer = ICrowdtainer(
+            Clones.clone(crowdtainerImplementation)
+        );
+        // Crowdtainer crowdtainer = new Crowdtainer(address(this));
+
+        crowdtainer.initialize(address(this), _campaignData);
 
         idForCrowdtainer[address(crowdtainer)] = ++nextCrowdtainerId;
         crowdtainerForId[nextCrowdtainerId] = address(crowdtainer);
@@ -133,7 +137,7 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
             revert Errors.CrowdtainerInexistent({id: _crowdtainerId});
         }
 
-        Crowdtainer crowdtainer = Crowdtainer(crowdtainerAddress);
+        ICrowdtainer crowdtainer = ICrowdtainer(crowdtainerAddress);
 
         crowdtainer.join(msg.sender, _quantities, _enableReferral, _referrer);
 
@@ -155,7 +159,9 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
      */
     function leave(uint256 _tokenId) external {
         uint128 crowdtainerId = uint128(_tokenId >> 128);
-        Crowdtainer crowdtainer = Crowdtainer(crowdtainerForId[crowdtainerId]);
+        ICrowdtainer crowdtainer = ICrowdtainer(
+            crowdtainerForId[crowdtainerId]
+        );
 
         crowdtainer.leave(msg.sender);
 
@@ -181,7 +187,7 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
             revert Errors.CrowdtainerInexistent({id: crowdtainerId});
         }
 
-        Crowdtainer crowdtainer = Crowdtainer(crowdtainerAddress);
+        ICrowdtainer crowdtainer = ICrowdtainer(crowdtainerAddress);
 
         uint256 numberOfProducts = crowdtainer.numberOfProducts();
 
@@ -199,12 +205,12 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
         Metadata memory metadata = Metadata(
             crowdtainerId,
             _tokenId,
+            ownerOf(_tokenId),
             false, // claimed?
-            numberOfProducts,
-            productDescription[crowdtainerId],
             prices,
             tokenIdQuantities[_tokenId],
-            ownerOf(_tokenId)
+            productDescription[crowdtainerId],
+            numberOfProducts
         );
 
         return metadataService.uri(metadata);
@@ -238,7 +244,9 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
         // Transfers are only allowed after funding either succeeded or failed.
         uint128 crowdtainerId = uint128(tokenId >> 128);
 
-        Crowdtainer crowdtainer = Crowdtainer(crowdtainerForId[crowdtainerId]);
+        ICrowdtainer crowdtainer = ICrowdtainer(
+            crowdtainerForId[crowdtainerId]
+        );
         if (
             crowdtainer.crowdtainerState() == CrowdtainerState.Funding ||
             crowdtainer.crowdtainerState() == CrowdtainerState.Uninitialized

@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.11;
 
-import "../Constants.sol";
+uint256 constant _MAX_NUMBER_OF_PRODUCTS = 4;
 
 struct Metadata {
     uint256 crowdtainerId;
     uint256 tokenId;
-    bool claimed;
-    uint256 numberOfProducts;
-    string[MAX_NUMBER_OF_PRODUCTS] productDescription;
-    uint256[MAX_NUMBER_OF_PRODUCTS] unitPricePerType;
-    uint256[MAX_NUMBER_OF_PRODUCTS] quantities;
     address currentOwner;
+    bool claimed;
+    uint256[_MAX_NUMBER_OF_PRODUCTS] unitPricePerType;
+    uint256[_MAX_NUMBER_OF_PRODUCTS] quantities;
+    string[_MAX_NUMBER_OF_PRODUCTS] productDescription;
+    uint256 numberOfProducts;
 }
 
 /**

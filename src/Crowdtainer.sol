@@ -8,36 +8,14 @@ import "../lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // @dev Internal dependencies
-import "./States.sol";
+import "./ICrowdtainer.sol";
 import "./Errors.sol";
 import "./Constants.sol";
-
-// Data defining all rules and values of a Crowdtainer instance.
-struct CampaignData {
-    // Address that represents the product or service provider.
-    address shippingAgent;
-    // Funding opening time.
-    uint256 openingTime;
-    // Time after which the owner can no longer withdraw funds.
-    uint256 expireTime;
-    // Amount in ERC20 units required for project to be considered to be successful.
-    uint256 targetMinimum;
-    // Amount in ERC20 units after which no further participation is possible.
-    uint256 targetMaximum;
-    // Array with price of each item, in ERC2O units. Zero is an invalid value and will throw.
-    uint256[MAX_NUMBER_OF_PRODUCTS] unitPricePerType;
-    // Percentage used for incentivising participation. Half the amount goes to the referee, and the other half to the referrer.
-    uint256 referralRate;
-    // The minimum purchase value required to be eligible to participate in referral rewards.
-    uint256 referralEligibilityValue;
-    // Address of the ERC20 token used for payment.
-    IERC20 token;
-}
 
 /**
  * @title Crowdtainer contract
  */
-contract Crowdtainer is ReentrancyGuard, Initializable {
+contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     using SafeERC20 for IERC20;
 
     // -----------------------------------------------
@@ -49,7 +27,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     // @notice Has permissions to call: initialize(), join() and leave() functions. These functions are gated so
     // that an owner contract can do special accounting (such as an EIP1155 compliant contract).
     // If set to address(0), no restriction is applied.
-    address public immutable owner;
+    address public owner;
 
     // @dev The entity or person responsible for the delivery of this crowdtainer project.
     // @notice Allowed to call getPaidAndDeliver().
@@ -91,12 +69,7 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
             _;
             return;
         }
-        if (msg.sender != requiredAddress)
-            revert Errors.CallerNotAllowed({
-                expected: msg.sender,
-                actual: requiredAddress
-            });
-        require(msg.sender == requiredAddress);
+        requireAddress(requiredAddress);
         _;
     }
 
@@ -104,13 +77,32 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
      * @dev Throws if called in state other than the specified.
      */
     modifier onlyInState(CrowdtainerState requiredState) {
-        if (crowdtainerState != requiredState)
-            revert Errors.InvalidOperationFor({state: crowdtainerState});
-        require(crowdtainerState == requiredState);
+        requireState(requiredState);
         _;
     }
 
     modifier onlyActive() {
+        requireActive();
+        _;
+    }
+
+    // Auxiliary modifier functions, used to save deployment cost.
+    function requireState(CrowdtainerState requiredState) internal view {
+        if (crowdtainerState != requiredState)
+            revert Errors.InvalidOperationFor({state: crowdtainerState});
+        require(crowdtainerState == requiredState);
+    }
+
+    function requireAddress(address requiredAddress) internal view {
+        if (msg.sender != requiredAddress)
+            revert Errors.CallerNotAllowed({
+                expected: msg.sender,
+                actual: requiredAddress
+            });
+        require(msg.sender == requiredAddress);
+    }
+
+    function requireActive() internal view {
         if (block.timestamp < openingTime)
             revert Errors.OpeningTimeNotReachedYet(
                 block.timestamp,
@@ -118,7 +110,6 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
             );
         if (block.timestamp > expireTime)
             revert Errors.CrowdtainerExpired(block.timestamp, expireTime);
-        _;
     }
 
     // -----------------------------------------------
@@ -143,10 +134,6 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
     uint256 public referralRate;
     // @note Address of the ERC20 token used for payment.
     IERC20 public token;
-
-    constructor(address _owner) {
-        owner = _owner;
-    }
 
     // -----------------------------------------------
     //  Events
@@ -198,12 +185,13 @@ contract Crowdtainer is ReentrancyGuard, Initializable {
      * @dev Initializes a Crowdtainer.
      * @param _campaignData Data defining all rules and values of this Crowdtainer instance.
      */
-    function initialize(CampaignData calldata _campaignData)
-        public
+    function initialize(address _owner, CampaignData calldata _campaignData)
+        external
         initializer
-        onlyAddress(owner)
         onlyInState(CrowdtainerState.Uninitialized)
     {
+        owner = _owner;
+
         // @dev: Sanity checks
         if (address(_campaignData.token) == address(0))
             revert Errors.TokenAddressIsZero();

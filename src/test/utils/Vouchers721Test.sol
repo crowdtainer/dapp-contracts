@@ -6,6 +6,7 @@ import "../external/Coin.sol";
 import "./CrowdtainerTestHelpers.sol";
 import "../../Vouchers721.sol";
 import "../../Constants.sol";
+import "../../Crowdtainer.sol";
 
 // This file contains the basic setup to test the Vouchers721 contract.
 
@@ -49,7 +50,7 @@ contract VoucherParticipant {
         vouchers.leave(_tokenId);
     }
 
-    function getTokenURI(uint256 _tokenId) public returns (string memory) {
+    function getTokenURI(uint256 _tokenId) public view returns (string memory) {
         return vouchers.tokenURI(_tokenId);
     }
 
@@ -95,6 +96,7 @@ contract VoucherShippingAgent {
             _productDescription,
             _metadataService
         );
+        return crowdtainerId;
     }
 
     function doGetPaidAndDeliver() public {
@@ -110,6 +112,7 @@ contract VoucherShippingAgent {
 
 contract VouchersTest is CrowdtainerTestHelpers {
     // contracts
+    Crowdtainer crowdtainerAddress;
     Vouchers721 internal vouchers;
     IMetadataService internal metadataService;
 
@@ -182,7 +185,9 @@ contract VouchersTest is CrowdtainerTestHelpers {
         openingTime = block.timestamp;
         closingTime = block.timestamp + 2 hours;
 
-        vouchers = new Vouchers721();
+        crowdtainerAddress = new Crowdtainer();
+
+        vouchers = new Vouchers721(address(crowdtainerAddress));
 
         agent = new VoucherShippingAgent(address(vouchers));
 

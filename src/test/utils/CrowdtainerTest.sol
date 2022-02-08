@@ -111,6 +111,7 @@ contract CrowdtainerTest is CrowdtainerTestHelpers {
 
     function init() internal {
         crowdtainer.initialize(
+            address(0),
             CampaignData(
                 address(agent),
                 openingTime,
@@ -132,7 +133,7 @@ contract CrowdtainerTest is CrowdtainerTestHelpers {
         openingTime = block.timestamp;
         closingTime = block.timestamp + 2 hours;
 
-        crowdtainer = new Crowdtainer(address(0));
+        crowdtainer = new Crowdtainer();
 
         agent = new ShippingAgent(address(crowdtainer));
 

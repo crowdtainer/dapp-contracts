@@ -136,6 +136,7 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
         ];
 
         crowdtainer.initialize(
+            address(0),
             CampaignData(
                 address(agent),
                 openingTime,
@@ -178,6 +179,7 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
         ];
 
         crowdtainer.initialize(
+            address(0),
             CampaignData(
                 address(agent),
                 openingTime,

@@ -9,6 +9,7 @@ import {Errors} from "../Crowdtainer.sol";
 contract ValidInitializeTester is CrowdtainerTest {
     function testValidValuesMustSucceed() public {
         crowdtainer.initialize(
+            address(0),
             CampaignData(
                 address(agent),
                 openingTime,
@@ -29,6 +30,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
         IERC20 invalidTokenAddress = IERC20(address(0));
         try
             crowdtainer.initialize(
+                address(0),
                 CampaignData(
                     address(agent),
                     openingTime,
@@ -53,6 +55,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
         IERC20 invalidTokenAddress = IERC20(address(0));
         try
             crowdtainer.initialize(
+                address(0),
                 CampaignData(
                     address(invalidTokenAddress),
                     openingTime,
@@ -76,6 +79,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
     function testFailWithInvalidReferralEligibilityValue() public {
         try
             crowdtainer.initialize(
+                address(0),
                 CampaignData(
                     address(agent),
                     openingTime,
@@ -99,6 +103,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
     function testFailInvalidClosingTime() public {
         try
             crowdtainer.initialize(
+                address(0),
                 CampaignData(
                     address(agent),
                     openingTime,
@@ -122,6 +127,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
     function testFailMinimumTargetTooHigh() public {
         try
             crowdtainer.initialize(
+                address(0),
                 CampaignData(
                     address(agent),
                     openingTime,
@@ -145,6 +151,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
     function testFailMinimumTargetTooLow() public {
         try
             crowdtainer.initialize(
+                address(0),
                 CampaignData(
                     address(agent),
                     openingTime,
@@ -168,6 +175,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
     function testFailMinimumTargetHigherThanMaximum() public {
         try
             crowdtainer.initialize(
+                address(0),
                 CampaignData(
                     address(agent),
                     openingTime,
@@ -191,6 +199,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
     function testFailInvalidMaximumTarget() public {
         try
             crowdtainer.initialize(
+                address(0),
                 CampaignData(
                     address(agent),
                     openingTime,
@@ -214,6 +223,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
     function testFailInvalidReferralRate() public {
         try
             crowdtainer.initialize(
+                address(0),
                 CampaignData(
                     address(agent),
                     openingTime,
@@ -237,6 +247,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
     function testFailInvalidReferralRateNotMultipleOfTwo() public {
         try
             crowdtainer.initialize(
+                address(0),
                 CampaignData(
                     address(agent),
                     openingTime,
@@ -291,6 +302,7 @@ contract InitializeFuzzer is CrowdtainerTest {
         if (_referralRate > SAFETY_MAX_REFERRAL_RATE) return;
 
         crowdtainer.initialize(
+            address(0),
             CampaignData(
                 _agent,
                 _openingTime,

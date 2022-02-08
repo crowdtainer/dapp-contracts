@@ -16,6 +16,7 @@ contract CrowdtainerRewardsTester is CrowdtainerTest {
         ];
 
         crowdtainer.initialize(
+            address(0),
             CampaignData(
                 address(agent),
                 openingTime,

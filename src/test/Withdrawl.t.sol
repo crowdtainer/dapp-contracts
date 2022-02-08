@@ -19,6 +19,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
         uint256 _targetMinimum = 3000;
         uint256 _targetMaximum = 4000;
         crowdtainer.initialize(
+            address(0),
             CampaignData(
                 address(agent),
                 openingTime,
@@ -55,6 +56,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
         uint256 _targetMinimum = 3000;
         uint256 _targetMaximum = 4000;
         crowdtainer.initialize(
+            address(0),
             CampaignData(
                 address(agent),
                 openingTime,
@@ -98,6 +100,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
         uint256 _targetMinimum = 3000;
         uint256 _targetMaximum = 4000;
         crowdtainer.initialize(
+            address(0),
             CampaignData(
                 address(agent),
                 openingTime,
@@ -140,6 +143,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
         uint256 _targetMinimum = 3000;
         uint256 _targetMaximum = 4000;
         crowdtainer.initialize(
+            address(0),
             CampaignData(
                 address(agent),
                 openingTime,
@@ -182,6 +186,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
         uint256 _targetMinimum = 3000;
         uint256 _targetMaximum = 4000;
         crowdtainer.initialize(
+            address(0),
             CampaignData(
                 address(agent),
                 openingTime,
