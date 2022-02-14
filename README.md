@@ -32,11 +32,28 @@ nix-env -iA ghc -f $(curl -sS https://api.github.com/repos/dapphub/dapptools/rel
 # Then, restart your terminal/shell session to make the installation effective.
 ```
 
+
 #### Install DappTools
 
 ```sh
 curl https://dapp.tools/install | sh
 ```
+
+
+#### Install Foundry
+
+```
+curl -L https://foundry.paradigm.xyz | bash
+
+# Reload your terminal enviroment variables, e.g.:
+source ~/.zshrc
+
+foundryup
+
+# MacOS might also require:
+brew install libusb
+```
+
 ## Building and testing
 
 ```sh
@@ -52,6 +69,15 @@ make coverage
 
 # To run Solidity' SMTChecker-based tests:
 make solcheck
+
+# Estimation of gas costs:
+
+- First run a local testnet with `dapp testnet`.
+- Then run e.g.: `make contract=Crowdtainer estimate`
+
+# Contract size estimation:
+- Example: `make contract=Vouchers721 size`
+
 ```
 
 ## Contributing
@@ -63,7 +89,11 @@ make lint
 ## Deploying
 
 Contracts can be deployed via the `make deploy` command. Addresses are automatically
-written in a name-address json file stored under `out/addresses.json`.
+written in a name-address json file stored under `out/addresses.json`. Additionally, you can specify a specific network with `make deploy-rinkeby` or `make deploy-mainnet`. You can choose which contract you want to deploy, by adding it as a variable, e.g.:
+
+ ```bash
+ make deploy-rinkeby CONTRACT=Crowdtainer
+ ```
 
 ### Local Testnet
 
@@ -72,7 +102,7 @@ written in a name-address json file stored under `out/addresses.json`.
 dapp testnet
 
 ```
-Make sure ETH_FROM local environment variable is the one returned by dapp testnet above.
+Make sure ETH_FROM is set according to the address returned by dapp testnet above in `.dapprc` file.
 
 ```
 # Then in a second terminal:

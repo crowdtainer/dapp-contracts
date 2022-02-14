@@ -5,6 +5,11 @@ set -eo pipefail
 # import the deployment helpers
 . $(dirname $0)/common.sh
 
-# Deploy.
-CrowdtainerAddr=$(deploy Crowdtainer 0x3412b62B3cd896Fc768023b0c25Cee9013ca44A9)
+# Deploy Crowdtainer.
+CrowdtainerAddr=$(deploy Crowdtainer)
 log "Crowdtainer deployed at:" $CrowdtainerAddr
+
+# Now deploy Vouchers712, giving it a reference to the Crowdtainer implementation
+Vouchers721Addr=$(deploy Vouchers721 $CrowdtainerAddr)
+log "Vouchers721 deployed at:" $Vouchers721Addr
+

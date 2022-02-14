@@ -13,8 +13,8 @@ gas_reports = ["*"]
 ## Sets the concrete solc version to use, this overrides the `auto_detect_solc` value
  solc_version = '0.8.1'
 auto_detect_solc = true
-optimizer = true
-optimizer_runs = 10
+optimizer = false
+optimizer_runs = 500000
 verbosity = 0
 ignored_error_codes = []
 fuzz_runs = 256
