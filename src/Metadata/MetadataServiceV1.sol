@@ -180,7 +180,7 @@ contract MetadataServiceV1 is IMetadataService {
                     '<text xml:space="preserve" class="tiny" x="10.478354" y="0" id="text16280-6-9-7" '
                     'transform="matrix(16.4916,0,0,15.627547,5.7282884,90.160098)">'
                     '<tspan x="10.478354" y="0" id="tspan1163">Claimed: No</tspan></text>'
-                    '<text xml:space="preserve" class="medium" x="13.478354" y="14.1689944" id="text16280-6"'
+                    '<text xml:space="preserve" class="medium" x="13.478354" y="14.1689944" id="text16280-6" '
                     'transform="matrix(16.4916,0,0,15.627547,7.589772,6.9947903)">'
                     '<tspan x="10.478354" y="4.1689944" id="tspan1165">Voucher # '
                 )
@@ -211,6 +211,7 @@ contract MetadataServiceV1 is IMetadataService {
                     uint128(_metadata.crowdtainerId).toString(),
                     getSVGClaimedInformation(),
                     uint128(_metadata.tokenId).toString(),
+                    '</tspan></text>',
                     description,
                     getSVGTotalCost(totalCost, _metadata.numberOfProducts),
                     '<text xml:space="preserve" class="footer" x="50" y="249.63843" transform="scale(1.0272733,0.97345081)">',
