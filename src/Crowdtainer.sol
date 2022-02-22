@@ -26,12 +26,11 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     // @dev Owner of this contract.
     // @notice Has permissions to call: initialize(), join() and leave() functions. These functions are gated so
     // that an owner contract can do special accounting (such as an EIP1155 compliant contract).
-    // If set to address(0), no restriction is applied.
     address public owner;
 
     // @dev The entity or person responsible for the delivery of this crowdtainer project.
     // @notice Allowed to call getPaidAndDeliver().
-    address private shippingAgent;
+    address public shippingAgent;
 
     // @dev Maps wallets that joined this Crowdtainer to the values they paid to join.
     mapping(address => uint256) private costForWallet;

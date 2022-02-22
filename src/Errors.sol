@@ -7,8 +7,10 @@ library Errors {
     // -----------------------------------------------
     //  Vouchers
     // -----------------------------------------------
-    // @notice: The provided crowdtainer id does not exist.
-    error CrowdtainerInexistent(uint128 id);
+    // @notice: The provided crowdtainer does not exist.
+    error CrowdtainerInexistent();
+    // @notice: Invalid token id.
+    error InvalidTokenId(uint256 tokenId);
     // @notice: Account cannot be of address(0).
     error AccountAddressIsZero();
     // @notice: Metadata service contract cannot be of address(0).
@@ -31,6 +33,8 @@ library Errors {
     error NonERC1155Receiver();
     // @notice: Can't make transfers in given state.
     error TransferNotAllowed(address crowdtainer, CrowdtainerState state);
+    // @notice: No further participants possible in a given Crowdtainer.
+    error MaximumNumberOfParticipantsReached(uint256 maximum, address crowdtainer);
 
     // -----------------------------------------------
     //  Initialization with invalid parameters

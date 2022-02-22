@@ -20,35 +20,34 @@ import "./Metadata/IMetadataService.sol";
  * @dev Each token id represents a "sold voucher", a set of one or more products or services of a specific Crowdtainer.
  */
 contract Vouchers721 is ERC721, ReentrancyGuard {
-    using Strings for uint256;
-    using Strings for uint128;
     // using Clones for address;
 
-    // @note In order to track which voucher belongs to which crowdtainer, we split the uint256 ID bits into two uint128 parts:
-    // @note <uint128: crowdtainer token id><uint128: index of non-fungible>.
+    // @dev Each Crowdtainer project is alloacted a range.
+    // @dev This is used as a multiple to deduce the crowdtainer id from a given token id.
+    uint256 constant public ID_MULTIPLE = 1000;
 
-    // The next available crowdtainer id to be used for a new Crowdtainer.
-    uint128 private nextCrowdtainerId;
+    // @dev The next available tokenId for the given crowdtainerId.
+    mapping(uint256 => uint256) private nextTokenIdForCrowdtainer;
 
-    // @dev The next available voucher id for the given crowdtainer.
-    mapping(uint128 => uint128) public nextTokenIdForCrowdtainer;
+    // @dev Number of created crowdtainers.
+    uint256 public crowdtainerCount;
 
     address private immutable crowdtainerImplementation;
 
     // @dev Mapping of id to Crowdtainer contract address.
-    mapping(uint128 => address) public crowdtainerForId;
+    mapping(uint256 => address) public crowdtainerForId;
     // @dev Mapping of deployed Crowdtainer contract addresses to its token id.
-    mapping(address => uint128) public idForCrowdtainer;
+    mapping(address => uint256) public idForCrowdtainer;
 
     // @dev Mapping of base token ID to metadata service, used as return value for URI method.
-    mapping(uint128 => address) public metadataServiceForCrowdatinerId;
+    mapping(uint256 => address) public metadataServiceForCrowdatinerId;
 
     // @dev Mapping of token ID => product quantities.
     mapping(uint256 => uint256[MAX_NUMBER_OF_PRODUCTS])
         public tokenIdQuantities;
 
     // @dev Mapping of crowdtainer id => array of product descriptions.
-    mapping(uint128 => string[MAX_NUMBER_OF_PRODUCTS])
+    mapping(uint256 => string[MAX_NUMBER_OF_PRODUCTS])
         public productDescription;
 
     // -----------------------------------------------
@@ -87,7 +86,7 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
         CampaignData calldata _campaignData,
         string[MAX_NUMBER_OF_PRODUCTS] memory _productDescription,
         address _metadataService
-    ) external returns (uint128) {
+    ) external returns (address, uint256) {
         if (_metadataService == address(0)) {
             revert Errors.MetadataServiceAddressIsZero();
         }
@@ -99,14 +98,14 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
 
         crowdtainer.initialize(address(this), _campaignData);
 
-        idForCrowdtainer[address(crowdtainer)] = ++nextCrowdtainerId;
-        crowdtainerForId[nextCrowdtainerId] = address(crowdtainer);
+        idForCrowdtainer[address(crowdtainer)] = ++crowdtainerCount;
+        crowdtainerForId[crowdtainerCount] = address(crowdtainer);
 
-        productDescription[nextCrowdtainerId] = _productDescription;
-        metadataServiceForCrowdatinerId[nextCrowdtainerId] = _metadataService;
-        emit CrowdtainerDeployed(address(crowdtainer), nextCrowdtainerId);
+        productDescription[crowdtainerCount] = _productDescription;
+        metadataServiceForCrowdatinerId[crowdtainerCount] = _metadataService;
+        emit CrowdtainerDeployed(address(crowdtainer), crowdtainerCount);
 
-        return nextCrowdtainerId;
+        return (address(crowdtainer), crowdtainerCount);
     }
 
     /*
@@ -127,22 +126,29 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
      *
      */
     function join(
-        uint128 _crowdtainerId,
+        address _crowdtainer,
         uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities,
         bool _enableReferral,
         address _referrer
     ) external returns (uint256) {
-        address crowdtainerAddress = crowdtainerForId[_crowdtainerId];
-        if (crowdtainerAddress == address(0)) {
-            revert Errors.CrowdtainerInexistent({id: _crowdtainerId});
+
+        uint256 crowdtainerId = idForCrowdtainer[_crowdtainer];
+
+        if (crowdtainerId == 0) {
+            revert Errors.CrowdtainerInexistent();
         }
 
-        ICrowdtainer crowdtainer = ICrowdtainer(crowdtainerAddress);
+        ICrowdtainer crowdtainer = ICrowdtainer(_crowdtainer);
 
         crowdtainer.join(msg.sender, _quantities, _enableReferral, _referrer);
 
-        uint256 newTokenID = ++nextTokenIdForCrowdtainer[_crowdtainerId] +
-            (_crowdtainerId << 128);
+        uint256 nextAvailableTokenId = ++nextTokenIdForCrowdtainer[crowdtainerId];
+
+        if(nextAvailableTokenId >= ID_MULTIPLE) {
+            revert Errors.MaximumNumberOfParticipantsReached(ID_MULTIPLE, _crowdtainer);
+        }
+
+        uint256 newTokenID = (ID_MULTIPLE * crowdtainerId) + nextAvailableTokenId;
 
         tokenIdQuantities[newTokenID] = _quantities;
 
@@ -158,10 +164,13 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
      * @note Only allowed if the respective Crowdtainer is in active funding state.
      */
     function leave(uint256 _tokenId) external {
-        uint128 crowdtainerId = uint128(_tokenId >> 128);
-        ICrowdtainer crowdtainer = ICrowdtainer(
-            crowdtainerForId[crowdtainerId]
-        );
+
+        if(ownerOf(_tokenId) != msg.sender) {
+            revert Errors.AccountNotOwnerOrApproved();
+        }
+
+        address crowdtainerAddress = crowdtainerIdToAddress(tokenIdToCrowdtainerId(_tokenId));
+        ICrowdtainer crowdtainer = ICrowdtainer(crowdtainerAddress);
 
         crowdtainer.leave(msg.sender);
 
@@ -181,11 +190,8 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
         override
         returns (string memory)
     {
-        uint128 crowdtainerId = (uint128(_tokenId >> 128)) + 1;
-        address crowdtainerAddress = crowdtainerForId[crowdtainerId];
-        if (crowdtainerAddress == address(0)) {
-            revert Errors.CrowdtainerInexistent({id: crowdtainerId});
-        }
+        uint256 crowdtainerId = tokenIdToCrowdtainerId(_tokenId);
+        address crowdtainerAddress = crowdtainerIdToAddress(crowdtainerId);
 
         ICrowdtainer crowdtainer = ICrowdtainer(crowdtainerAddress);
 
@@ -204,7 +210,7 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
 
         Metadata memory metadata = Metadata(
             crowdtainerId,
-            _tokenId,
+            _tokenId - (tokenIdToCrowdtainerId(_tokenId) * ID_MULTIPLE),
             ownerOf(_tokenId),
             false, // claimed?
             prices,
@@ -242,11 +248,9 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
         if (mintOrBurn) return;
 
         // Transfers are only allowed after funding either succeeded or failed.
-        uint128 crowdtainerId = uint128(tokenId >> 128);
+        address crowdtainerAddress = crowdtainerIdToAddress(tokenIdToCrowdtainerId(tokenId));
+        ICrowdtainer crowdtainer = ICrowdtainer(crowdtainerAddress);
 
-        ICrowdtainer crowdtainer = ICrowdtainer(
-            crowdtainerForId[crowdtainerId]
-        );
         if (
             crowdtainer.crowdtainerState() == CrowdtainerState.Funding ||
             crowdtainer.crowdtainerState() == CrowdtainerState.Uninitialized
@@ -256,5 +260,22 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
                 state: crowdtainer.crowdtainerState()
             });
         }
+    }
+
+    function tokenIdToCrowdtainerId(uint256 _tokenId) public pure returns (uint256) {
+        if(_tokenId == 0
+           || _tokenId < ID_MULTIPLE) {
+            revert Errors.InvalidTokenId(_tokenId);
+        }
+
+        return _tokenId / ID_MULTIPLE;
+    }
+
+    function crowdtainerIdToAddress(uint256 _crowdtainerId) public view returns (address) {
+        address crowdtainerAddress = crowdtainerForId[_crowdtainerId];
+        if (crowdtainerAddress == address(0)) {
+            revert Errors.CrowdtainerInexistent();
+        }
+        return crowdtainerAddress;
     }
 }

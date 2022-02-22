@@ -187,13 +187,6 @@ contract MetadataServiceV1 is IMetadataService {
             );
     }
 
-    function getSVGFirstPart() internal pure returns (string memory) {
-        return string(
-                abi.encodePacked('<text xml:space="preserve" class="medium" x="10.478354" y="0" id="text16280-6-9" transform="matrix(16.4916,0,0,15.627547,7.1325211,54.664932)">',
-                    '<tspan x="10.478354" y="0">Crowdtainer # '));
-    }
-
-
     function generateImage(Metadata calldata _metadata, string memory _ticketFootnotes)
         internal
         view

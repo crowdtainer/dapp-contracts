@@ -21,6 +21,21 @@ contract VoucherParticipant {
         token = IERC20(_token);
     }
 
+    function doJoin(
+        address _crowdtainerAddress,
+        uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities,
+        bool _enableReferral,
+        address _referrer
+    ) public returns (uint256) {
+        return
+            vouchers.join(
+                _crowdtainerAddress,
+                _quantities,
+                _enableReferral,
+                _referrer
+            );
+    }
+
     // Comply with IERC721Receiver
     function onERC721Received(
         address,
@@ -29,21 +44,6 @@ contract VoucherParticipant {
         bytes memory
     ) external pure returns (bytes4) {
         return this.onERC721Received.selector;
-    }
-
-    function doJoin(
-        uint128 _crowdtainerId,
-        uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities,
-        bool _enableReferral,
-        address _referrer
-    ) public returns (uint256) {
-        return
-            vouchers.join(
-                _crowdtainerId,
-                _quantities,
-                _enableReferral,
-                _referrer
-            );
     }
 
     function doLeave(uint128 _tokenId) public {
@@ -68,19 +68,18 @@ contract VoucherParticipant {
         return vouchers.balanceOf(owner);
     }
 
-    function doSafeTransferFrom(
-        address from,
+    function doSafeTransferTo(
         address to,
         uint256 tokenId
     ) public {
-        vouchers.safeTransferFrom(from, to, tokenId);
+        vouchers.safeTransferFrom(address(this), to, tokenId);
     }
 }
 
 // ShippingAgent represents the creator/responsible for a crowdtainer.
 contract VoucherShippingAgent {
     Vouchers721 internal vouchersContract;
-    uint128 internal crowdtainerId;
+    uint256 internal crowdtainerId;
 
     constructor(address _vouchersContract) {
         vouchersContract = Vouchers721(_vouchersContract);
@@ -90,13 +89,14 @@ contract VoucherShippingAgent {
         CampaignData calldata _campaignData,
         string[MAX_NUMBER_OF_PRODUCTS] memory _productDescription,
         address _metadataService
-    ) public returns (uint128) {
-        crowdtainerId = vouchersContract.createCrowdtainer(
+    ) public returns (address,uint256) {
+        address crowdtainerAddress;
+        (crowdtainerAddress,crowdtainerId) = vouchersContract.createCrowdtainer(
             _campaignData,
             _productDescription,
             _metadataService
         );
-        return crowdtainerId;
+        return (crowdtainerAddress, crowdtainerId);
     }
 
     function doGetPaidAndDeliver() public {
@@ -112,7 +112,6 @@ contract VoucherShippingAgent {
 
 contract VouchersTest is CrowdtainerTestHelpers {
     // contracts
-    Crowdtainer crowdtainerAddress;
     Vouchers721 internal vouchers;
     IMetadataService internal metadataService;
 
@@ -129,11 +128,13 @@ contract VouchersTest is CrowdtainerTestHelpers {
     uint256 internal targetMinimum = 20000;
     uint256 internal targetMaximum = 26000;
 
+    string[MAX_NUMBER_OF_PRODUCTS] internal productDescription = ["","","",""];
+
     uint256[MAX_NUMBER_OF_PRODUCTS] internal unitPricePerType = [
         10,
         20,
         25,
-        40
+        200
     ];
 
     uint256 internal discountRate = 10;
@@ -149,10 +150,10 @@ contract VouchersTest is CrowdtainerTestHelpers {
 
     address internal owner = address(this);
 
-    function createCrowdtainer(
-        string[MAX_NUMBER_OF_PRODUCTS] memory _productDescription
-    ) internal returns (uint128) {
-        uint128 crowdtainerId = vouchers.createCrowdtainer({
+    function createCrowdtainer() internal returns (address, uint256) {
+        uint256 crowdtainerId;
+        address crowdtainerAddress;
+        (crowdtainerAddress, crowdtainerId) = vouchers.createCrowdtainer({
             _campaignData: CampaignData(
                 address(agent),
                 openingTime,
@@ -164,7 +165,7 @@ contract VouchersTest is CrowdtainerTestHelpers {
                 referralEligibilityValue,
                 iERC20Token
             ),
-            _productDescription: _productDescription,
+            _productDescription: productDescription,
             _metadataService: address(metadataService)
         });
 
@@ -175,7 +176,7 @@ contract VouchersTest is CrowdtainerTestHelpers {
         // Bob allows Crowdtainer to pull the value
         bob.doApprovePayment(crowdtainer, 1000);
 
-        return crowdtainerId;
+        return (crowdtainerAddress, crowdtainerId);
     }
 
     function setUp() public virtual {
@@ -185,9 +186,9 @@ contract VouchersTest is CrowdtainerTestHelpers {
         openingTime = block.timestamp;
         closingTime = block.timestamp + 2 hours;
 
-        crowdtainerAddress = new Crowdtainer();
+        Crowdtainer crowdtainer = new Crowdtainer();
 
-        vouchers = new Vouchers721(address(crowdtainerAddress));
+        vouchers = new Vouchers721(address(crowdtainer));
 
         agent = new VoucherShippingAgent(address(vouchers));
 
@@ -195,7 +196,7 @@ contract VouchersTest is CrowdtainerTestHelpers {
         bob = new VoucherParticipant(address(vouchers), address(erc20Token));
 
         // Give lots of ERC20 tokens to alice
-        erc20Token.mint(address(alice), type(uint256).max - 1000);
+        erc20Token.mint(address(alice), type(uint256).max - 1000000000);
 
         // Give 1000 ERC20 tokens to bob
         erc20Token.mint(address(bob), 1000);
