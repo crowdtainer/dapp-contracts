@@ -46,7 +46,7 @@ contract VoucherParticipant {
         return this.onERC721Received.selector;
     }
 
-    function doLeave(uint128 _tokenId) public {
+    function doLeave(uint256 _tokenId) public {
         vouchers.leave(_tokenId);
     }
 
@@ -79,33 +79,18 @@ contract VoucherParticipant {
 // ShippingAgent represents the creator/responsible for a crowdtainer.
 contract VoucherShippingAgent {
     Vouchers721 internal vouchersContract;
-    uint256 internal crowdtainerId;
 
     constructor(address _vouchersContract) {
         vouchersContract = Vouchers721(_vouchersContract);
     }
 
-    function doCreateCrowdtainer(
-        CampaignData calldata _campaignData,
-        string[MAX_NUMBER_OF_PRODUCTS] memory _productDescription,
-        address _metadataService
-    ) public returns (address,uint256) {
-        address crowdtainerAddress;
-        (crowdtainerAddress,crowdtainerId) = vouchersContract.createCrowdtainer(
-            _campaignData,
-            _productDescription,
-            _metadataService
-        );
-        return (crowdtainerAddress, crowdtainerId);
-    }
-
-    function doGetPaidAndDeliver() public {
-        Crowdtainer(vouchersContract.crowdtainerForId(crowdtainerId))
+    function doGetPaidAndDeliver(uint256 _crowdtainerId) public {
+        Crowdtainer(vouchersContract.crowdtainerForId(_crowdtainerId))
             .getPaidAndDeliver();
     }
 
-    function doAbortProject() public {
-        Crowdtainer(vouchersContract.crowdtainerForId(crowdtainerId))
+    function doAbortProject(uint256 _crowdtainerId) public {
+        Crowdtainer(vouchersContract.crowdtainerForId(_crowdtainerId))
             .abortProject();
     }
 }
@@ -114,6 +99,10 @@ contract VouchersTest is CrowdtainerTestHelpers {
     // contracts
     Vouchers721 internal vouchers;
     IMetadataService internal metadataService;
+
+    // "default" crowdtainer used in tests
+    Crowdtainer internal defaultCrowdtainer;
+    uint256 internal defaultCrowdtainerId;
 
     // shipping agent
     VoucherShippingAgent internal agent;
@@ -170,11 +159,12 @@ contract VouchersTest is CrowdtainerTestHelpers {
         });
 
         // Alice allows Crowdtainer to pull the value
-        address crowdtainer = vouchers.crowdtainerForId(crowdtainerId);
-        alice.doApprovePayment(crowdtainer, type(uint256).max - 1000);
+        defaultCrowdtainerId = crowdtainerId;
+        defaultCrowdtainer = Crowdtainer(vouchers.crowdtainerForId(crowdtainerId));
+        alice.doApprovePayment(address(defaultCrowdtainer), type(uint256).max - 1000);
 
         // Bob allows Crowdtainer to pull the value
-        bob.doApprovePayment(crowdtainer, 1000);
+        bob.doApprovePayment(address(defaultCrowdtainer), 100000);
 
         return (crowdtainerAddress, crowdtainerId);
     }
@@ -186,6 +176,7 @@ contract VouchersTest is CrowdtainerTestHelpers {
         openingTime = block.timestamp;
         closingTime = block.timestamp + 2 hours;
 
+        // This is the implementation used by proxy/clone pattern
         Crowdtainer crowdtainer = new Crowdtainer();
 
         vouchers = new Vouchers721(address(crowdtainer));
@@ -199,6 +190,6 @@ contract VouchersTest is CrowdtainerTestHelpers {
         erc20Token.mint(address(alice), type(uint256).max - 1000000000);
 
         // Give 1000 ERC20 tokens to bob
-        erc20Token.mint(address(bob), 1000);
+        erc20Token.mint(address(bob), 1000000);
     }
 }

@@ -140,6 +140,46 @@ contract Vouchers721CreateTester is VouchersTest {
 
     }
 
+    function testUserLeavesAndAttemptsToTransferVoucherMustFail() public {
+        // This test is just a 'sanity check' on our ERC721 open zeppelin implementation.
+        metadataService = IMetadataService(address(1));
+
+        createCrowdtainer();
+
+        // Bob purchases enough to make project succeed its target
+        uint256 aliceCrowdtainerTokenId = alice.doJoin({
+            _crowdtainerAddress: address(defaultCrowdtainer),
+            _quantities: [uint256(1), 4, 3, 1],
+            _enableReferral: false,
+            _referrer: address(0)
+        });
+
+        // Bob purchases enough to make project succeed its target
+        uint256 bobCrowdtainer1TokenId = bob.doJoin({
+            _crowdtainerAddress: address(defaultCrowdtainer),
+            _quantities: [uint256(1), 4, 3, 100],
+            _enableReferral: false,
+            _referrer: address(0)
+        });
+
+        // Alice decides to leave
+        alice.doLeave(aliceCrowdtainerTokenId);
+
+        // Shipping agent deems project successful (because bob purchase enough to hit target)
+        agent.doGetPaidAndDeliver(defaultCrowdtainerId);
+
+        // Bob must be able to transfer his voucher to another account.
+        bob.doSafeTransferTo(address(10), bobCrowdtainer1TokenId);
+
+        failed = true;
+        // Alice attempts transfer her 'non-existent' voucher.
+        try alice.doSafeTransferTo(address(11), aliceCrowdtainerTokenId) {} catch (
+            bytes memory /*lowLevelData*/
+        ) {
+            failed = false;
+        }
+    }
+
     function testTokenURIOfExistingTokenIdMustSucceed() public {
         metadataService = IMetadataService(
             new MetadataServiceV1({
@@ -178,7 +218,7 @@ contract Vouchers721CreateTester is VouchersTest {
 
 contract Vouchers721FailureTester is VouchersTest {
 
-    function testFailTransferDuringDeliveryState() public {
+    function testFailTransferDuringFundingState() public {
         metadataService = IMetadataService(address(1));
         address crowdtainerAddress;
 
