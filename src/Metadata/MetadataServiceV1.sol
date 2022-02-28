@@ -8,39 +8,9 @@ import "@openzeppelin/contracts/utils/Base64.sol";
 
 /* solhint-disable quotes */
 
-library HexStrings {
-    bytes16 internal constant ALPHABET = '0123456789abcdef';
-
-    /// @notice Converts a `uint256` to its ASCII `string` hexadecimal representation with fixed length.
-    /// @dev Credit to Open Zeppelin under MIT license https://github.com/OpenZeppelin/openzeppelin-contracts/blob/243adff49ce1700e0ecb99fe522fb16cff1d1ddc/contracts/utils/Strings.sol#L55
-    function toHexString(uint256 value, uint256 length) internal pure returns (string memory) {
-        bytes memory buffer = new bytes(2 * length + 2);
-        buffer[0] = '0';
-        buffer[1] = 'x';
-        for (uint256 i = 2 * length + 1; i > 1; --i) {
-            buffer[i] = ALPHABET[value & 0xf];
-            value >>= 4;
-        }
-        require(value == 0, 'Strings: hex length insufficient');
-        return string(buffer);
-    }
-
-    function toHexStringNoPrefix(uint256 value, uint256 length) internal pure returns (string memory) {
-        bytes memory buffer = new bytes(2 * length);
-        for (uint256 i = buffer.length; i > 0; i--) {
-            buffer[i - 1] = ALPHABET[value & 0xf];
-            value >>= 4;
-        }
-        return string(buffer);
-    }
-}
-
 contract MetadataServiceV1 is IMetadataService {
     using Strings for uint256;
-    using Strings for uint128;
     using Strings for uint24;
-
-    using HexStrings for uint256;
 
     uint24 internal constant yIncrement = 1;
     uint24 internal constant yStartingPoint = 7;
@@ -200,9 +170,9 @@ contract MetadataServiceV1 is IMetadataService {
             string(
                 abi.encodePacked(
                     getSVGHeader(),
-                    uint128(_metadata.crowdtainerId).toString(),
+                    _metadata.crowdtainerId.toString(),
                     getSVGClaimedInformation(),
-                    uint128(_metadata.tokenId).toString(),
+                    _metadata.tokenId.toString(),
                     '</tspan></text>',
                     description,
                     getSVGTotalCost(totalCost, _metadata.numberOfProducts),
@@ -279,9 +249,9 @@ contract MetadataServiceV1 is IMetadataService {
                         bytes(
                             abi.encodePacked(
                                 '{"crowdtainerId":"',
-                                uint128(_metadata.crowdtainerId).toString(),
+                                _metadata.crowdtainerId.toString(),
                                 '", "voucherId":"',
-                                uint128(_metadata.tokenId).toString(),
+                                _metadata.tokenId.toString(),
                                 '", "currentOwner":"0x',
                                 addressToString(_metadata.currentOwner),
                                 '", "description":',
@@ -298,7 +268,7 @@ contract MetadataServiceV1 is IMetadataService {
     }
 
     function addressToString(address _address) internal pure returns (string memory) {
-        return HexStrings.toHexString( uint256(uint160(_address)), 20);
+        return Strings.toHexString( uint256(uint160(_address)), 20);
     }
 }
 /* solhint-enable quotes */
