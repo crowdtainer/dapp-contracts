@@ -24,7 +24,7 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
 
     // @dev Each Crowdtainer project is alloacted a range.
     // @dev This is used as a multiple to deduce the crowdtainer id from a given token id.
-    uint256 constant public ID_MULTIPLE = 1000;
+    uint256 constant public ID_MULTIPLE = 1000000;
 
     // @dev The next available tokenId for the given crowdtainerId.
     mapping(uint256 => uint256) private nextTokenIdForCrowdtainer;

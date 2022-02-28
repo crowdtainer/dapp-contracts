@@ -68,9 +68,9 @@ contract Vouchers721CreateTester is VouchersTest {
         metadataService = IMetadataService(address(1));
 
         // setup
-        VoucherParticipant juliet = new VoucherParticipant(address(vouchers), address(erc20Token));
+        VoucherParticipant neo = new VoucherParticipant(address(vouchers), address(erc20Token));
         VoucherParticipant georg = new VoucherParticipant(address(vouchers), address(erc20Token));
-        erc20Token.mint(address(juliet), 100000);
+        erc20Token.mint(address(neo), 100000);
         erc20Token.mint(address(georg), 100000);
 
         uint256 crowdtainerId1;
@@ -95,9 +95,9 @@ contract Vouchers721CreateTester is VouchersTest {
             _referrer: address(0)
         });
 
-        juliet.doApprovePayment(crowdtainerAddress2, type(uint256).max - 1000);
+        neo.doApprovePayment(crowdtainerAddress2, type(uint256).max - 1000);
 
-        uint256 julietCrowdtainer2TokenId = juliet.doJoin({
+        uint256 neoCrowdtainer2TokenId = neo.doJoin({
             _crowdtainerAddress: crowdtainerAddress2,
             _quantities: [uint256(1), 4, 3, 1],
             _enableReferral: false,
@@ -134,7 +134,7 @@ contract Vouchers721CreateTester is VouchersTest {
 
         assertEq(aliceCrowdtainer1TokenId / vouchers.ID_MULTIPLE(), crowdtainerId1);
         assertEq(bobCrowdtainer2TokenId / vouchers.ID_MULTIPLE(), crowdtainerId2);
-        assertEq(julietCrowdtainer2TokenId / vouchers.ID_MULTIPLE(), crowdtainerId2);
+        assertEq(neoCrowdtainer2TokenId / vouchers.ID_MULTIPLE(), crowdtainerId2);
         assertEq(georgCrowdtainer3TokenId / vouchers.ID_MULTIPLE(), crowdtainerId3);
         assertEq(aliceCrowdtainer3TokenId / vouchers.ID_MULTIPLE(), crowdtainerId3);
 
@@ -179,6 +179,51 @@ contract Vouchers721CreateTester is VouchersTest {
             failed = false;
         }
     }
+
+    function testFailJoinInexistentCrowdtainer() public {
+
+        try alice.doJoin({
+            _crowdtainerAddress: address(0x111),
+            _quantities: [uint256(1), 4, 3, 1],
+            _enableReferral: false,
+            _referrer: address(0)
+        }) {} catch (
+            bytes memory lowLevelData
+        ) {
+            failed = this.assertEqSignature(
+                makeError(Errors.CrowdtainerInexistent.selector),
+                lowLevelData
+                );
+        }
+    }
+
+    /*
+    // To run this test the ID_MULTIPLE must be reduced to avoid test memory usage issues with hevm.
+    function testFailGivenParticipantJoinLimitReachedThenErrorMustBeThrown() public {
+        metadataService = IMetadataService(address(1));
+
+        address crowdtainerAddress;
+        (crowdtainerAddress,) = createCrowdtainer();
+
+        for(uint256 i = 0; i < vouchers.ID_MULTIPLE(); ++i) {
+            VoucherParticipant smith = new VoucherParticipant(address(vouchers), address(erc20Token));
+            erc20Token.mint(address(smith), 100000);
+            smith.doApprovePayment(crowdtainerAddress, 100000);
+
+            try smith.doJoin({
+                _crowdtainerAddress: crowdtainerAddress,
+                _quantities: [uint256(1), 0, 0, 0],
+                _enableReferral: false,
+                _referrer: address(0)
+            }) {} catch (bytes memory lowLevelData) {
+                failed = this.assertEqSignature(
+                makeError(Errors.MaximumNumberOfParticipantsReached.selector),
+                lowLevelData
+                );
+                break;
+            }
+        }
+    }*/
 
     function testTokenURIOfExistingTokenIdMustSucceed() public {
         metadataService = IMetadataService(
