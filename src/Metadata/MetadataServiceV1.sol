@@ -3,9 +3,8 @@ pragma solidity ^0.8.11;
 
 import "./IMetadataService.sol";
 
-import "../../lib/openzeppelin-contracts/contracts/utils/Strings.sol";
-
-import "./Base64.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
 
 /* solhint-disable quotes */
 
