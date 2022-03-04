@@ -12,13 +12,11 @@ set -eo pipefail
 : ${CONTRACT:=Crowdtainer}
 
 echo "Deploying $CONTRACT to $NETWORK with arguments: $arguments"
-Address=$(deploy $CONTRACT)
+Address=$(deploy $CONTRACT $arguments)
 log "$CONTRACT deployed at:" $Address
-
-: ${CONTRACT:=Vouchers721}
 
 # Now deploy Vouchers712, giving it a reference to the Crowdtainer implementation
-$arguments = $Address $arguments
-echo "Deploying $CONTRACT to $NETWORK with arguments: $Address $arguments"
-Address=$(deploy $CONTRACT $Address)
-log "$CONTRACT deployed at:" $Address
+
+echo "Deploying Vouchers721 to $NETWORK with arguments: $Address $arguments"
+Address=$(deploy Vouchers721 $Address $arguments)
+log "Vouchers721 deployed at:" $Address

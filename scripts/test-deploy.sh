@@ -8,23 +8,20 @@ set -eo pipefail
 # run the deploy script
 . $(dirname $0)/deploy.sh
 
-# get the address
-addr=$(jq -r '.Greeter' out/addresses.json)
+# get the addresses
+crowdtainerAddr=$(jq -r '.Crowdtainer' out/addresses.json)
+vouchersAddr=$(jq -r '.Vouchers721' out/addresses.json)
 
-# the initial greeting must be empty
-greeting=$(seth call $addr 'greeting()(string)')
-[[ $greeting = "" ]] || error
+# the initial crowdtainerCount must be zero
+greeting=$(seth call $vouchersAddr 'crowdtainerCount()(uint256)')
+[[ $greeting = 0 ]] || error
 
-# set it to a value
-seth send $addr \
-    'greet(string memory)' '"yo"' \
-    --keystore $TMPDIR/8545/keystore \
-    --password /dev/null
+# example on how to interact using temporary keystore
+# seth send $vouchersAddr \
+#     'greet(string memory)' '"yo"' \
+#     --keystore $TMPDIR/8545/keystore \
+#     --password /dev/null
 
 sleep 1
-
-# should be set afterwards
-greeting=$(seth call $addr 'greeting()(string)')
-[[ $greeting = "yo" ]] || error
 
 echo "Success."
