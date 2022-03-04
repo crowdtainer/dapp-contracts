@@ -13,6 +13,10 @@ See [`Crowdtainer smart contracts system`](./UserStories.md) for description and
 
 ## Installing dependencies
 
+There are currently two different tools that are able to build & execute tests in this repository: DappTools and Foundry.
+
+Foundry is recommended for getting started, since it is easier to install, and faster to execute tests with. However, it is not yet as feature complete as DappTools, namely, it doesn't support formal verification (yet). Scripts such as `make test` depend on DappTools. To run tests with foundry, the command would be instead e.g.: `forge test`.
+
 #### Install Nix
 
 ```sh
@@ -55,11 +59,6 @@ brew install libusb
 ```
 
 ## Building and testing
-
-There are currently two different tools that are able to build & execute tests in this repository: DappTools and Foundry.
-
-Foundry is recommended for getting started, since it is easier to install, and faster to execute tests with. However, it is not yet as feature complete as DappTools, namely, it doesn't support formal verification (yet).
-
 
 ```sh
 git clone --recursive https://github.com/crowdtainer/dapp-contracts
