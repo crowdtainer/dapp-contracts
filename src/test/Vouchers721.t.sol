@@ -16,7 +16,9 @@ contract Vouchers721CreateTester is VouchersTest {
         address crowdtainerAddress1;
         (crowdtainerAddress1, crowdtainerId1) = createCrowdtainer();
 
-        assert(vouchers.crowdtainerForId(crowdtainerId1) == crowdtainerAddress1);
+        assert(
+            vouchers.crowdtainerForId(crowdtainerId1) == crowdtainerAddress1
+        );
         assert(crowdtainerAddress1 != address(0));
 
         assertEq(crowdtainerId1, 1);
@@ -33,7 +35,7 @@ contract Vouchers721CreateTester is VouchersTest {
         metadataService = IMetadataService(address(1));
         address crowdtainerAddress;
 
-        (crowdtainerAddress,) = createCrowdtainer();
+        (crowdtainerAddress, ) = createCrowdtainer();
         uint256 tokenId = alice.doJoin({
             _crowdtainerAddress: crowdtainerAddress,
             _quantities: [uint256(1), 4, 3, 1],
@@ -41,7 +43,7 @@ contract Vouchers721CreateTester is VouchersTest {
             _referrer: address(0)
         });
 
-       assertEq(tokenId, vouchers.ID_MULTIPLE() + 1);
+        assertEq(tokenId, vouchers.ID_MULTIPLE() + 1);
 
         tokenId = bob.doJoin({
             _crowdtainerAddress: crowdtainerAddress,
@@ -53,14 +55,16 @@ contract Vouchers721CreateTester is VouchersTest {
         assertEq(tokenId, vouchers.ID_MULTIPLE() + 2);
     }
 
-    function testTokenIdToCrowdtainerIdMustSucceed(uint256 randomTokenId) public {
-
-        if(randomTokenId == 0
-           || randomTokenId < vouchers.ID_MULTIPLE()) {
+    function testTokenIdToCrowdtainerIdMustSucceed(uint256 randomTokenId)
+        public
+    {
+        if (randomTokenId == 0 || randomTokenId < vouchers.ID_MULTIPLE()) {
             return;
         }
         // for any tokenId, the crowdtainer Id must be the following:
-        uint256 derivedCrowdtainerId = vouchers.tokenIdToCrowdtainerId(randomTokenId);
+        uint256 derivedCrowdtainerId = vouchers.tokenIdToCrowdtainerId(
+            randomTokenId
+        );
         assertEq(randomTokenId / vouchers.ID_MULTIPLE(), derivedCrowdtainerId);
     }
 
@@ -68,8 +72,14 @@ contract Vouchers721CreateTester is VouchersTest {
         metadataService = IMetadataService(address(1));
 
         // setup
-        VoucherParticipant neo = new VoucherParticipant(address(vouchers), address(erc20Token));
-        VoucherParticipant georg = new VoucherParticipant(address(vouchers), address(erc20Token));
+        VoucherParticipant neo = new VoucherParticipant(
+            address(vouchers),
+            address(erc20Token)
+        );
+        VoucherParticipant georg = new VoucherParticipant(
+            address(vouchers),
+            address(erc20Token)
+        );
         erc20Token.mint(address(neo), 100000);
         erc20Token.mint(address(georg), 100000);
 
@@ -132,12 +142,26 @@ contract Vouchers721CreateTester is VouchersTest {
 
         // Derive CrowdtainerId from tokenId's and check correctness.
 
-        assertEq(aliceCrowdtainer1TokenId / vouchers.ID_MULTIPLE(), crowdtainerId1);
-        assertEq(bobCrowdtainer2TokenId / vouchers.ID_MULTIPLE(), crowdtainerId2);
-        assertEq(neoCrowdtainer2TokenId / vouchers.ID_MULTIPLE(), crowdtainerId2);
-        assertEq(georgCrowdtainer3TokenId / vouchers.ID_MULTIPLE(), crowdtainerId3);
-        assertEq(aliceCrowdtainer3TokenId / vouchers.ID_MULTIPLE(), crowdtainerId3);
-
+        assertEq(
+            aliceCrowdtainer1TokenId / vouchers.ID_MULTIPLE(),
+            crowdtainerId1
+        );
+        assertEq(
+            bobCrowdtainer2TokenId / vouchers.ID_MULTIPLE(),
+            crowdtainerId2
+        );
+        assertEq(
+            neoCrowdtainer2TokenId / vouchers.ID_MULTIPLE(),
+            crowdtainerId2
+        );
+        assertEq(
+            georgCrowdtainer3TokenId / vouchers.ID_MULTIPLE(),
+            crowdtainerId3
+        );
+        assertEq(
+            aliceCrowdtainer3TokenId / vouchers.ID_MULTIPLE(),
+            crowdtainerId3
+        );
     }
 
     function testUserLeavesAndAttemptsToTransferVoucherMustFail() public {
@@ -173,7 +197,9 @@ contract Vouchers721CreateTester is VouchersTest {
 
         failed = true;
         // Alice attempts transfer her 'non-existent' voucher.
-        try alice.doSafeTransferTo(address(11), aliceCrowdtainerTokenId) {} catch (
+        try
+            alice.doSafeTransferTo(address(11), aliceCrowdtainerTokenId)
+        {} catch (
             bytes memory /*lowLevelData*/
         ) {
             failed = false;
@@ -181,19 +207,18 @@ contract Vouchers721CreateTester is VouchersTest {
     }
 
     function testFailJoinInexistentCrowdtainer() public {
-
-        try alice.doJoin({
-            _crowdtainerAddress: address(0x111),
-            _quantities: [uint256(1), 4, 3, 1],
-            _enableReferral: false,
-            _referrer: address(0)
-        }) {} catch (
-            bytes memory lowLevelData
-        ) {
+        try
+            alice.doJoin({
+                _crowdtainerAddress: address(0x111),
+                _quantities: [uint256(1), 4, 3, 1],
+                _enableReferral: false,
+                _referrer: address(0)
+            })
+        {} catch (bytes memory lowLevelData) {
             failed = this.assertEqSignature(
                 makeError(Errors.CrowdtainerInexistent.selector),
                 lowLevelData
-                );
+            );
         }
     }
 
@@ -234,15 +259,15 @@ contract Vouchers721CreateTester is VouchersTest {
         );
 
         productDescription = [
-                "Roasted beans 250g",
-                "Roasted beans 500g",
-                "Roasted beans 1Kg",
-                "Roasted beans 2Kg"
-            ];
+            "Roasted beans 250g",
+            "Roasted beans 500g",
+            "Roasted beans 1Kg",
+            "Roasted beans 2Kg"
+        ];
 
         address crowdtainerAddress;
 
-        (crowdtainerAddress,) = createCrowdtainer();
+        (crowdtainerAddress, ) = createCrowdtainer();
 
         uint256 tokenID = alice.doJoin({
             _crowdtainerAddress: crowdtainerAddress,
@@ -262,12 +287,11 @@ contract Vouchers721CreateTester is VouchersTest {
 }
 
 contract Vouchers721FailureTester is VouchersTest {
-
     function testFailTransferDuringFundingState() public {
         metadataService = IMetadataService(address(1));
         address crowdtainerAddress;
 
-        (crowdtainerAddress,) = createCrowdtainer();
+        (crowdtainerAddress, ) = createCrowdtainer();
 
         uint256 tokenId = alice.doJoin({
             _crowdtainerAddress: crowdtainerAddress,
@@ -286,7 +310,6 @@ contract Vouchers721FailureTester is VouchersTest {
                 lowLevelData
             );
         }
-
     }
 }
 

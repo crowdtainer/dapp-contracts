@@ -1,6 +1,6 @@
 <div style="text-align:center"><img src="logo.png" alt="Crowdtainer" height="128px"/>
 
-<h1> Crowdtainer contracts repository </h1> </div>
+<h1> Crowdtainer Solidity smart contracts</h1> </div>
 <br/>
 
 ![Github Actions](https://github.com/gakonst/dapptools-template/workflows/Tests/badge.svg)
@@ -55,6 +55,11 @@ brew install libusb
 ```
 
 ## Building and testing
+
+There are currently two different tools that are able to build & execute tests in this repository: DappTools and Foundry.
+
+Foundry is recommended for getting started, since it is easier to install, and faster to execute tests with. However, it is not yet as feature complete as DappTools, namely, it doesn't support formal verification (yet).
+
 
 ```sh
 git clone --recursive https://github.com/crowdtainer/dapp-contracts

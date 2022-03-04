@@ -38,7 +38,10 @@ contract MetadataServiceV1 is IMetadataService {
             );
     }
 
-    function generateProductList(Metadata calldata _metadata, string memory _unitSymbol) internal pure returns (string memory productList, uint256 totalCost) {
+    function generateProductList(
+        Metadata calldata _metadata,
+        string memory _unitSymbol
+    ) internal pure returns (string memory productList, uint256 totalCost) {
         uint256 newY = yStartingPoint;
 
         for (uint24 i = 0; i < _metadata.numberOfProducts; i++) {
@@ -145,7 +148,7 @@ contract MetadataServiceV1 is IMetadataService {
         return
             string(
                 abi.encodePacked(
-                    '</tspan></text>'
+                    "</tspan></text>"
                     '<text xml:space="preserve" class="tiny" x="10.478354" y="0" id="text16280-6-9-7" '
                     'transform="matrix(16.4916,0,0,15.627547,5.7282884,90.160098)">'
                     '<tspan x="10.478354" y="0" id="tspan1163">Claimed: No</tspan></text>'
@@ -156,11 +159,10 @@ contract MetadataServiceV1 is IMetadataService {
             );
     }
 
-    function generateImage(Metadata calldata _metadata, string memory _ticketFootnotes)
-        internal
-        view
-        returns (string memory)
-    {
+    function generateImage(
+        Metadata calldata _metadata,
+        string memory _ticketFootnotes
+    ) internal view returns (string memory) {
         string memory description;
         uint256 totalCost;
 
@@ -173,12 +175,12 @@ contract MetadataServiceV1 is IMetadataService {
                     _metadata.crowdtainerId.toString(),
                     getSVGClaimedInformation(),
                     _metadata.tokenId.toString(),
-                    '</tspan></text>',
+                    "</tspan></text>",
                     description,
                     getSVGTotalCost(totalCost, _metadata.numberOfProducts),
                     '<text xml:space="preserve" class="footer" x="50" y="249.63843" transform="scale(1.0272733,0.97345081)">',
                     _ticketFootnotes,
-                    '</text></g>',
+                    "</text></g>",
                     getSVGFooter()
                 )
             );
@@ -239,7 +241,9 @@ contract MetadataServiceV1 is IMetadataService {
             )
         );
 
-        string memory image = Base64.encode(bytes(generateImage(_metadata, ticketFootnotes)));
+        string memory image = Base64.encode(
+            bytes(generateImage(_metadata, ticketFootnotes))
+        );
 
         return
             string(
@@ -267,8 +271,12 @@ contract MetadataServiceV1 is IMetadataService {
             );
     }
 
-    function addressToString(address _address) internal pure returns (string memory) {
-        return Strings.toHexString( uint256(uint160(_address)), 20);
+    function addressToString(address _address)
+        internal
+        pure
+        returns (string memory)
+    {
+        return Strings.toHexString(uint256(uint160(_address)), 20);
     }
 }
 /* solhint-enable quotes */

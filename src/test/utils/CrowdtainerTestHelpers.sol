@@ -12,8 +12,7 @@ contract CrowdtainerTestHelpers is DSTest {
         bytes calldata expectedSignature,
         bytes calldata receivedBytes
     ) external returns (bool) {
-
-        if (receivedBytes.length < 4 ) {
+        if (receivedBytes.length < 4) {
             emit log_string("No custom error");
             return false;
         }

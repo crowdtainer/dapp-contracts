@@ -34,7 +34,10 @@ library Errors {
     // @notice: Can't make transfers in given state.
     error TransferNotAllowed(address crowdtainer, CrowdtainerState state);
     // @notice: No further participants possible in a given Crowdtainer.
-    error MaximumNumberOfParticipantsReached(uint256 maximum, address crowdtainer);
+    error MaximumNumberOfParticipantsReached(
+        uint256 maximum,
+        address crowdtainer
+    );
 
     // -----------------------------------------------
     //  Initialization with invalid parameters

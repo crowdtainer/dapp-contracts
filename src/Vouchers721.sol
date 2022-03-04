@@ -24,7 +24,7 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
 
     // @dev Each Crowdtainer project is alloacted a range.
     // @dev This is used as a multiple to deduce the crowdtainer id from a given token id.
-    uint256 constant public ID_MULTIPLE = 1000000;
+    uint256 public constant ID_MULTIPLE = 1000000;
 
     // @dev The next available tokenId for the given crowdtainerId.
     mapping(uint256 => uint256) private nextTokenIdForCrowdtainer;
@@ -131,7 +131,6 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
         bool _enableReferral,
         address _referrer
     ) external returns (uint256) {
-
         uint256 crowdtainerId = idForCrowdtainer[_crowdtainer];
 
         if (crowdtainerId == 0) {
@@ -142,13 +141,19 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
 
         crowdtainer.join(msg.sender, _quantities, _enableReferral, _referrer);
 
-        uint256 nextAvailableTokenId = ++nextTokenIdForCrowdtainer[crowdtainerId];
+        uint256 nextAvailableTokenId = ++nextTokenIdForCrowdtainer[
+            crowdtainerId
+        ];
 
-        if(nextAvailableTokenId >= ID_MULTIPLE) {
-            revert Errors.MaximumNumberOfParticipantsReached(ID_MULTIPLE, _crowdtainer);
+        if (nextAvailableTokenId >= ID_MULTIPLE) {
+            revert Errors.MaximumNumberOfParticipantsReached(
+                ID_MULTIPLE,
+                _crowdtainer
+            );
         }
 
-        uint256 newTokenID = (ID_MULTIPLE * crowdtainerId) + nextAvailableTokenId;
+        uint256 newTokenID = (ID_MULTIPLE * crowdtainerId) +
+            nextAvailableTokenId;
 
         tokenIdQuantities[newTokenID] = _quantities;
 
@@ -164,12 +169,13 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
      * @note Only allowed if the respective Crowdtainer is in active funding state.
      */
     function leave(uint256 _tokenId) external {
-
-        if(ownerOf(_tokenId) != msg.sender) {
+        if (ownerOf(_tokenId) != msg.sender) {
             revert Errors.AccountNotOwnerOrApproved();
         }
 
-        address crowdtainerAddress = crowdtainerIdToAddress(tokenIdToCrowdtainerId(_tokenId));
+        address crowdtainerAddress = crowdtainerIdToAddress(
+            tokenIdToCrowdtainerId(_tokenId)
+        );
         ICrowdtainer crowdtainer = ICrowdtainer(crowdtainerAddress);
 
         crowdtainer.leave(msg.sender);
@@ -248,7 +254,9 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
         if (mintOrBurn) return;
 
         // Transfers are only allowed after funding either succeeded or failed.
-        address crowdtainerAddress = crowdtainerIdToAddress(tokenIdToCrowdtainerId(tokenId));
+        address crowdtainerAddress = crowdtainerIdToAddress(
+            tokenIdToCrowdtainerId(tokenId)
+        );
         ICrowdtainer crowdtainer = ICrowdtainer(crowdtainerAddress);
 
         if (
@@ -262,16 +270,23 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
         }
     }
 
-    function tokenIdToCrowdtainerId(uint256 _tokenId) public pure returns (uint256) {
-        if(_tokenId == 0
-           || _tokenId < ID_MULTIPLE) {
+    function tokenIdToCrowdtainerId(uint256 _tokenId)
+        public
+        pure
+        returns (uint256)
+    {
+        if (_tokenId == 0 || _tokenId < ID_MULTIPLE) {
             revert Errors.InvalidTokenId(_tokenId);
         }
 
         return _tokenId / ID_MULTIPLE;
     }
 
-    function crowdtainerIdToAddress(uint256 _crowdtainerId) public view returns (address) {
+    function crowdtainerIdToAddress(uint256 _crowdtainerId)
+        public
+        view
+        returns (address)
+    {
         address crowdtainerAddress = crowdtainerForId[_crowdtainerId];
         if (crowdtainerAddress == address(0)) {
             revert Errors.CrowdtainerInexistent();

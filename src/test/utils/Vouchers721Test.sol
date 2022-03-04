@@ -68,10 +68,7 @@ contract VoucherParticipant {
         return vouchers.balanceOf(owner);
     }
 
-    function doSafeTransferTo(
-        address to,
-        uint256 tokenId
-    ) public {
+    function doSafeTransferTo(address to, uint256 tokenId) public {
         vouchers.safeTransferFrom(address(this), to, tokenId);
     }
 }
@@ -117,7 +114,12 @@ contract VouchersTest is CrowdtainerTestHelpers {
     uint256 internal targetMinimum = 20000;
     uint256 internal targetMaximum = 26000;
 
-    string[MAX_NUMBER_OF_PRODUCTS] internal productDescription = ["","","",""];
+    string[MAX_NUMBER_OF_PRODUCTS] internal productDescription = [
+        "",
+        "",
+        "",
+        ""
+    ];
 
     uint256[MAX_NUMBER_OF_PRODUCTS] internal unitPricePerType = [
         10,
@@ -160,8 +162,13 @@ contract VouchersTest is CrowdtainerTestHelpers {
 
         // Alice allows Crowdtainer to pull the value
         defaultCrowdtainerId = crowdtainerId;
-        defaultCrowdtainer = Crowdtainer(vouchers.crowdtainerForId(crowdtainerId));
-        alice.doApprovePayment(address(defaultCrowdtainer), type(uint256).max - 1000);
+        defaultCrowdtainer = Crowdtainer(
+            vouchers.crowdtainerForId(crowdtainerId)
+        );
+        alice.doApprovePayment(
+            address(defaultCrowdtainer),
+            type(uint256).max - 1000
+        );
 
         // Bob allows Crowdtainer to pull the value
         bob.doApprovePayment(address(defaultCrowdtainer), 100000);
