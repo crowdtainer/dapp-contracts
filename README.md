@@ -3,7 +3,7 @@
 <h1> Crowdtainer contracts repository </h1> </div>
 <br/>
 
-![Github Actions](https://github.com/gakonst/dapptools-template/workflows/Tests/badge.svg)
+![Github Actions](https://github.com/crowdtainer/dapp-contracts/workflows/Tests/badge.svg)
 
 ## Functionality and design
 
