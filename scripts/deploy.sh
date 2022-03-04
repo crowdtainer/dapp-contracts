@@ -5,11 +5,20 @@ set -eo pipefail
 # import the deployment helpers
 . $(dirname $0)/common.sh
 
+# import config with arguments based on contract and network
+. $(dirname $0)/helper-config.sh
+
 # Deploy Crowdtainer.
-CrowdtainerAddr=$(deploy Crowdtainer)
-log "Crowdtainer deployed at:" $CrowdtainerAddr
+: ${CONTRACT:=Crowdtainer}
+
+echo "Deploying $CONTRACT to $NETWORK with arguments: $arguments"
+Address=$(deploy $CONTRACT)
+log "$CONTRACT deployed at:" $Address
+
+: ${CONTRACT:=Vouchers721}
 
 # Now deploy Vouchers712, giving it a reference to the Crowdtainer implementation
-Vouchers721Addr=$(deploy Vouchers721 $CrowdtainerAddr)
-log "Vouchers721 deployed at:" $Vouchers721Addr
-
+$arguments = $Address $arguments
+echo "Deploying $CONTRACT to $NETWORK with arguments: $Address $arguments"
+Address=$(deploy $CONTRACT $Address)
+log "$CONTRACT deployed at:" $Address
