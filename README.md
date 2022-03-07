@@ -5,11 +5,12 @@
 
 ![Github Actions](https://github.com/crowdtainer/dapp-contracts/workflows/Tests/badge.svg)
 
-## Functionality and design
-
 This repository contains all solidity code related to the core functionality of crowdtainer.
 
-See [`Crowdtainer smart contracts system`](./UserStories.md) for description and User Stories.
+## Functionality and design
+
+ - [`Crowdtainer smart contracts system description`](./SystemDescription.md)
+ - [`User Stories`](./UserStories.md)
 
 ## Installing dependencies
 
