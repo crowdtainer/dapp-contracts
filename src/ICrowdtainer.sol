@@ -40,6 +40,8 @@ interface ICrowdtainer {
 
     function crowdtainerState() external view returns (CrowdtainerState);
 
+    function shippingAgent() external view returns (address);
+
     function numberOfProducts() external view returns (uint256);
 
     function unitPricePerType(uint256) external view returns (uint256);

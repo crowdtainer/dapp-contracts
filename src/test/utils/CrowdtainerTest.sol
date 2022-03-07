@@ -28,6 +28,7 @@ contract Participant {
         crowdtainer.leave(address(this));
     }
 
+    // Method `doGetPaidAndDeliver()` not possible by participant (only used for testing)
     function doGetPaidAndDeliver() public {
         crowdtainer.getPaidAndDeliver();
     }

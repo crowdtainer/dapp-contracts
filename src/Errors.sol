@@ -23,6 +23,8 @@ library Errors {
     error CannotSetApprovalForSelf();
     // @notice: Caller is not owner nor approved.
     error AccountNotOwnerOrApproved();
+    // @notice: Only the shipping agent is able to set a voucher/tokenId as "claimed".
+    error SetClaimedOnlyAllowedByShippingAgent();
     // @notice: Cannot transfer someone else's tokens.
     error UnauthorizedTransfer();
     // @notice: Insufficient balance.

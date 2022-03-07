@@ -6,6 +6,7 @@ import "../lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import "../lib/openzeppelin-contracts/contracts/interfaces/IERC721.sol";
+import "../lib/openzeppelin-contracts/contracts/utils/structs/BitMaps.sol";
 import "../lib/openzeppelin-contracts/contracts/proxy/Clones.sol";
 
 // @dev Internal dependencies
@@ -25,6 +26,9 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
     // @dev Each Crowdtainer project is alloacted a range.
     // @dev This is used as a multiple to deduce the crowdtainer id from a given token id.
     uint256 public constant ID_MULTIPLE = 1000000;
+
+    // @dev Claimed status of a specific token id
+    BitMaps.BitMap private claimed;
 
     // @dev The next available tokenId for the given crowdtainerId.
     mapping(uint256 => uint256) private nextTokenIdForCrowdtainer;
@@ -275,7 +279,7 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
         pure
         returns (uint256)
     {
-        if (_tokenId == 0 || _tokenId < ID_MULTIPLE) {
+        if (_tokenId == 0) {
             revert Errors.InvalidTokenId(_tokenId);
         }
 
@@ -292,5 +296,24 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
             revert Errors.CrowdtainerInexistent();
         }
         return crowdtainerAddress;
+    }
+
+    function getClaimStatus(uint256 _tokenId) public view returns (bool) {
+        return BitMaps.get(claimed, _tokenId);
+    }
+
+    function setClaimStatus(uint256 _tokenId, bool _value) public {
+
+        address crowdtainerAddress = crowdtainerIdToAddress(tokenIdToCrowdtainerId(_tokenId));
+
+        ICrowdtainer crowdtainer = ICrowdtainer(crowdtainerAddress);
+
+        address shippingAgent = crowdtainer.shippingAgent();
+
+        if(msg.sender != shippingAgent) {
+            revert Errors.SetClaimedOnlyAllowedByShippingAgent();
+        }
+
+        BitMaps.setTo(claimed, _tokenId, _value);
     }
 }

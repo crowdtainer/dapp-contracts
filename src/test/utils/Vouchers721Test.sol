@@ -90,6 +90,11 @@ contract VoucherShippingAgent {
         Crowdtainer(vouchersContract.crowdtainerForId(_crowdtainerId))
             .abortProject();
     }
+
+    function doSetClaimStatus(uint256 tokenId, bool value) public {
+        vouchersContract.setClaimStatus(tokenId, value);
+    }
+
 }
 
 contract VouchersTest is CrowdtainerTestHelpers {

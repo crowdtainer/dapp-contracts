@@ -170,7 +170,6 @@ contract Vouchers721CreateTester is VouchersTest {
 
         createCrowdtainer();
 
-        // Bob purchases enough to make project succeed its target
         uint256 aliceCrowdtainerTokenId = alice.doJoin({
             _crowdtainerAddress: address(defaultCrowdtainer),
             _quantities: [uint256(1), 4, 3, 1],
@@ -204,6 +203,31 @@ contract Vouchers721CreateTester is VouchersTest {
         ) {
             failed = false;
         }
+    }
+
+    function testShippingAgentAbleToSetVoucherClaimStatus() public {
+        metadataService = IMetadataService(address(1));
+
+        createCrowdtainer();
+
+        // Bob purchases enough to make project succeed its target
+        uint256 aliceCrowdtainerTokenId = alice.doJoin({
+            _crowdtainerAddress: address(defaultCrowdtainer),
+            _quantities: [uint256(1), 4, 3, 100],
+            _enableReferral: false,
+            _referrer: address(0)
+        });
+
+        assertTrue(!vouchers.getClaimStatus(aliceCrowdtainerTokenId));
+
+        // Shipping agent deems project successful
+        agent.doGetPaidAndDeliver(defaultCrowdtainerId);
+
+        // agent set claimed to true
+        agent.doSetClaimStatus(aliceCrowdtainerTokenId, true);
+
+        // verify state is true
+        assertTrue(vouchers.getClaimStatus(aliceCrowdtainerTokenId));
     }
 
     function testFailJoinInexistentCrowdtainer() public {
