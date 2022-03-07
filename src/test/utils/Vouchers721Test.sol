@@ -94,7 +94,6 @@ contract VoucherShippingAgent {
     function doSetClaimStatus(uint256 tokenId, bool value) public {
         vouchersContract.setClaimStatus(tokenId, value);
     }
-
 }
 
 contract VouchersTest is CrowdtainerTestHelpers {

@@ -303,14 +303,15 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
     }
 
     function setClaimStatus(uint256 _tokenId, bool _value) public {
-
-        address crowdtainerAddress = crowdtainerIdToAddress(tokenIdToCrowdtainerId(_tokenId));
+        address crowdtainerAddress = crowdtainerIdToAddress(
+            tokenIdToCrowdtainerId(_tokenId)
+        );
 
         ICrowdtainer crowdtainer = ICrowdtainer(crowdtainerAddress);
 
         address shippingAgent = crowdtainer.shippingAgent();
 
-        if(msg.sender != shippingAgent) {
+        if (msg.sender != shippingAgent) {
             revert Errors.SetClaimedOnlyAllowedByShippingAgent();
         }
 
