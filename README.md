@@ -1,6 +1,6 @@
 <div style="text-align:center"><img src="logo.png" alt="Crowdtainer" height="128px"/>
 
-<h1> Crowdtainer contracts repository </h1> </div>
+<h1> Crowdtainer Solidity smart contracts</h1> </div>
 <br/>
 
 ![Github Actions](https://github.com/crowdtainer/dapp-contracts/workflows/Tests/badge.svg)
@@ -9,19 +9,33 @@
 
 This repository contains all solidity code related to the core functionality of crowdtainer.
 
-```TODO: Add summary + system description link with further details.```
+See [`Crowdtainer smart contracts system`](./UserStories.md) for description and User Stories.
 
-## Building and testing
+## Installing dependencies
+
+There are currently two different tools that are able to build & execute tests in this repository: DappTools and Foundry.
+
+Foundry is recommended for getting started, since it is easier to install, and faster to execute tests with. However, it is not yet as feature complete as DappTools, namely, it doesn't support formal verification (yet). Scripts such as `make test` depend on DappTools. To run tests with foundry, the command would be instead e.g.: `forge test`.
 
 #### Install Nix
 
 ```sh
-# User must be in sudoers
-curl -L https://nixos.org/nix/install | sh
+# For Linux users:
+sh <(curl -L https://nixos.org/nix/install) --daemon
 
 # Run this or login again to use Nix
 . "$HOME/.nix-profile/etc/profile.d/nix.sh"
+
+# For MacOS users:
+sh <(curl -L https://nixos.org/nix/install) --darwin-use-unencrypted-nix-store-volume --daemon
+# In case of MacOS arm (M1) issues, you may want to run everything under Rosetta.
+vi ~/.config/nix/nix.conf
+# set:
+system = x86_64-darwin
+nix-env -iA ghc -f $(curl -sS https://api.github.com/repos/dapphub/dapptools/releases/latest | jq -r .tarball_url)
+# Then, restart your terminal/shell session to make the installation effective.
 ```
+
 
 #### Install DappTools
 
@@ -29,20 +43,61 @@ curl -L https://nixos.org/nix/install | sh
 curl https://dapp.tools/install | sh
 ```
 
-### Build and test 
 
-```sh
-git clone https://github.com/crowdtainer/dapp-contracts
-cd dapp-contracs
-make # Also installs project dependencies
-make test
+#### Install Foundry
+
+```
+curl -L https://foundry.paradigm.xyz | bash
+
+# Reload your terminal enviroment variables, e.g.:
+source ~/.zshrc
+
+foundryup
+
+# MacOS might also require:
+brew install libusb
 ```
 
+## Building and testing
 
+```sh
+git clone --recursive https://github.com/crowdtainer/dapp-contracts
+cd dapp-contracs
+make         # Also installs project dependencies
+
+# To run dapp-tools based tests (Unit testing, Fuzz and Symbolic):
+make test
+
+# To see unit test code coverage:
+make coverage
+
+# To run Solidity' SMTChecker-based tests:
+make solcheck
+
+# Estimation of gas costs:
+
+- First run a local testnet with `dapp testnet`.
+- Then run e.g.: `make contract=Crowdtainer estimate`
+
+# Contract size estimation:
+- Example: `make contract=Vouchers721 size`
+
+```
+
+## Contributing
+
+### To apply linter:
+```sh
+make lint
+```
 ## Deploying
 
 Contracts can be deployed via the `make deploy` command. Addresses are automatically
-written in a name-address json file stored under `out/addresses.json`.
+written in a name-address json file stored under `out/addresses.json`. Additionally, you can specify a specific network with `make deploy-rinkeby` or `make deploy-mainnet`. You can choose which contract you want to deploy, by adding it as a variable, e.g.:
+
+ ```bash
+ make deploy-rinkeby CONTRACT=Crowdtainer
+ ```
 
 ### Local Testnet
 
@@ -51,7 +106,7 @@ written in a name-address json file stored under `out/addresses.json`.
 dapp testnet
 
 ```
-Make sure ETH_FROM local environment variable is the one returned by dapp testnet above.
+Make sure ETH_FROM is set according to the address returned by dapp testnet above in `.dapprc` file.
 
 ```
 # Then in a second terminal:
