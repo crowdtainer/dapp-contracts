@@ -141,18 +141,19 @@ contract MetadataServiceV1 is IMetadataService {
             );
     }
 
-    function getSVGClaimedInformation() internal pure returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    "</tspan></text>"
-                    '<text xml:space="preserve" class="tiny" x="10.478354" y="0" id="text16280-6-9-7" '
+    function getSVGClaimedInformation(bool claimedStatus) internal pure returns (string memory) {
+        string memory part1 = '<text xml:space="preserve" class="tiny" x="10.478354" y="0" id="text16280-6-9-7" '
                     'transform="matrix(16.4916,0,0,15.627547,5.7282884,90.160098)"><tspan x="15.478354" '
-                    'y="1.5" id="tspan1163">Claimed: No</tspan></text><text xml:space="preserve" class="medium" '
+                    'y="1.5" id="tspan1163">Claimed: ';
+        string memory part2 = '</tspan></text><text xml:space="preserve" class="medium" '
                     'x="13.478354" y="14.1689944" id="text16280-6" transform="matrix(16.4916,0,0,15.627547,7.589772,6.9947903)">'
-                    '<tspan x="15.478354" y="5.4" id="tspan1165">Voucher '
-                )
-            );
+                    '<tspan x="15.478354" y="5.4" id="tspan1165">Voucher ';
+        if(claimedStatus) {
+            return string(abi.encodePacked(part1, 'Yes', part2));
+        }
+        else {
+            return string(abi.encodePacked(part1, 'No', part2));
+        }
     }
 
     function generateImage(
@@ -169,7 +170,8 @@ contract MetadataServiceV1 is IMetadataService {
                 abi.encodePacked(
                     getSVGHeader(),
                     _metadata.crowdtainerId.toString(),
-                    getSVGClaimedInformation(),
+                    "</tspan></text>",
+                    getSVGClaimedInformation(_metadata.claimed),
                     _metadata.tokenId.toString(),
                     "</tspan></text>",
                     description,

@@ -222,7 +222,7 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
             crowdtainerId,
             _tokenId - (tokenIdToCrowdtainerId(_tokenId) * ID_MULTIPLE),
             ownerOf(_tokenId),
-            false, // claimed?
+            getClaimStatus(_tokenId),
             prices,
             tokenIdQuantities[_tokenId],
             productDescription[crowdtainerId],
