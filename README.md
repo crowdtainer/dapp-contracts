@@ -1,4 +1,4 @@
-<div style="text-align:center"><img src="logo.png" alt="Crowdtainer" height="128px"/>
+<div style="text-align:center"><img src="CrowdtainerLogo.svg" alt="Crowdtainer" height="128px"/>
 
 <h1> Crowdtainer Solidity smart contracts</h1> </div>
 <br/>
