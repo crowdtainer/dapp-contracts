@@ -115,10 +115,10 @@ estimate_gas() {
     GAS=$(seth estimate --create "$BYTECODE" "$SIG" $ARGS --rpc-url "$ETH_RPC_URL")
     GAS_URL="ethgasstation.info/api/ethgasAPI.json"
     response=$(curl -s $GAS_URL)
-    rapid=$(( $(jq '.fastest' <<< $response)))
-    fast=$(( $(jq '.fast' <<< $response) ))
-    standard=$(( $(jq '.average' <<< $response) ))
-    slow=$(( $(jq '.safeLow' <<< $response) ))
+    rapid=$(( $(jq '.fastest' <<< $response)))/10
+    fast=$(( $(jq '.fast' <<< $response) ))/10
+    standard=$(( $(jq '.average' <<< $response) ))/10
+    slow=$(( $(jq '.safeLow' <<< $response) ))/10
     rapid_cost=$(echo "scale=5; $GAS*$rapid/10000000000" | bc)
     fast_cost=$(echo "scale=5; $GAS*$fast/10000000000" | bc)
     standard_cost=$(echo "scale=5; $GAS*$standard/10000000000" | bc)
@@ -135,10 +135,10 @@ estimate_gas() {
     echo ""
     echo "Gas prices from ${TPUT_BOLD}${GAS_URL}${TPUT_RESET}:"
     echo "
-    ${TPUT_RED}Rapid: $rapid wei -> $rapid_cost ETH -> $rapid_eur EUR ${TPUT_RESET}
-    ${TPUT_YELLOW}Fast: $fast wei -> $fast_cost ETH -> $fast_eur EUR ${TPUT_RESET}
-    ${TPUT_BLUE}Standard: $standard wei -> $standard_cost ETH -> $standard_eur EUR ${TPUT_RESET}
-    ${TPUT_GREEN}Slow: $slow wei -> $slow_cost ETH -> $slow_eur EUR ${TPUT_RESET} ${TPUT_RESET}" | column -t
+    ${TPUT_RED}Rapid: $rapid gwei -> $rapid_cost ETH -> $rapid_eur EUR ${TPUT_RESET}
+    ${TPUT_YELLOW}Fast: $fast gwei -> $fast_cost ETH -> $fast_eur EUR ${TPUT_RESET}
+    ${TPUT_BLUE}Standard: $standard gwei -> $standard_cost ETH -> $standard_eur EUR ${TPUT_RESET}
+    ${TPUT_GREEN}Slow: $slow gwei -> $slow_cost ETH -> $slow_eur EUR ${TPUT_RESET} ${TPUT_RESET}" | column -t
     size=$(contract_size $NAME)
     echo ""
     echo "Estimated gas cost for deployment of $NAME: ${TPUT_BOLD}$GAS${TPUT_RESET} units of gas"
