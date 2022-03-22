@@ -8,15 +8,37 @@ set -eo pipefail
 # import config with arguments based on contract and network
 . $(dirname $0)/helper-config.sh
 
+lastAddress="0x0"
+
+function deployContract() {
+    local network=$1
+    local contractName=$2
+    local arguments="${@:3}"
+
+    if [[ -z ${network+x} ]]; then echo "Error: network not specified."; exit 1; fi
+    if [[ -z ${contractName+x} ]]; then echo "Error: contract not specified."; exit 1; fi
+
+    log "Deploying $contractName to $network with arguments: '$arguments'"
+
+    lastAddress=$(deploy $contractName $arguments)
+    log "$contractName deployed at address: $lastAddress"
+}
+
+START_ETH_BALANCE=$(seth balance $ETH_FROM)
+
 # Deploy Crowdtainer.
-: ${CONTRACT:=Crowdtainer}
+contractName=Crowdtainer
+deployContract $NETWORK Crowdtainer
+crowdtainerAddress=$lastAddress
 
-echo "Deploying $CONTRACT to $NETWORK with arguments: $arguments"
-Address=$(deploy $CONTRACT $arguments)
-log "$CONTRACT deployed at:" $Address
+# Deploy MetadataServiceV1; Params: "ERC20 symbol name" "SVG footer"
+contractName=MetadataServiceV1
+deployContract $NETWORK $contractName '"DAI"' '"This∙ticket∙is∙not∙valid∙as∙an∙invoice."'
 
-# Now deploy Vouchers712, giving it a reference to the Crowdtainer implementation
+# Deploy Vouchers721; Params: reference of Crowdtainer implementation
+contractName=Vouchers721
+deployContract $NETWORK $contractName $crowdtainerAddress
 
-echo "Deploying Vouchers721 to $NETWORK with arguments: $Address $arguments"
-Address=$(deploy Vouchers721 $Address $arguments)
-log "Vouchers721 deployed at:" $Address
+END_ETH_BALANCE=$(seth balance $ETH_FROM)
+ETH_SPENT="$((START_ETH_BALANCE-END_ETH_BALANCE))"
+echo "ETH spent: $(echo "$ETH_SPENT/10^18" | bc -l) ETH"

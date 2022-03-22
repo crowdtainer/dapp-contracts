@@ -42,6 +42,7 @@ fi
 
 # Make sure address is checksummed
 if [ "$ETH_FROM" != "$(seth --to-checksum-address "$ETH_FROM")" ]; then
+    echo "ETH_FROM=> '$ETH_FROM'"
 	echo "ETH_FROM not checksummed, please format it with 'seth --to-checksum-address <address>'"
 	exit 1
 fi

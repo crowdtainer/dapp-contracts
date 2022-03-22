@@ -29,11 +29,13 @@ size   		:; ./scripts/contract-size.sh ${contract}
 deploy :; @./scripts/deploy.sh
 
 # mainnet
-deploy-mainnet: export ETH_RPC_URL = $(call network,mainnet)
+deploy-mainnet: export NETWORK=mainnet
+deploy-mainnet: export ETH_RPC_URL=https://eth-${NETWORK}.alchemyapi.io/v2/${ALCHEMY_API_KEY}
 deploy-mainnet: check-api-key deploy
 
 # rinkeby
-deploy-rinkeby: export ETH_RPC_URL = $(call network,rinkeby)
+deploy-rinkeby: export NETWORK=rinkeby
+deploy-rinkeby: export ETH_RPC_URL=https://eth-${NETWORK}.alchemyapi.io/v2/${ALCHEMY_API_KEY}
 deploy-rinkeby: check-api-key deploy
 
 check-api-key:
@@ -42,10 +44,3 @@ ifndef ALCHEMY_API_KEY
 endif
 
 solcheck:; solc src/Crowdtainer.sol --model-checker-targets constantCondition,divByZero,balance,assert,popEmptyArray,outOfBounds --model-checker-show-unproved --model-checker-timeout 100 --model-checker-engine chc
-
-# Returns the URL to deploy to a hosted node.
-# Requires the ALCHEMY_API_KEY env var to be set.
-# The first argument determines the network (mainnet / rinkeby / ropsten / kovan / goerli)
-define network
-	https://eth-$1.alchemyapi.io/v2/${ALCHEMY_API_KEY}
-endef

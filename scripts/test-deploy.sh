@@ -9,12 +9,15 @@ set -eo pipefail
 . $(dirname $0)/deploy.sh
 
 # get the addresses
-crowdtainerAddr=$(jq -r '.Crowdtainer' out/addresses.json)
-vouchersAddr=$(jq -r '.Vouchers721' out/addresses.json)
+crowdtainerAddress=$(jq -r '.Crowdtainer' out/addresses.json)
+metadataServiceAddress=$(jq -r '.MetadataServiceV1' out/addresses.json)
+vouchersAddress=$(jq -r '.Vouchers721' out/addresses.json)
 
 # the initial crowdtainerCount must be zero
-greeting=$(seth call $vouchersAddr 'crowdtainerCount()(uint256)')
+greeting=$(seth call $vouchersAddress 'crowdtainerCount()(uint256)')
 [[ $greeting = 0 ]] || error
+
+# Encoding calldata structs: https://github.com/dapphub/dapptools/issues/616
 
 # example on how to interact using temporary keystore
 # seth send $vouchersAddr \
