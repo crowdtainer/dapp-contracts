@@ -54,11 +54,11 @@ cat >"$ADDRESSES_FILE" <<EOF
 }
 EOF
 
-# Call as `ETH_FROM=0x... ETH_RPC_URL=<url> deploy ContractName arg1 arg2 arg3`
+# Call as `ETH_FROM=0x... ETH_RPC_URL=<url> deploy ConractName arg1 arg2 arg3`
 # (or omit the env vars if you have already set them)
 deploy() {
 	NAME=$1
-	ARGS=${@:2}
+	shift;
 
 	# find file path
 	CONTRACT_PATH=$(find ./src -name $NAME.sol)
@@ -75,14 +75,12 @@ deploy() {
 	BYTECODE=0x$(jq -r "$PATTERN.evm.bytecode.object" out/dapp.sol.json)
 
 	# estimate gas
-	GAS=$(seth estimate --create "$BYTECODE" "$SIG" $ARGS --rpc-url "$ETH_RPC_URL")
+	GAS=$(seth estimate --create "$BYTECODE" "$SIG" "$@" --rpc-url "$ETH_RPC_URL")
 
 	# deploy
-	ADDRESS=$(dapp create "$NAME" $ARGS -- --gas "$GAS" --rpc-url "$ETH_RPC_URL")
+	ADDRESS=$(dapp create "$NAME" "$@" -- --gas "$GAS" --rpc-url "$ETH_RPC_URL")
 
-	# save the addrs to the json
-	# TODO: It'd be nice if we could evolve this into a minimal versioning system
-	# e.g. via commit / chainid etc.
+	# save the address
 	saveContract "$NAME" "$ADDRESS"
 
 	echo "$ADDRESS"

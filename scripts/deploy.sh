@@ -13,14 +13,15 @@ lastAddress="0x0"
 function deployContract() {
     local network=$1
     local contractName=$2
-    local arguments="${@:3}"
+    shift;
+    shift;
 
     if [[ -z ${network+x} ]]; then echo "Error: network not specified."; exit 1; fi
     if [[ -z ${contractName+x} ]]; then echo "Error: contract not specified."; exit 1; fi
 
-    log "Deploying $contractName to $network with arguments: '$arguments'"
+    log "Deploying $contractName to $network with arguments: $@"
 
-    lastAddress=$(deploy $contractName $arguments)
+    lastAddress=$(deploy $contractName "$@")
     log "$contractName deployed at address: $lastAddress"
 }
 
@@ -31,9 +32,8 @@ contractName=Crowdtainer
 deployContract $NETWORK Crowdtainer
 crowdtainerAddress=$lastAddress
 
-# Deploy MetadataServiceV1; Params: "ERC20 symbol name" "SVG footer"
-contractName=MetadataServiceV1
-deployContract $NETWORK $contractName '"DAI"' '"This∙ticket∙is∙not∙valid∙as∙an∙invoice."'
+# Deploy MetadataServiceV1
+deployContract $NETWORK MetadataServiceV1 '"DAI"' '"This ticket is not valid as an invoice."'
 
 # Deploy Vouchers721; Params: reference of Crowdtainer implementation
 contractName=Vouchers721
