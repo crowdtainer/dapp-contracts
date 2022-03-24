@@ -1,6 +1,13 @@
+# Common
+.env
+
 # Node
 node_modules
+typechain
 
-# Dapptools
+# Dapptools / Foundry
 out/
-.env
+
+# Hardhat files
+cache
+artifacts

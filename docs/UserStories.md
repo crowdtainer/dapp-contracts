@@ -25,10 +25,10 @@ What follows is a detailed description of the smart contract expectations in Use
 - (redacted for MVP) ~~The withdrawl function should allow for partial withdrawals, so that participants can get a 'cash-back' in case the estimated price for producing the service or product was higher than estimated.~~ 
     - ~~This allows for getting signal of intent from participants, even before the exact final cost can be calculated, by guessing the cost by a higher margin. E.g.: Estimate unit meal cost of 15 eur per person for price to pool money, but return overpayment once the exact final price was calculated by the restaurant (discounting for shipping savings etc).~~ 
     - ~~The withdrawl function needs to provide the final prices array, so that each participant is correctly assigned the remainder value.~~ 
-- ◻️ I need a way to mark a voucher as "claimed".
+- ✅ I need a way to mark a voucher as "claimed". (done in commit 8626f67)
 
-- ◻️ I need a 2-way communication channel, so that once a Crowdtainer is successful, I can communicate with them regarding their delivery. 
-    - Idea: NFT-gated discord channel per Crowdtainer project.
+- ✅ I need a 2-way communication channel, so that once a Crowdtainer is successful, I can communicate with them regarding their delivery. 
+    - Idea: NFT-gated discord channel per Crowdtainer project. (Found https://swordybot.com/ and https://Collab.Land)
 
 - ✅ I need a method to cancel a project, so that I can signal participants that the project will no longer be possible, and participants are therefore able to leave taking their money without waiting for expiration.
 

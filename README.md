@@ -1,24 +1,49 @@
-<div style="text-align:center"><img src="CrowdtainerLogo.svg" alt="Crowdtainer" height="128px"/>
+<div align="center"><img src="CrowdtainerLogo.svg" alt="Crowdtainer" height="128px"/>
 
-<h1> Crowdtainer Solidity smart contracts</h1> </div>
-<br/>
+<h1>Crowdtainer Solidity smart contracts</h1>
+</div>
+<br />
 
 ![Github Actions](https://github.com/crowdtainer/dapp-contracts/workflows/Tests/badge.svg)
 
-This repository contains all solidity code related to the core functionality of crowdtainer.
+This repository contains all the solidity code related to the core functionality of Crowdtainer.
+
+There are currently three different tools that are able to build & execute tests in this repository: DappTools, Foundry and Hardhat.
+
+- Foundry: Fast execution of solidity unit tests.
+- Dapp.tools: Solidity tests with Formal Verification, local test network, and deployment scripts.
+- Hardhat: 
+    - Scripts and utilities used to deploy, initialize, and interact a Crowdtainer project.
+    - Easy to run test network (local), useful for frontend development.
 
 ## Functionality and design
 
- - [`Crowdtainer smart contracts system description`](./SystemDescription.md)
- - [`User Stories`](./UserStories.md)
+ - [`Crowdtainer smart contracts system description`](./docs/SystemDescription.md)
+ - [`User Stories`](./docs/UserStories.md)
+
+## Community
+
+Come hang on our [discord](https://--.com) - to be announced soon.✨
 
 ## Installing dependencies
 
-There are currently two different tools that are able to build & execute tests in this repository: DappTools and Foundry.
-
 Foundry is recommended for getting started, since it is easier to install, and faster to execute tests with. However, it is not yet as feature complete as DappTools, namely, it doesn't support formal verification (yet). Scripts such as `make test` depend on DappTools. To run tests with foundry, the command would be instead e.g.: `forge test`.
 
-#### Install Nix
+### Foundry installation
+
+```
+curl -L https://foundry.paradigm.xyz | bash
+
+# Reload your terminal enviroment variables, e.g.:
+source ~/.zshrc
+
+foundryup
+
+# MacOS might also require:
+brew install libusb
+```
+
+### Nix & Dapp.tools installation
 
 ```sh
 # For Linux users:
@@ -34,6 +59,7 @@ vi ~/.config/nix/nix.conf
 # set:
 system = x86_64-darwin
 nix-env -iA ghc -f $(curl -sS https://api.github.com/repos/dapphub/dapptools/releases/latest | jq -r .tarball_url)
+
 # Then, restart your terminal/shell session to make the installation effective.
 ```
 
@@ -45,19 +71,6 @@ curl https://dapp.tools/install | sh
 ```
 
 
-#### Install Foundry
-
-```
-curl -L https://foundry.paradigm.xyz | bash
-
-# Reload your terminal enviroment variables, e.g.:
-source ~/.zshrc
-
-foundryup
-
-# MacOS might also require:
-brew install libusb
-```
 
 ## Building and testing
 
@@ -91,7 +104,20 @@ make solcheck
 ```sh
 make lint
 ```
-## Deploying
+
+## Directory Structure
+
+<pre>
+root
+├── <a href="./src">src</a>
+│   ├── <a href="./contracts">contracts</a>: Crowdtainer's Solidity source code.
+│   └── <a href="./test">test</a>: Solidity tests. Used by Foundry and Dapp.tools.
+├── <a href="./docs">docs: Documentation and user stories.</a>
+├── <a href="./lib">lib</a>: Solidity libraries / remappings (git submodules).
+├── <a href="./scripts">scripts</a>: Scripts used by Makefile. Entry points for dapp.tools.
+└── <a href="./hardhat_scripts">hardhat_scripts</a>: Deploy & interact with contracts.
+</pre>
+## Dapp.tools
 
 Contracts can be deployed via the `make deploy` command. Addresses are automatically
 written in a name-address json file stored under `out/addresses.json`. Additionally, you can specify a specific network with `make deploy-rinkeby` or `make deploy-mainnet`. You can choose which contract you want to deploy, by adding it as a variable, e.g.:
@@ -145,3 +171,25 @@ ETH_FROM=0x3538b6eF447f244268BCb2A0E1796fEE7c45002D make deploy-rinkeby
 ```
 ETH_RPC_URL=<your network> make deploy
 ```
+
+## Hardhat (WIP)
+
+```shell
+npx hardhat accounts
+npx hardhat compile
+npx hardhat clean
+# npx hardhat test
+npx hardhat node
+npx hardhat run scripts/deploy.ts
+TS_NODE_FILES=true npx ts-node scripts/deploy.ts
+npx eslint '**/*.{js,ts}'
+npx eslint '**/*.{js,ts}' --fix
+npx prettier '**/*.{json,sol,md}' --check
+npx prettier '**/*.{json,sol,md}' --write
+npx solhint 'contracts/**/*.sol'
+npx solhint 'contracts/**/*.sol' --fix
+```
+
+### Performance optimizations
+
+For faster runs of your tests and scripts, consider skipping ts-node's type checking by setting the environment variable `TS_NODE_TRANSPILE_ONLY` to `1` in hardhat's environment. For more details see [the documentation](https://hardhat.org/guides/typescript.html#performance-optimizations).
