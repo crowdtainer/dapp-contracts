@@ -38,6 +38,10 @@ deploy-rinkeby: export NETWORK=rinkeby
 deploy-rinkeby: export ETH_RPC_URL=https://eth-${NETWORK}.alchemyapi.io/v2/${ALCHEMY_API_KEY}
 deploy-rinkeby: check-api-key deploy
 
+deploy-localhost: export NETWORK=localhost
+deploy-localhost: export ETH_RPC_URL=http://127.0.0.1:8545
+deploy-localhost: deploy
+
 check-api-key:
 ifndef ALCHEMY_API_KEY
 	$(error ALCHEMY_API_KEY is undefined)
