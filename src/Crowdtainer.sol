@@ -2,10 +2,10 @@
 pragma solidity ^0.8.11;
 
 // @dev External dependencies
-import "../lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
-import "../lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
-import "../lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
-import "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import "@openzeppelin/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // @dev Internal dependencies
 import "./ICrowdtainer.sol";

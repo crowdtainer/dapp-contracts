@@ -2,12 +2,12 @@
 pragma solidity ^0.8.11;
 
 // @dev External dependencies
-import "../lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
-import "../lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../lib/openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
-import "../lib/openzeppelin-contracts/contracts/interfaces/IERC721.sol";
-import "../lib/openzeppelin-contracts/contracts/utils/structs/BitMaps.sol";
-import "../lib/openzeppelin-contracts/contracts/proxy/Clones.sol";
+import "@openzeppelin/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/openzeppelin-contracts/contracts/interfaces/IERC721.sol";
+import "@openzeppelin/openzeppelin-contracts/contracts/utils/structs/BitMaps.sol";
+import "@openzeppelin/openzeppelin-contracts/contracts/proxy/Clones.sol";
 
 // @dev Internal dependencies
 import "./ICrowdtainer.sol";

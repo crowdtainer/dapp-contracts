@@ -3,7 +3,7 @@ pragma solidity ^0.8.11;
 
 import "./Constants.sol";
 import "./States.sol";
-import "../lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import "@openzeppelin/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
 // Data defining all rules and values of a Crowdtainer instance.
 struct CampaignData {
