@@ -2,9 +2,9 @@
 pragma solidity ^0.8.11;
 
 import "./utils/Vouchers721Test.sol";
-import {Errors} from "../Crowdtainer.sol";
+import {Errors} from "../contracts/Crowdtainer.sol";
 
-import "../Metadata/MetadataServiceV1.sol";
+import "../contracts/Metadata/MetadataServiceV1.sol";
 
 /* solhint-disable no-empty-blocks */
 
@@ -350,7 +350,7 @@ contract Vouchers721CreateInvalidTester is VouchersTest {
                     unitPricePerType,
                     referralRate,
                     referralEligibilityValue,
-                    iERC20Token
+                    address(iERC20Token)
                 ),
                 _productDescription: ["", "", "", ""],
                 _metadataService: address(metadataService)

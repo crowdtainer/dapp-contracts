@@ -4,9 +4,9 @@ pragma solidity ^0.8.11;
 import "../external/Coin.sol";
 
 import "./CrowdtainerTestHelpers.sol";
-import "../../Vouchers721.sol";
-import "../../Constants.sol";
-import "../../Crowdtainer.sol";
+import "../../contracts/Vouchers721.sol";
+import "../../contracts/Constants.sol";
+import "../../contracts/Crowdtainer.sol";
 
 // This file contains the basic setup to test the Vouchers721 contract.
 
@@ -158,7 +158,7 @@ contract VouchersTest is CrowdtainerTestHelpers {
                 unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                iERC20Token
+                address(iERC20Token)
             ),
             _productDescription: productDescription,
             _metadataService: address(metadataService)

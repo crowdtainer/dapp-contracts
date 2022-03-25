@@ -23,12 +23,11 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 
 const config: HardhatUserConfig = {
   paths: {
-    // sources: "./contracts",
-    sources: "./src",
+    sources: "./src/contracts",
     cache: "./out/hardhat/cache",
     artifacts: "./out/hardhat/artifacts"
   },
-  solidity: "0.8.4",
+  solidity: "0.8.11",
   networks: {
     ropsten: {
       url: process.env.ROPSTEN_URL || "",

@@ -2,7 +2,7 @@
 # (-include to ignore error if it does not exist)
 -include .env
 
-install: solc update npm
+install: npm solc update
 
 # dapp deps
 update:; dapp update

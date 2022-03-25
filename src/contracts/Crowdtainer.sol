@@ -2,10 +2,10 @@
 pragma solidity ^0.8.11;
 
 // @dev External dependencies
-import "@openzeppelin/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
-import "@openzeppelin/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+// import "@openzeppelin/contracts/interfaces/IERC20.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // @dev Internal dependencies
 import "./ICrowdtainer.sol";
@@ -246,7 +246,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         unitPricePerType = _campaignData.unitPricePerType;
         referralRate = _campaignData.referralRate;
         referralEligibilityValue = _campaignData.referralEligibilityValue;
-        token = _campaignData.token;
+        token = IERC20(_campaignData.token);
 
         crowdtainerState = CrowdtainerState.Funding;
 

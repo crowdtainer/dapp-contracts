@@ -1,10 +1,12 @@
 ## defaults for _all_ profiles
 [default]
-src = 'src'
-test = 'test'
+src = 'src/contracts'
+test = 'src/test'
 out = 'out'
 libs = ['lib']
-remappings = []
+remappings = [
+    '@openzeppelin/=node_modules/@openzeppelin/',
+    'ds-test/=lib/ds-test/src/']
 libraries = []
 cache = true
 force = true
