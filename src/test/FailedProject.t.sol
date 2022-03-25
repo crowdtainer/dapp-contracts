@@ -2,8 +2,8 @@
 pragma solidity ^0.8.11;
 
 import "./utils/CrowdtainerTest.sol";
-import {Errors} from "../Crowdtainer.sol";
-import "../States.sol";
+import {Errors} from "../contracts/Crowdtainer.sol";
+import "../contracts/States.sol";
 
 /* solhint-disable no-empty-blocks */
 
@@ -146,7 +146,7 @@ contract CrowdtainerInvalidProjectTerminationTester is CrowdtainerTest {
                 _unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                iERC20Token
+                address(iERC20Token)
             )
         );
 

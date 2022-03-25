@@ -2,7 +2,7 @@
 pragma solidity ^0.8.11;
 
 import "./utils/CrowdtainerTest.sol";
-import {Errors} from "../Crowdtainer.sol";
+import {Errors} from "../contracts/Crowdtainer.sol";
 
 /* solhint-disable no-empty-blocks */
 
@@ -19,7 +19,7 @@ contract ValidInitializeTester is CrowdtainerTest {
                 unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                erc20Token
+                address(erc20Token)
             )
         );
     }
@@ -40,7 +40,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     referralRate,
                     referralEligibilityValue,
-                    invalidTokenAddress
+                    address(invalidTokenAddress)
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -65,7 +65,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     referralRate,
                     referralEligibilityValue,
-                    erc20Token
+                    address(erc20Token)
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -89,7 +89,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     referralRate,
                     targetMinimum + 1,
-                    erc20Token
+                    address(erc20Token)
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -113,7 +113,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     referralRate,
                     referralEligibilityValue,
-                    erc20Token
+                    address(erc20Token)
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -137,7 +137,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     referralRate,
                     referralEligibilityValue,
-                    erc20Token
+                    address(erc20Token)
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -161,7 +161,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     referralRate,
                     0,
-                    erc20Token
+                    address(erc20Token)
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -185,7 +185,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     referralRate,
                     referralEligibilityValue,
-                    erc20Token
+                    address(erc20Token)
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -209,7 +209,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     referralRate,
                     referralEligibilityValue,
-                    erc20Token
+                    address(erc20Token)
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -233,7 +233,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     160,
                     referralEligibilityValue,
-                    erc20Token
+                    address(erc20Token)
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -257,7 +257,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     3,
                     referralEligibilityValue,
-                    erc20Token
+                    address(erc20Token)
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -312,7 +312,7 @@ contract InitializeFuzzer is CrowdtainerTest {
                 _unitPricePerType,
                 _referralRate,
                 _referralEligibilityValue,
-                _token
+                address(_token)
             )
         );
 

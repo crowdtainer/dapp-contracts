@@ -2,7 +2,7 @@
 pragma solidity ^0.8.11;
 
 import "./utils/CrowdtainerTest.sol";
-import {Errors} from "../Crowdtainer.sol";
+import {Errors} from "../contracts/Crowdtainer.sol";
 
 /* solhint-disable no-empty-blocks */
 
@@ -29,7 +29,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
                 _unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                iERC20Token
+                address(iERC20Token)
             )
         );
 
@@ -66,7 +66,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
                 _unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                iERC20Token
+                address(iERC20Token)
             )
         );
 
@@ -110,7 +110,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
                 _unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                iERC20Token
+                address(iERC20Token)
             )
         );
 
@@ -153,7 +153,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
                 _unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                iERC20Token
+                address(iERC20Token)
             )
         );
 
@@ -196,7 +196,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
                 _unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                iERC20Token
+                address(iERC20Token)
             )
         );
 

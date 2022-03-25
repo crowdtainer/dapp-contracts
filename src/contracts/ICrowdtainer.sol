@@ -3,7 +3,6 @@ pragma solidity ^0.8.11;
 
 import "./Constants.sol";
 import "./States.sol";
-import "../lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
 // Data defining all rules and values of a Crowdtainer instance.
 struct CampaignData {
@@ -24,7 +23,7 @@ struct CampaignData {
     // The minimum purchase value required to be eligible to participate in referral rewards.
     uint256 referralEligibilityValue;
     // Address of the ERC20 token used for payment.
-    IERC20 token;
+    address token;
 }
 
 /**

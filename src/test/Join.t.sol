@@ -2,7 +2,7 @@
 pragma solidity ^0.8.11;
 
 import "./utils/CrowdtainerTest.sol";
-import {Errors} from "../Crowdtainer.sol";
+import {Errors} from "../contracts/Crowdtainer.sol";
 
 /* solhint-disable no-empty-blocks */
 
@@ -146,7 +146,7 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
                 _unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                iERC20Token
+                address(iERC20Token)
             )
         );
 
@@ -189,7 +189,7 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
                 _unitPricePerType,
                 referralRate,
                 20,
-                iERC20Token
+                address(iERC20Token)
             )
         );
 

@@ -1,17 +1,19 @@
 ## defaults for _all_ profiles
 [default]
-src = 'src'
-test = 'test'
+src = 'src/contracts'
+test = 'src/test'
 out = 'out'
 libs = ['lib']
-remappings = []
+remappings = [
+    '@openzeppelin/=node_modules/@openzeppelin/',
+    'ds-test/=lib/ds-test/src/']
 libraries = []
 cache = true
 force = true
 evm_version = 'london'
 gas_reports = ["*"]
 ## Sets the concrete solc version to use, this overrides the `auto_detect_solc` value
- solc_version = '0.8.1'
+#solc_version = '0.8.11'
 auto_detect_solc = true
 optimizer = true
 optimizer_runs = 500000

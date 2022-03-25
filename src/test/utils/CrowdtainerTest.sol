@@ -3,8 +3,8 @@ pragma solidity ^0.8.11;
 
 import "../external/Coin.sol";
 import "./CrowdtainerTestHelpers.sol";
-import "../../Crowdtainer.sol";
-import "../../Constants.sol";
+import "../../contracts/Crowdtainer.sol";
+import "../../contracts/Constants.sol";
 
 // Participant represents a user that joins / interacts directly with a Crowdtainer (created by the ShippingAgent)
 contract Participant {
@@ -122,7 +122,7 @@ contract CrowdtainerTest is CrowdtainerTestHelpers {
                 unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                iERC20Token
+                address(iERC20Token)
             )
         );
     }

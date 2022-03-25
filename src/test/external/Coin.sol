@@ -16,7 +16,7 @@
 
 pragma solidity 0.8.11;
 
-import "../../../lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 contract Coin is IERC20 {
     // --- Auth ---
