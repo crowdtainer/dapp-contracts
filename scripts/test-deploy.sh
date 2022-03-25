@@ -5,6 +5,8 @@ set -eo pipefail
 # bring up the network
 . $(dirname $0)/run-temp-testnet.sh
 
+sleep 3
+
 # run the deploy script
 . $(dirname $0)/deploy.sh
 

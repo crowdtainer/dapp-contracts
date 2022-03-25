@@ -47,8 +47,11 @@ brew install libusb
 ### Nix & Dapp.tools installation
 
 ```sh
-# For Linux users:
+# Nix for Linux users:
 sh <(curl -L https://nixos.org/nix/install) --daemon
+
+# Nix for MacOs users:
+sh <(curl -L https://nixos.org/nix/install)
 
 # Run this or login again to use Nix
 . "$HOME/.nix-profile/etc/profile.d/nix.sh"
@@ -63,15 +66,11 @@ nix-env -iA ghc -f $(curl -sS https://api.github.com/repos/dapphub/dapptools/rel
 
 # Then, restart your terminal/shell session to make the installation effective.
 ```
-
-
 #### Install DappTools
 
 ```sh
 curl https://dapp.tools/install | sh
 ```
-
-
 
 ## Building and testing
 
@@ -110,10 +109,10 @@ make lint
 
 <pre>
 root
-├── <a href="./src">src</a>
-│   ├── <a href="./contracts">contracts</a>: Crowdtainer's Solidity source code.
-│   └── <a href="./test">test</a>: Solidity tests. Used by Foundry and Dapp.tools.
-├── <a href="./docs">docs: Documentation and user stories.</a>
+├── <a href="./src">src/</a>
+│   ├── <a href="./src/contracts">contracts</a>: Crowdtainer's Solidity source code.
+│   └── <a href="./src/test">test</a>: Solidity tests. Used by Foundry and Dapp.tools.
+├── <a href="./docs">docs:</a> Documentation and user stories.
 ├── <a href="./lib">lib</a>: Solidity libraries / remappings (git submodules).
 ├── <a href="./scripts">scripts</a>: Scripts used by Makefile. Entry points for dapp.tools.
 └── <a href="./hardhat_scripts">hardhat_scripts</a>: Deploy & interact with contracts.
@@ -179,9 +178,7 @@ ETH_RPC_URL=<your network> make deploy
 npx hardhat accounts
 npx hardhat compile
 npx hardhat clean
-# npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.ts
+npx hardhat node ; npx hardhat run scripts/deploy.ts --network localhost
 TS_NODE_FILES=true npx ts-node scripts/deploy.ts
 npx eslint '**/*.{js,ts}'
 npx eslint '**/*.{js,ts}' --fix
