@@ -1,10 +1,11 @@
 <div align="center"><img src="docs/CrowdtainerLogo.svg" alt="Crowdtainer" height="128px"/>
 
 <h1>Crowdtainer Solidity smart contracts</h1>
-</div>
+
 <br />
 
 ![Github Actions](https://github.com/crowdtainer/dapp-contracts/workflows/Tests/badge.svg)
+</div>
 
 This repository contains all the solidity code related to the core functionality of Crowdtainer.
 
