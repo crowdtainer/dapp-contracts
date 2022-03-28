@@ -25,8 +25,12 @@ async function main() {
   const Vouchers721 = await ethers.getContractFactory("Vouchers721");
   const vouchers721 = await Vouchers721.deploy(crowdtainer.address);
   await vouchers721.deployed();
-
   console.log("Vouchers721 deployed to:", crowdtainer.address);
+
+  const Coin = await ethers.getContractFactory("Coin");
+  const coin = await Coin.deploy("Token","TST", 1);
+  await coin.deployed();
+  console.log("Coin deployed to:", crowdtainer.address);
 }
 
 main().catch((error) => {
