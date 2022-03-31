@@ -24,12 +24,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log:true,
   });
 
-  const metadataServiceAddress = await (await hre.ethers.getContract("MetadataServiceV1")).address;
+  const crowdtainerImplementation = await hre.ethers.getContract("Crowdtainer");
 
   // Deploy Vouchers721 - main contract for users
   await deploy('Vouchers721', {
     from: deployer,
-    args: [metadataServiceAddress],
+    args: [crowdtainerImplementation.address],
     log:true,
   });
 

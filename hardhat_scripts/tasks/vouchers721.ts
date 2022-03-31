@@ -1,7 +1,8 @@
 import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-ethers";
-import "@typechain/hardhat";
-// import {} from "../../typechain/Vouchers721";
+// import "@typechain/hardhat";
+import { BigNumberish } from "@ethersproject/bignumber/lib/bignumber";
+import { parseUnits } from "ethers/lib/utils";
 
 task("createCrowdtainer", "Create/initialize a new Crowdtainer project with default values.")
     .setAction(async function ({ _ }, { ethers }) {
@@ -16,30 +17,26 @@ task("createCrowdtainer", "Create/initialize a new Crowdtainer project with defa
         console.log(`Agent address: ${agent.address}`);
         console.log(`token address: ${token.address}`);
 
-        //  Vouchers721.initialize() params:
-        //  - CampaignData,
-        //  - string array of product descriptions,
-        //  - ERC721 tokenUri implementation contract address
+        let arrayOfBigNumbers: [BigNumberish,BigNumberish,BigNumberish,BigNumberish];
+        arrayOfBigNumbers = [1,2,3,4];
+
+        let currentTime = (await ethers.provider.getBlock("latest")).timestamp;
+        let erc20Decimals = await token.decimals();
 
         let campaignData = {
             shippingAgent: agent.address,
-            openingTime: 1,
-            expireTime: 2,
-            targetMinimum: 100,
-            targetMaximum: 10000,
-            unitPricePerType: [
-              1,
-              2,
-              3,
-              4
-            ],
+            openingTime: currentTime + 10,
+            expireTime: currentTime + 10 + 3601,
+            targetMinimum: parseUnits("10000", erc20Decimals),
+            targetMaximum: parseUnits("10000000", erc20Decimals),
+            unitPricePerType: arrayOfBigNumbers,
             referralRate: 20,
-            referralEligibilityValue: 50,
+            referralEligibilityValue: parseUnits("50", erc20Decimals),
             token: token.address
           };
 
         await vouchers721.createCrowdtainer(campaignData,
-            ["","","",""],
+            ["250g","500g","1Kg","2Kg"],
             metadataService.address);
 
         console.log(`${agent.address} created a new Crowdtainer project.`);

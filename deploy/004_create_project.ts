@@ -4,7 +4,6 @@ import '@nomiclabs/hardhat-ethers';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
-  const {deploy} = hre.deployments;
   const chainId = await hre.getChainId();
   const {deployer, agent, neo, trinity} = await hre.getNamedAccounts();
 
@@ -19,9 +18,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   
   const token = await hre.ethers.getContract("Coin");
   const vouchers721 = await hre.ethers.getContract("Vouchers721");
-  
+
+  await hre.run("createCrowdtainer", { /* params */ });
+
+  console.log(`Created Crowdtainer project.`);
 
 };
 
 export default func;
-func.tags = ['DeployCrowdtainer'];
+func.tags = ['CreateCrowdtainerProject'];

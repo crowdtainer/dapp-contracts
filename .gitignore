@@ -12,3 +12,6 @@ out/
 # Hardhat files
 cache
 artifacts
+
+# Hardhat-deploy extension
+deployments/localhost
