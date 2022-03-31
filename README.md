@@ -36,6 +36,7 @@ Foundry is our recommended for getting started with Solidity development, since 
 <pre>
 root
 ├── <a href="./deploy">deploy:</a> Hardhat deployment tasks.
+├── <a href="./deployments">deployments:</a> Existing deployments artifacts.
 ├── <a href="./src">src/</a>
 │   ├── <a href="./src/contracts">contracts</a>: Crowdtainer's Solidity source code.
 │   └── <a href="./src/test">test</a>: Solidity tests. Used by Foundry and Dapp.tools.
