@@ -5,6 +5,7 @@
 <br />
 
 ![Github Actions](https://github.com/crowdtainer/dapp-contracts/workflows/Tests/badge.svg)
+
 </div>
 
 This repository contains all the solidity code related to the core functionality of Crowdtainer.
@@ -13,18 +14,19 @@ There are currently three different tools that are able to build & execute tests
 
 - Foundry: Fast execution of solidity unit tests.
 - Dapp.tools: Solidity tests with Formal Verification, local test network, and deployment scripts.
-- Hardhat: 
-    - Scripts and utilities used to deploy, initialize, and interact a Crowdtainer project.
-    - Easy to run test network (local), useful for frontend development.
+- Hardhat:
+  - Scripts and utilities used to deploy, initialize, and interact a Crowdtainer project.
+  - Easy to run test network (local), useful for frontend development.
 
 ## Functionality and design
 
- - [`Crowdtainer smart contracts system description`](./docs/SystemDescription.md)
- - [`User Stories`](./docs/UserStories.md)
+- [`Crowdtainer smart contracts system description`](./docs/SystemDescription.md)
+- [`User Stories`](./docs/UserStories.md)
 
 ## Community
 
 Come hang on our [discord](https://--.com) - to be announced soon.✨
+
 ## Contributing
 
 Foundry is our recommended for getting started with Solidity development, since it is easier to install, and faster to execute tests with. However, it is not yet as feature complete as DappTools, namely, it doesn't support formal verification (yet). Scripts such as `make test` depend on DappTools. However it is generally possible to execute the unit tests with `forge test`, as we strive to keep compatibility.
@@ -45,7 +47,7 @@ root
 
 # Installing dependencies
 
-```Note: Below are instructions to have all three workflows available (Foundry, Dapp.tools and Hardhat). However, one workflow does not depend on the tools required by the other. Frontend development may be interested only in getting a local network running with contracts and therefore only install node/Hardhat.```
+`Note: Below are instructions to have all three workflows available (Foundry, Dapp.tools and Hardhat). However, one workflow does not depend on the tools required by the other. Frontend development may be interested only in getting a local network running with contracts and therefore only install node/Hardhat.`
 
 ## Hardhat installation
 
@@ -95,6 +97,7 @@ nix-env -iA ghc -f $(curl -sS https://api.github.com/repos/dapphub/dapptools/rel
 
 # Then, restart your terminal/shell session to make the installation effective.
 ```
+
 ## Install DappTools
 
 ```sh
@@ -108,7 +111,9 @@ curl https://dapp.tools/install | sh
 ```sh
 npx hardhat # show all available tasks
 ```
+
 Copy the `.env.example` file to `.env`.
+
 ### Local instance + deployment
 
 ```sh
@@ -117,14 +122,14 @@ npx hardhat node
 ```
 
 To deploy to a specific network:
+
 ```sh
 # (See hardhat.config.ts for available networks)
 npx hardhat deploy --network <network_name> # e.g. rinkeby
 ```
 
-
-
 ### Useful commands
+
 ```sh
 npx hardhat accounts
 npx hardhat compile
@@ -138,7 +143,6 @@ npx prettier '**/*.{json,sol,md}' --write
 npx solhint 'contracts/**/*.sol'
 npx solhint 'contracts/**/*.sol' --fix
 ```
-
 
 ## Solidity code development
 
@@ -155,18 +159,18 @@ make coverage
 
 # To run Solidity' SMTChecker-based tests:
 make solcheck
+```
 
-# Estimation of gas costs:
+### Estimation of gas costs:
 
 - First run a local testnet with `dapp testnet`.
 - Then run e.g.: `make contract=Crowdtainer estimate`
 
-# Contract size estimation:
+### Contract size estimation:
 - Example: `make contract=Vouchers721 size`
 
-```
-
 ### To apply linter (Solidity only):
+
 ```sh
 make lint
 ```
@@ -176,9 +180,9 @@ make lint
 Contracts can be deployed via the `make deploy` command. Addresses are automatically
 written in a name-address json file stored under `out/addresses.json`. Additionally, you can specify a specific network with `make deploy-rinkeby` or `make deploy-mainnet`. You can choose which contract you want to deploy, by adding it as a variable, e.g.:
 
- ```bash
- make deploy-rinkeby CONTRACT=Crowdtainer
- ```
+```sh
+make deploy-rinkeby CONTRACT=Crowdtainer
+```
 
 ### Local Testnet
 
