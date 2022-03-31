@@ -1,5 +1,6 @@
 # Common
 .env
+.DS_Store
 
 # Node
 node_modules
@@ -12,4 +13,5 @@ out/
 cache
 artifacts
 
-.DS_Store
+# Hardhat-deploy extension
+deployments/localhost

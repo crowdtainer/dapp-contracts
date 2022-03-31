@@ -5,43 +5,47 @@ import "@nomiclabs/hardhat-ethers";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
+import "hardhat-deploy";
+import {
+  nodeUrlFor,
+  /* mnemonicAccountsFor, */
+  privateKeysFor,
+} from "./network_utils/network";
+
+import "./hardhat_scripts/tasks/erc20";
+import "./hardhat_scripts/tasks/vouchers721";
 
 dotenv.config();
-
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
-task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
-  const accounts = await hre.ethers.getSigners();
-
-  for (const account of accounts) {
-    console.log(account.address);
-  }
-});
-
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
 
 const config: HardhatUserConfig = {
   paths: {
     sources: "./src/contracts",
     cache: "./out/hardhat/cache",
-    artifacts: "./out/hardhat/artifacts"
+    artifacts: "./out/hardhat/artifacts",
   },
   solidity: "0.8.11",
+  namedAccounts: {
+    deployer: 0,
+    neo: 1, // participant
+    trinity: 2, // participant
+    agent: 3, // agent / service provider
+  },
   networks: {
-    ropsten: {
-      url: process.env.ROPSTEN_URL || "",
-      accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    rinkeby: {
+      url: nodeUrlFor("rinkeby"),
+      accounts: privateKeysFor("rinkeby"),
+      // accounts: mnemonicAccountsFor('rinkeby'),
+    },
+    localhost: {
+      gas: 2100000,
+      gasPrice: 8000000000,
     },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
     currency: "USD",
+    gasPrice: 0,
   },
-  // etherscan: {
-  //   apiKey: process.env.ETHERSCAN_API_KEY,
-  // },
 };
 
 export default config;

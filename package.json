@@ -8,7 +8,7 @@
     "*.sol"
   ],
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.0.0",
+    "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.13",
     "@openzeppelin/contracts": "^4.5.0",
     "@typechain/ethers-v5": "^7.0.1",
     "@typechain/hardhat": "^2.3.0",
@@ -24,8 +24,9 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^3.4.0",
     "eslint-plugin-promise": "^5.1.0",
-    "ethers": "^5.0.0",
+    "ethers": "^5.6.2",
     "hardhat": "^2.9.1",
+    "hardhat-deploy": "^0.11.2",
     "hardhat-gas-reporter": "^1.0.4",
     "prettier": "^2.4.1",
     "prettier-plugin-solidity": "^1.0.0-beta.18",
@@ -48,6 +49,5 @@
     "prettier:check": "prettier --check \"src/**/*.sol\"",
     "solhint": "yarn solhint:check --fix",
     "solhint:check": "solhint --config ./.solhint.json \"src/**/*.sol\""
-  },
-  "dependencies": {}
+  }
 }
