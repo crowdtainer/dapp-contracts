@@ -17,7 +17,7 @@ export function node_url_for(network: string): string {
     uri = uri.replace('{{networkName}}', network);
   }
   if (!uri || uri === '') {
-    throw new Error(`environment variable "ETH_NODE_URI" not configured `);
+    return "";
   }
   if (uri.indexOf('{{') >= 0) {
     throw new Error(
