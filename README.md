@@ -49,8 +49,14 @@ root
 
 ## Hardhat installation
 
+- Prerequisite: node
+
 ```sh
-yarn
+# Install yarn
+npm install --global yarn
+
+# Install Crowdtainer project dependencies
+yarn install
 ```
 
 ## Foundry installation
@@ -97,17 +103,17 @@ curl https://dapp.tools/install | sh
 
 # Building and testing
 
-## Hardhat (contract deployment / interaction)
+## Hardhat
 
 ```sh
 npx hardhat # show all available tasks
 ```
-### Deploying
+Copy the `.env.example` file to `.env`.
+### Local instance + deployment
 
 ```sh
-# To deploy locally:
-npx hardhat node # run a simulated Ethereum blockchain locally
-npx hardhat deploy --network localhost # (separate terminal)
+# Run a simulated Ethereum blockchain locally and deploy contracts:
+npx hardhat node
 ```
 
 To deploy to a specific network:
