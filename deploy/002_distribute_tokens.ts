@@ -1,6 +1,7 @@
 import {HardhatRuntimeEnvironment} from 'hardhat/types';
 import {DeployFunction} from 'hardhat-deploy/types';
 import '@nomiclabs/hardhat-ethers';
+import { parseUnits } from 'ethers/lib/utils';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
@@ -19,7 +20,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const token = await hre.ethers.getContract("Coin");
   const symbol = await token.symbol();
 
-  const quantity = 89898989;
+  const quantity = parseUnits("1000", 18);
 
   console.log(`Mint ${quantity} ${symbol} to trinity (${trinity}).`);
   await hre.run("mint", {
