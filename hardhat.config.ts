@@ -6,10 +6,14 @@ import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "hardhat-deploy";
-import {node_url_for, mnemonicAccountsFor, privateKeysFor} from './network_utils/network';
+import {
+  nodeUrlFor,
+  /* mnemonicAccountsFor, */
+  privateKeysFor,
+} from "./network_utils/network";
 
-import "./hardhat_scripts/tasks/erc20"
-import "./hardhat_scripts/tasks/vouchers721"
+import "./hardhat_scripts/tasks/erc20";
+import "./hardhat_scripts/tasks/vouchers721";
 
 dotenv.config();
 
@@ -17,20 +21,20 @@ const config: HardhatUserConfig = {
   paths: {
     sources: "./src/contracts",
     cache: "./out/hardhat/cache",
-    artifacts: "./out/hardhat/artifacts"
+    artifacts: "./out/hardhat/artifacts",
   },
   solidity: "0.8.11",
   namedAccounts: {
     deployer: 0,
-    neo: 1,     // participant
+    neo: 1, // participant
     trinity: 2, // participant
-    agent: 3,   // agent / service provider
+    agent: 3, // agent / service provider
   },
   networks: {
     rinkeby: {
-      url: node_url_for('rinkeby'),
-      accounts: privateKeysFor('rinkeby'),
-      //accounts: mnemonicAccountsFor('rinkeby'),
+      url: nodeUrlFor("rinkeby"),
+      accounts: privateKeysFor("rinkeby"),
+      // accounts: mnemonicAccountsFor('rinkeby'),
     },
     localhost: {
       gas: 2100000,

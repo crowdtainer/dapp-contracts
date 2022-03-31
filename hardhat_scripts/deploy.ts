@@ -20,8 +20,13 @@ async function main() {
   await crowdtainer.deployed();
   console.log("Crowdtainer deployed to:", crowdtainer.address);
 
-  const metadataServiceV1Factory = await ethers.getContractFactory("MetadataServiceV1");
-  const metadataService = await metadataServiceV1Factory.deploy("DAI", "This ticket is not valid as an invoice");
+  const metadataServiceV1Factory = await ethers.getContractFactory(
+    "MetadataServiceV1"
+  );
+  const metadataService = await metadataServiceV1Factory.deploy(
+    "DAI",
+    "This ticket is not valid as an invoice"
+  );
   await metadataService.deployed();
   console.log("MetadataServiceV1 deployed to:", crowdtainer.address);
 
@@ -31,33 +36,40 @@ async function main() {
   console.log("Vouchers721 deployed to:", crowdtainer.address);
 
   const coinFactory = await ethers.getContractFactory("Coin");
-  const coin = await coinFactory.deploy("Token","TST", 1);
+  const coin = await coinFactory.deploy("Token", "TST", 1);
   await coin.deployed();
   console.log("Coin deployed to:", crowdtainer.address);
 
-  let arrayOfBigNumbers: [BigNumberish,BigNumberish,BigNumberish,BigNumberish];
-  arrayOfBigNumbers = [1,2,3,4];
+  let arrayOfBigNumbers: [
+    BigNumberish,
+    BigNumberish,
+    BigNumberish,
+    BigNumberish
+  ];
+  arrayOfBigNumbers = [1, 2, 3, 4];
 
-  let currentTime = (await ethers.provider.getBlock("latest")).timestamp;
-  let erc20Decimals = await coin.decimals();
+  const currentTime = (await ethers.provider.getBlock("latest")).timestamp;
+  const erc20Decimals = await coin.decimals();
 
   const [agent] = await ethers.getSigners();
 
-  let campaignData = {
-      shippingAgent: agent.address,
-      openingTime: currentTime + 10,
-      expireTime: currentTime + 10 + 3601,
-      targetMinimum: parseUnits("10000", erc20Decimals),
-      targetMaximum: parseUnits("10000000", erc20Decimals),
-      unitPricePerType: arrayOfBigNumbers,
-      referralRate: 20,
-      referralEligibilityValue: parseUnits("50", erc20Decimals),
-      token: coin.address
-    };
+  const campaignData = {
+    shippingAgent: agent.address,
+    openingTime: currentTime + 10,
+    expireTime: currentTime + 10 + 3601,
+    targetMinimum: parseUnits("10000", erc20Decimals),
+    targetMaximum: parseUnits("10000000", erc20Decimals),
+    unitPricePerType: arrayOfBigNumbers,
+    referralRate: 20,
+    referralEligibilityValue: parseUnits("50", erc20Decimals),
+    token: coin.address,
+  };
 
-  await vouchers721.createCrowdtainer(campaignData,
-      ["250g","500g","1Kg","2Kg"],
-      metadataService.address);
+  await vouchers721.createCrowdtainer(
+    campaignData,
+    ["250g", "500g", "1Kg", "2Kg"],
+    metadataService.address
+  );
 
   console.log(`${agent.address} created a new Crowdtainer project.`);
 }

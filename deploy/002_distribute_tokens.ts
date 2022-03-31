@@ -1,18 +1,19 @@
-import {HardhatRuntimeEnvironment} from 'hardhat/types';
-import {DeployFunction} from 'hardhat-deploy/types';
-import '@nomiclabs/hardhat-ethers';
-import { parseUnits } from 'ethers/lib/utils';
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { DeployFunction } from "hardhat-deploy/types";
+import "@nomiclabs/hardhat-ethers";
+import { parseUnits } from "ethers/lib/utils";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-
   const chainId = await hre.getChainId();
-  const {neo, trinity} = await hre.getNamedAccounts();
+  const { neo, trinity } = await hre.getNamedAccounts();
 
   const mainnetChainId = "1";
-  const isMainnet = (chainId == mainnetChainId);
+  const isMainnet = chainId === mainnetChainId;
 
-  if(isMainnet){
-    console.warn("Mainnet configuration detected, skipping Coin.sol token distribution.");
+  if (isMainnet) {
+    console.warn(
+      "Mainnet configuration detected, skipping Coin.sol token distribution."
+    );
     return;
   }
 
@@ -25,7 +26,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   console.log(`Mint ${quantity} ${symbol} to trinity (${trinity}).`);
   await hre.run("mint", {
     receiver: trinity,
-    amount: `${quantity}`
+    amount: `${quantity}`,
   });
 
   console.log(`Mint ${quantity} ${symbol} to neo (${neo}).`);
@@ -33,9 +34,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // Give tokens to neo
   await hre.run("mint", {
     receiver: neo,
-    amount: `${quantity}`
+    amount: `${quantity}`,
   });
-
 };
 export default func;
-func.tags = ['DistributeTokens'];
+func.tags = ["DistributeTokens"];
