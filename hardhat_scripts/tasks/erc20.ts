@@ -1,6 +1,7 @@
 import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-ethers";
 import "@typechain/hardhat";
+import { Coin } from "../../typechain/";
 
 task("accounts", "Prints the list of accounts.", async (taskArgs, hre) => {
   const accounts = await hre.ethers.getSigners();
@@ -47,32 +48,22 @@ task("mint", "ERC-20 mint.")
   .addParam("receiver", "Receiver address")
   .addParam("amount", "Token amount")
   .setAction(async function ({ receiver, amount }, hre) {
-    const token = await hre.ethers.getContract("Coin");
+    const token = <Coin>(await hre.ethers.getContract("Coin"));
     const [deployer] = await hre.ethers.getSigners();
     await (await token.connect(deployer).mint(receiver, amount)).wait();
     console.log(`${deployer.address} has minted ${amount} to ${receiver}`);
   });
 
 task("approve", "ERC-20 approve.")
+  .addParam("erc20", "ERC-20 Contract address")
   .addParam("spender", "Spender address")
   .addParam("amount", "Token amount")
-  .setAction(async function ({ spender, amount }, hre) {
-    const token = await hre.ethers.getContract("Coin");
+  .setAction(async function ({ erc20, spender, amount }, hre) {
+    const tokenFactory = await hre.ethers.getContractFactory("Coin");
+    const token = <Coin>tokenFactory.attach(erc20);
     const [sender] = await hre.ethers.getSigners();
     await token.approve(spender, amount);
     console.log(
       `${sender.address} has approved ${amount} tokens to ${spender}`
     );
-  });
-
-task("transfer", "ERC-20 transfer.")
-  .addParam("token", "Token address")
-  .addParam("spender", "Spender address")
-  .addParam("amount", "Token amount")
-  .setAction(async function ({ token, spender, amount }, { ethers }) {
-    const watermelonToken = await ethers.getContractFactory("WatermelonToken");
-    const watermelon = watermelonToken.attach(token);
-    const [minter] = await ethers.getSigners();
-    await (await watermelon.connect(minter).transfer(spender, amount)).wait();
-    console.log(`${minter.address} has transferred ${amount} to ${spender}`);
   });
