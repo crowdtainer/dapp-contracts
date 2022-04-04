@@ -4,9 +4,9 @@
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
 import { ethers } from "hardhat";
-// import hre from "hardhat";
 import { BigNumberish } from "@ethersproject/bignumber/lib/bignumber";
 import { parseUnits } from "ethers/lib/utils";
+import { Vouchers721 } from "../typechain";
 
 async function main() {
   // If this script is run directly using `node` you may want to call compile
@@ -31,8 +31,9 @@ async function main() {
   console.log("MetadataServiceV1 deployed to:", crowdtainer.address);
 
   const vouchers721Factory = await ethers.getContractFactory("Vouchers721");
-  const vouchers721 = await vouchers721Factory.deploy(crowdtainer.address);
+  const vouchers721 = <Vouchers721>(await vouchers721Factory.deploy(crowdtainer.address));
   await vouchers721.deployed();
+
   console.log("Vouchers721 deployed to:", crowdtainer.address);
 
   const coinFactory = await ethers.getContractFactory("Coin");
