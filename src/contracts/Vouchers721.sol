@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 
 // @dev Internal dependencies
 import "./ICrowdtainer.sol";
+import "./Crowdtainer.sol";
 import "./Errors.sol";
 import "./Constants.sol";
 import "./Metadata/IMetadataService.sol";
@@ -98,7 +99,7 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
         ICrowdtainer crowdtainer = ICrowdtainer(
             Clones.clone(crowdtainerImplementation)
         );
-        // Crowdtainer crowdtainer = new Crowdtainer(address(this));
+        // ICrowdtainer crowdtainer = ICrowdtainer(new Crowdtainer());
 
         crowdtainer.initialize(address(this), _campaignData);
 
