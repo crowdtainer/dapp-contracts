@@ -4,7 +4,8 @@ pragma solidity ^0.8.11;
 import "./utils/CrowdtainerTest.sol";
 import {Errors} from "../contracts/Crowdtainer.sol";
 
-/* solhint-disable no-empty-blocks */
+/* solhint-disable no-empty-blocks*/
+/* solhint-disable code-complexity*/
 
 contract ValidInitializeTester is CrowdtainerTest {
     function testValidValuesMustSucceed() public {
@@ -285,13 +286,17 @@ contract InitializeFuzzer is CrowdtainerTest {
         IERC20 _token
     ) public {
         // Discard initialize() invariants
-        if (address(_token) != address(0)) return;
+        if (address(_token) == address(0)) return;
+        if (address(_agent) == address(0)) return;
         if (!(_openingTime < type(uint256).max - SAFETY_TIME_RANGE)) return;
         if (_closingTime > _openingTime + SAFETY_TIME_RANGE) return;
         if (_targetMaximum == 0) return;
         if (_targetMinimum == 0) return;
         if (_targetMinimum > _targetMaximum) return;
         if (_referralRate % 2 != 0) return;
+        if (_referralEligibilityValue > _targetMinimum) return;
+
+        if (_closingTime < _openingTime + SAFETY_TIME_RANGE) return;
 
         // Ensure that there are no prices set to zero
         for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
@@ -316,7 +321,6 @@ contract InitializeFuzzer is CrowdtainerTest {
             )
         );
 
-        assert(address(_token) != address(0));
         assert(
             crowdtainer.expireTime() >
                 (crowdtainer.openingTime() + SAFETY_TIME_RANGE)
@@ -337,7 +341,7 @@ contract InitializeProver is CrowdtainerTest {
         uint256 _expireTime,
         uint256 _targetMinimum,
         uint256 _targetMaximum,
-        uint256[10] memory _unitPricePerType,
+        uint256[4] memory _unitPricePerType,
         uint256 _referralRate,
         uint256 _referralEligibilityValue,
         IERC20 _token
@@ -345,25 +349,29 @@ contract InitializeProver is CrowdtainerTest {
 
         // Remove initialize() invariants from branch exploration
         if(address(_token) == address(0)) return;
-        if(_expireTime < (_openingTime + crowdtainer.SAFETY_TIME_RANGE())) return;
+        if(_expireTime < (_openingTime + SAFETY_TIME_RANGE)) return;
         if(_targetMaximum == 0) return;
         if(_targetMinimum < _targetMaximum) return;
-        if (_referralRate % 2 != 0) return;
+        if(_referralRate % 2 != 0) return;
+        if(_referralRate >= _targetMinimum) return;
 
-        crowdtainer.initialize(CampaignData(
-            _openingTime,
-            _expireTime,
-            _targetMinimum,
-            _targetMaximum,
-            _unitPricePerType,
-            _referralRate,
-            _referralEligibilityValue,
-            _token)
-        );
+        crowdtainer.initialize(address(this), CampaignData(
+                    address(agent),
+                    openingTime,
+                    closingTime,
+                    targetMinimum,
+                    targetMaximum,
+                    unitPricePerType,
+                    referralRate,
+                    referralEligibilityValue,
+                    address(erc20Token)
+                )
+            );
 
         assert(true);
 
         // TODO: Other invariant checks.
     } */
 }
-/* solhint-enable no-empty-blocks */
+/* solhint-enable code-complexity*/
+/* solhint-enable no-empty-blocks code-complexity */
