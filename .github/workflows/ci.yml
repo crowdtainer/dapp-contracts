@@ -14,7 +14,6 @@ env:
   CI: true
   FORCE_COLOR: 2
 
-
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -51,7 +50,9 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        with:
+            submodules: recursive
 
       # Cache dependencies
       - name: Cache node dependencies
@@ -63,18 +64,29 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
 
       # Install dependencies
-      - name: Install dependencies
+      - name: Install yarn dependencies
         if: steps.yarn-cache.outputs.cache-hit != 'true'
         run: yarn
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
 
       - name: Create .env file
         run: cp .env.example .env
 
       - name: Build
-        run: npx hardhat compile
+        run: yarn build && npx hardhat compile
 
       - name: Deploy contracts
         run: npx hardhat run hardhat_scripts/deploy.ts
+
+      - name: Run forge tests
+        run: forge test -vvv
+
+      - name: Run forge snapshot (tests gas usage)
+        run: forge snapshot
 
   # deploy:
   #   runs-on: ubuntu-latest

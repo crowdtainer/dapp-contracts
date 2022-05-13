@@ -1,7 +1,6 @@
 import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-ethers";
-import "@typechain/hardhat";
-import { Coin } from "../../typechain/";
+import { Coin } from "../../out/typechain/";
 
 task("accounts", "Prints the list of accounts.", async (taskArgs, hre) => {
   const accounts = await hre.ethers.getSigners();
