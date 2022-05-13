@@ -6,7 +6,7 @@
 import { ethers } from "hardhat";
 import { BigNumberish } from "@ethersproject/bignumber/lib/bignumber";
 import { parseUnits } from "ethers/lib/utils";
-import { Vouchers721 } from "../typechain";
+import { Vouchers721 } from "../out/typechain";
 
 async function main() {
   // If this script is run directly using `node` you may want to call compile

@@ -33,5 +33,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     `Coin deployed at: ${token.address}. Current supply of ${supply} ${symbol}`
   );
 };
+
 export default func;
+
 func.tags = ["DeployFakeCoin"];

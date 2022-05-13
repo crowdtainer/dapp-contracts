@@ -21,4 +21,7 @@ module.exports = {
       { ignores: ["modules"] },
     ],
   },
+  solidity: {
+    version: "0.8.11"
+  }
 };
