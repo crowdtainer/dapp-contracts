@@ -110,10 +110,10 @@ curl https://dapp.tools/install | sh
 ## Hardhat
 
 ```sh
-npx hardhat # show all available tasks
+# Important (required for npx hardhat compile):
+yarn build # generates smartcontract <-> typescript bindings with typechain
 
-# Important: required for npx hardhat compile:
-yarn build # generates typescript bindinds
+npx hardhat # show all available tasks
 ```
 
 Copy the `.env.example` file to `.env`.
