@@ -337,6 +337,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
 
             // @dev Calculate the discount value
             discount = ((finalCost * referralRate) / 100) / 2;
+            assert(discount != 0);
 
             // @dev 1- Apply discount
             assert(discount < finalCost);
@@ -348,8 +349,6 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             accumulatedRewards += discount;
 
             referrerOfReferee[_wallet] = _referrer;
-
-            assert(discount != 0);
         }
 
         costForWallet[_wallet] = finalCost;
@@ -405,6 +404,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         }
 
         totalValueRaised -= costForWallet[_wallet];
+        accumulatedRewards -= discountForUser[_wallet];
+
         costForWallet[_wallet] = 0;
         discountForUser[_wallet] = 0;
         referrerOfReferee[_wallet] = address(0);
@@ -522,6 +523,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             assert(targetMaximum > 0);
             assert(targetMinimum <= targetMaximum);
             assert(referralRate <= SAFETY_MAX_REFERRAL_RATE);
+
+            assert(accumulatedRewards < totalValueRaised);
         }
     }
 }
