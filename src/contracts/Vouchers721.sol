@@ -173,7 +173,7 @@ contract Vouchers721 is ERC721 {
      */
     function leave(uint256 _tokenId) external {
         if (ownerOf(_tokenId) != msg.sender) {
-            revert Errors.AccountNotOwnerOrApproved();
+            revert Errors.AccountNotOwner();
         }
 
         address crowdtainerAddress = crowdtainerIdToAddress(

@@ -63,7 +63,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
      */
     modifier onlyAddress(address requiredAddress) {
         if (owner == address(0)) {
-            // This branch means this contract is being used as a stand-alone contract (e.g., not managed by EIP-1155 owning it)
+            // This branch means this contract is being used as a stand-alone contract, not managed/owned by a EIP-721/1155 contract
             // E.g.: A Crowdtainer instance interacted directly by an EOA.
             _;
             return;
@@ -288,6 +288,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         onlyActive
         nonReentrant
     {
+        if(owner == address(0)) {
+            requireAddress(_wallet);
+        }
+
         enableReferral[_wallet] = _enableReferral;
 
         // @dev Check if wallet didn't already join
@@ -389,6 +393,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         onlyActive
         nonReentrant
     {
+        if(owner == address(0)) {
+            requireAddress(_wallet);
+        }
+
         uint256 withdrawalTotal = costForWallet[_wallet];
 
         // @dev Subtract formerly given referral rewards originating from this account.

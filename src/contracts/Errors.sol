@@ -21,8 +21,8 @@ library Errors {
     error IDsAmountsLengthMismatch();
     // @notice: Cannot set approval for the same account.
     error CannotSetApprovalForSelf();
-    // @notice: Caller is not owner nor approved.
-    error AccountNotOwnerOrApproved();
+    // @notice: Caller is not owner or has correct permission.
+    error AccountNotOwner();
     // @notice: Only the shipping agent is able to set a voucher/tokenId as "claimed".
     error SetClaimedOnlyAllowedByShippingAgent();
     // @notice: Cannot transfer someone else's tokens.
