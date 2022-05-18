@@ -148,7 +148,10 @@ contract CrowdtainerTest is CrowdtainerTestHelpers {
         // Give lots of tokens to alice
         erc20Token.mint(address(alice), type(uint256).max - (1000 * ONE));
         // Alice allows Crowdtainer to pull the value
-        alice.doApprovePayment(address(crowdtainer), type(uint256).max - (1000 * ONE));
+        alice.doApprovePayment(
+            address(crowdtainer),
+            type(uint256).max - (1000 * ONE)
+        );
 
         // Give 1000 tokens to bob
         erc20Token.mint(address(bob), 1000 * ONE);

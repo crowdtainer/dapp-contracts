@@ -32,7 +32,6 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
     }
 
     function testSmallPricesAndDiscountsMustSucceed() public {
-
         crowdtainer.initialize(
             address(0),
             CampaignData(
@@ -59,7 +58,7 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
 
         uint256 totalCost = quantities[0] * ONE;
 
-        uint256 discount = ((totalCost * referralRate) / 100) / 2;
+        uint256 discount = (totalCost * referralRate) / 100 / 2;
         assert(discount != 0);
 
         uint256 previousAliceBalance = erc20Token.balanceOf(address(alice));

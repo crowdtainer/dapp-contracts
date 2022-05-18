@@ -62,7 +62,7 @@ contract MetadataServiceV1 is IMetadataService {
                     '" transform="matrix(16.4916,0,0,15.627547,7.589772,6.9947903)">',
                     generateSVGProductDescription(
                         _metadata.quantities[i],
-                        _metadata.unitPricePerType[i] / (10 ** _erc20Decimals),
+                        _metadata.unitPricePerType[i] / (10**_erc20Decimals),
                         _unitSymbol,
                         _metadata.productDescription[i]
                     ),
@@ -79,7 +79,7 @@ contract MetadataServiceV1 is IMetadataService {
                 _metadata.quantities[i];
         }
 
-        return (productList, totalCost / 10 ** _erc20Decimals);
+        return (productList, totalCost / 10**_erc20Decimals);
     }
 
     function getSVGHeader() internal pure returns (string memory) {
@@ -169,7 +169,11 @@ contract MetadataServiceV1 is IMetadataService {
         string memory description;
         uint256 totalCost;
 
-        (description, totalCost) = generateProductList(_metadata, unitSymbol, erc20Decimals);
+        (description, totalCost) = generateProductList(
+            _metadata,
+            unitSymbol,
+            erc20Decimals
+        );
 
         return
             string(
@@ -190,7 +194,11 @@ contract MetadataServiceV1 is IMetadataService {
             );
     }
 
-    constructor(string memory _unitSymbol, uint8 _erc20Decimals, string memory _ticketFootnotes) {
+    constructor(
+        string memory _unitSymbol,
+        uint8 _erc20Decimals,
+        string memory _ticketFootnotes
+    ) {
         unitSymbol = _unitSymbol;
         erc20Decimals = _erc20Decimals;
         ticketFootnotes = _ticketFootnotes;

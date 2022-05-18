@@ -230,14 +230,14 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
             if (_campaignData.unitPricePerType[i] == 0) {
                 break;
-            } else if(_campaignData.unitPricePerType[i] < ONE) {
+            } else if (_campaignData.unitPricePerType[i] < ONE) {
                 revert Errors.PriceTooLow();
             }
 
             numberOfProducts++;
         }
 
-        if(numberOfProducts == 0) {
+        if (numberOfProducts == 0) {
             revert Errors.InvalidProductNumberAndPrices();
         }
 
@@ -297,7 +297,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         onlyActive
         nonReentrant
     {
-        if(owner == address(0)) {
+        if (owner == address(0)) {
             requireAddress(_wallet);
         }
 
@@ -402,7 +402,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         onlyActive
         nonReentrant
     {
-        if(owner == address(0)) {
+        if (owner == address(0)) {
             requireAddress(_wallet);
         }
 
@@ -506,7 +506,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         discountForUser[msg.sender] = 0;
         referrerOfReferee[msg.sender] = address(0);
 
-        if(withdrawalTotal == 0) {
+        if (withdrawalTotal == 0) {
             revert Errors.InsufficientBalance();
         }
 

@@ -105,7 +105,10 @@ contract Vouchers721CreateTester is VouchersTest {
             _referrer: address(0)
         });
 
-        neo.doApprovePayment(crowdtainerAddress2, type(uint256).max - 1000 * ONE);
+        neo.doApprovePayment(
+            crowdtainerAddress2,
+            type(uint256).max - 1000 * ONE
+        );
 
         uint256 neoCrowdtainer2TokenId = neo.doJoin({
             _crowdtainerAddress: crowdtainerAddress2,
@@ -118,7 +121,10 @@ contract Vouchers721CreateTester is VouchersTest {
         address crowdtainerAddress3;
         (crowdtainerAddress3, crowdtainerId3) = createCrowdtainer();
 
-        georg.doApprovePayment(crowdtainerAddress3, type(uint256).max - 1000 * ONE);
+        georg.doApprovePayment(
+            crowdtainerAddress3,
+            type(uint256).max - 1000 * ONE
+        );
 
         uint256 georgCrowdtainer3TokenId = georg.doJoin({
             _crowdtainerAddress: crowdtainerAddress3,
@@ -127,7 +133,10 @@ contract Vouchers721CreateTester is VouchersTest {
             _referrer: address(0)
         });
 
-        alice.doApprovePayment(crowdtainerAddress3, type(uint256).max - 1000 * ONE);
+        alice.doApprovePayment(
+            crowdtainerAddress3,
+            type(uint256).max - 1000 * ONE
+        );
 
         uint256 aliceCrowdtainer3TokenId = alice.doJoin({
             _crowdtainerAddress: crowdtainerAddress3,

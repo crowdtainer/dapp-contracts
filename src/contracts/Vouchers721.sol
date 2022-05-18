@@ -21,7 +21,6 @@ import "./Metadata/IMetadataService.sol";
  * @dev Each token id represents a "sold voucher", a set of one or more products or services of a specific Crowdtainer.
  */
 contract Vouchers721 is ERC721 {
-
     // @dev Each Crowdtainer project is alloacted a range.
     // @dev This is used as a multiple to deduce the crowdtainer id from a given token id.
     uint256 public constant ID_MULTIPLE = 1000000;
