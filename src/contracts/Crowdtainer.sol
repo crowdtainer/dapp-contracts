@@ -330,7 +330,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         // @dev Apply discounts to `finalCost` if applicable.
         bool eligibleForDiscount;
         // @dev Verify validity of given `referrer`
-        if (_referrer != address(0)) {
+        if (_referrer != address(0) && referralRate > 0) {
             // @dev Check if referrer participated
             if (costForWallet[_referrer] == 0) {
                 revert Errors.ReferralInexistent();
@@ -351,11 +351,9 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             //    2 - Half of the referral rate is credited to the referrer.
 
             // @dev Calculate the discount value
-            discount = ((finalCost * referralRate) / 100) / 2;
-            assert(discount != 0);
+            discount = (finalCost * referralRate) / 100 / 2;
 
             // @dev 1- Apply discount
-            assert(discount < finalCost);
             finalCost -= discount;
             discountForUser[_wallet] += discount;
 
@@ -445,8 +443,6 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         onlyInState(CrowdtainerState.Funding)
         nonReentrant
     {
-        assert(accumulatedRewards < totalValueRaised);
-
         uint256 availableForAgent = totalValueRaised - accumulatedRewards;
 
         if (availableForAgent < targetMinimum) {
@@ -492,8 +488,6 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
 
         if (crowdtainerState == CrowdtainerState.Delivery)
             revert Errors.InvalidOperationFor({state: crowdtainerState});
-
-        assert(accumulatedRewards < totalValueRaised);
 
         // The first interaction with this function 'nudges' the state to `Failed` if
         // the project didn't reach the goal in time.
