@@ -146,6 +146,8 @@ npx prettier '**/*.{json,sol,md}' --check
 npx prettier '**/*.{json,sol,md}' --write
 npx solhint 'contracts/**/*.sol'
 npx solhint 'contracts/**/*.sol' --fix
+# Debug function with specific parameters; Eg.:
+forge run src/test/Join.t.sol -t JoinFuzzer --sig "testInvariantsHold(uint256,uint256,uint256)" --debug 0 0 0
 ```
 
 ## Solidity code development
