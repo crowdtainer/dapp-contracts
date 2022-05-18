@@ -506,6 +506,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         discountForUser[msg.sender] = 0;
         referrerOfReferee[msg.sender] = address(0);
 
+        if(withdrawalTotal == 0) {
+            revert Errors.InsufficientBalance();
+        }
+
         // @dev transfer the owed funds from this contract back to the user.
         token.safeTransferFrom(address(this), msg.sender, withdrawalTotal);
 
