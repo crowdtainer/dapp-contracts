@@ -11,6 +11,8 @@ library Errors {
     error CrowdtainerInexistent();
     // @notice: Invalid token id.
     error InvalidTokenId(uint256 tokenId);
+    // @notice: Prices lower than 1 * 1^6 not supported.
+    error PriceTooLow();
     // @notice: Account cannot be of address(0).
     error AccountAddressIsZero();
     // @notice: Metadata service contract cannot be of address(0).
@@ -33,6 +35,8 @@ library Errors {
     error ERC1155ReceiverRejectedTokens();
     // @notice: Invalid receiver (non ERC155Receiver).
     error NonERC1155Receiver();
+    // @notice: Can't initialize with all their prices set to zero.
+    error InvalidProductNumberAndPrices();
     // @notice: Can't make transfers in given state.
     error TransferNotAllowed(address crowdtainer, CrowdtainerState state);
     // @notice: No further participants possible in a given Crowdtainer.

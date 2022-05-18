@@ -55,6 +55,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     // @dev The total value raised/accumulated by this contract.
     uint256 public totalValueRaised;
 
+    uint256 internal constant ONE = 1e6; // 6 decimal places
+
     // -----------------------------------------------
     //  Modifiers
     // -----------------------------------------------
@@ -228,8 +230,15 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
             if (_campaignData.unitPricePerType[i] == 0) {
                 break;
+            } else if(_campaignData.unitPricePerType[i] < ONE) {
+                revert Errors.PriceTooLow();
             }
+
             numberOfProducts++;
+        }
+
+        if(numberOfProducts == 0) {
+            revert Errors.InvalidProductNumberAndPrices();
         }
 
         if (_campaignData.referralRate > SAFETY_MAX_REFERRAL_RATE)
@@ -309,6 +318,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
 
             finalCost += unitPricePerType[i] * _quantities[i];
         }
+
+        assert(finalCost >= ONE);
 
         if (_enableReferral && finalCost < referralEligibilityValue)
             revert Errors.MinimumPurchaseValueForReferralNotMet({

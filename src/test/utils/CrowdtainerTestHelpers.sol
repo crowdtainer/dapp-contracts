@@ -8,6 +8,8 @@ import "./Hevm.sol";
 contract CrowdtainerTestHelpers is Test {
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
+    uint256 internal constant ONE = 10**6; // 6 decimal places
+
     // @dev Helper function to check wheether the thrown Custom Error type matches expectation.
     function assertEqSignature(
         bytes calldata expectedSignature,

@@ -31,20 +31,33 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
         );
     }
 
-    function testUsageOfValidReferralCodeMustSucceed() public {
-        init();
+    function testSmallPricesAndDiscountsMustSucceed() public {
+
+        crowdtainer.initialize(
+            address(0),
+            CampaignData(
+                address(agent),
+                openingTime,
+                closingTime,
+                targetMinimum,
+                targetMaximum,
+                [ONE, 0, 0, 0],
+                referralRate,
+                0,
+                address(iERC20Token)
+            )
+        );
+
         uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
             uint256(1),
-            2,
-            10,
+            0,
+            0,
             0
         ];
 
         bob.doJoin(quantities, true, address(0));
 
-        uint256 totalCost = quantities[0] * unitPricePerType[0];
-        totalCost += quantities[1] * unitPricePerType[1];
-        totalCost += quantities[2] * unitPricePerType[2];
+        uint256 totalCost = quantities[0] * ONE;
 
         uint256 discount = ((totalCost * referralRate) / 100) / 2;
         assert(discount != 0);
@@ -130,10 +143,10 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
 
     function testFailPurchaseExceedsMaximumTarget() public {
         uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
-            uint256(10),
-            20,
-            25,
-            5000
+            uint256(10) * ONE,
+            20 * ONE,
+            25 * ONE,
+            5000 * ONE
         ];
 
         crowdtainer.initialize(

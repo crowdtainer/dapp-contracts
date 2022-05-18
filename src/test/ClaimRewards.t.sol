@@ -9,10 +9,10 @@ import {Errors} from "../contracts/Crowdtainer.sol";
 contract CrowdtainerRewardsTester is CrowdtainerTest {
     function testClaimRewardsMustSucceed() public {
         uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
-            uint256(10),
-            20,
-            25,
-            5000
+            uint256(10) * ONE,
+            20 * ONE,
+            25 * ONE,
+            5000 * ONE
         ];
 
         crowdtainer.initialize(
@@ -21,8 +21,8 @@ contract CrowdtainerRewardsTester is CrowdtainerTest {
                 address(agent),
                 openingTime,
                 closingTime,
-                20000,
-                30000,
+                20000 * ONE,
+                30000 * ONE,
                 _unitPricePerType,
                 referralRate,
                 referralEligibilityValue,

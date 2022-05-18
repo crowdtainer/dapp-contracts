@@ -11,13 +11,13 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
         // Create a crowdtainer where targetMinimum is small enough that a single user could
         // make the project succeed with a single join() call.
         uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
-            uint256(100),
-            200,
-            300,
+            uint256(100) * ONE,
+            200 * ONE,
+            300 * ONE,
             0
         ];
-        uint256 _targetMinimum = 3000;
-        uint256 _targetMaximum = 4000;
+        uint256 _targetMinimum = 3000 * ONE;
+        uint256 _targetMaximum = 4000 * ONE;
         crowdtainer.initialize(
             address(0),
             CampaignData(
@@ -48,13 +48,13 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
 
     function testFailclaimFundsOnSuccessfulProject() public {
         uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
-            uint256(100),
-            200,
-            300,
+            uint256(100) * ONE,
+            200 * ONE,
+            300 * ONE,
             0
         ];
-        uint256 _targetMinimum = 3000;
-        uint256 _targetMaximum = 4000;
+        uint256 _targetMinimum = 3000 * ONE;
+        uint256 _targetMaximum = 4000 * ONE;
         crowdtainer.initialize(
             address(0),
             CampaignData(
@@ -92,13 +92,13 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
 
     function testFailGetPaidAndDeliverCalledBeforeTargetReached() public {
         uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
-            uint256(100),
-            200,
-            300,
+            uint256(100) * ONE,
+            200 * ONE,
+            300 * ONE,
             0
         ];
-        uint256 _targetMinimum = 3000;
-        uint256 _targetMaximum = 4000;
+        uint256 _targetMinimum = 3000 * ONE;
+        uint256 _targetMaximum = 4000 * ONE;
         crowdtainer.initialize(
             address(0),
             CampaignData(
@@ -135,13 +135,13 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
 
     function testFailGetPaidAndDeliverCalledBeforeActivePeriod() public {
         uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
-            uint256(100),
-            200,
-            300,
+            uint256(100) * ONE,
+            200 * ONE,
+            300 * ONE,
             0
         ];
-        uint256 _targetMinimum = 3000;
-        uint256 _targetMaximum = 4000;
+        uint256 _targetMinimum = 3000 * ONE;
+        uint256 _targetMaximum = 4000 * ONE;
         crowdtainer.initialize(
             address(0),
             CampaignData(
@@ -178,13 +178,13 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
 
     function testFailGetPaidAndDeliverCalledOnFailedAndExpiredProject() public {
         uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
-            uint256(100),
-            200,
-            300,
+            uint256(100) * ONE,
+            200 * ONE,
+            300 * ONE,
             0
         ];
-        uint256 _targetMinimum = 3000;
-        uint256 _targetMaximum = 4000;
+        uint256 _targetMinimum = 3000 * ONE;
+        uint256 _targetMaximum = 4000 * ONE;
         crowdtainer.initialize(
             address(0),
             CampaignData(

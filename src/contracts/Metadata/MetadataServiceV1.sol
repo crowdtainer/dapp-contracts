@@ -16,6 +16,8 @@ contract MetadataServiceV1 is IMetadataService {
     uint24 internal constant yStartingPoint = 10;
     uint24 internal constant anchorX = 2;
 
+    uint8 private erc20Decimals;
+
     string private unitSymbol;
     string private ticketFootnotes;
 
@@ -40,7 +42,8 @@ contract MetadataServiceV1 is IMetadataService {
 
     function generateProductList(
         Metadata calldata _metadata,
-        string memory _unitSymbol
+        string memory _unitSymbol,
+        uint8 _erc20Decimals
     ) internal pure returns (string memory productList, uint256 totalCost) {
         uint256 newY = yStartingPoint;
 
@@ -59,7 +62,7 @@ contract MetadataServiceV1 is IMetadataService {
                     '" transform="matrix(16.4916,0,0,15.627547,7.589772,6.9947903)">',
                     generateSVGProductDescription(
                         _metadata.quantities[i],
-                        _metadata.unitPricePerType[i],
+                        _metadata.unitPricePerType[i] / (10 ** _erc20Decimals),
                         _unitSymbol,
                         _metadata.productDescription[i]
                     ),
@@ -76,7 +79,7 @@ contract MetadataServiceV1 is IMetadataService {
                 _metadata.quantities[i];
         }
 
-        return (productList, totalCost);
+        return (productList, totalCost / 10 ** _erc20Decimals);
     }
 
     function getSVGHeader() internal pure returns (string memory) {
@@ -166,7 +169,7 @@ contract MetadataServiceV1 is IMetadataService {
         string memory description;
         uint256 totalCost;
 
-        (description, totalCost) = generateProductList(_metadata, unitSymbol);
+        (description, totalCost) = generateProductList(_metadata, unitSymbol, erc20Decimals);
 
         return
             string(
@@ -187,8 +190,9 @@ contract MetadataServiceV1 is IMetadataService {
             );
     }
 
-    constructor(string memory _unitSymbol, string memory _ticketFootnotes) {
+    constructor(string memory _unitSymbol, uint8 _erc20Decimals, string memory _ticketFootnotes) {
         unitSymbol = _unitSymbol;
+        erc20Decimals = _erc20Decimals;
         ticketFootnotes = _ticketFootnotes;
     }
 

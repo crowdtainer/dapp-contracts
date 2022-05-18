@@ -115,8 +115,8 @@ contract VouchersTest is CrowdtainerTestHelpers {
     // Default valid constructor values
     uint256 internal openingTime;
     uint256 internal closingTime;
-    uint256 internal targetMinimum = 20000;
-    uint256 internal targetMaximum = 26000;
+    uint256 internal targetMinimum = 20000 * ONE;
+    uint256 internal targetMaximum = 26000 * ONE;
 
     string[MAX_NUMBER_OF_PRODUCTS] internal productDescription = [
         "",
@@ -126,21 +126,19 @@ contract VouchersTest is CrowdtainerTestHelpers {
     ];
 
     uint256[MAX_NUMBER_OF_PRODUCTS] internal unitPricePerType = [
-        10,
-        20,
-        25,
-        200
+        10 * ONE,
+        20 * ONE,
+        25 * ONE,
+        200 * ONE
     ];
 
     uint256 internal discountRate = 10;
     uint256 internal referralRate = 10;
-    uint256 internal referralEligibilityValue = 50;
+    uint256 internal referralEligibilityValue = 50 * ONE;
 
     // Create a token
-    uint8 internal numberOfDecimals = 18;
-    uint256 internal multiplier = (10**uint256(numberOfDecimals));
-
-    Coin internal erc20Token = new Coin("StableToken", "STK", 1);
+    uint8 internal numberOfDecimals = 6;
+    Coin internal erc20Token = new Coin("StableToken", "STK", numberOfDecimals);
     IERC20 internal iERC20Token = IERC20(erc20Token);
 
     address internal owner = address(this);
@@ -171,11 +169,11 @@ contract VouchersTest is CrowdtainerTestHelpers {
         );
         alice.doApprovePayment(
             address(defaultCrowdtainer),
-            type(uint256).max - 1000
+            type(uint256).max - 1000 * ONE
         );
 
         // Bob allows Crowdtainer to pull the value
-        bob.doApprovePayment(address(defaultCrowdtainer), 100000);
+        bob.doApprovePayment(address(defaultCrowdtainer), 100000 * ONE);
 
         return (crowdtainerAddress, crowdtainerId);
     }
@@ -203,9 +201,9 @@ contract VouchersTest is CrowdtainerTestHelpers {
         // vm.label(address(0), "none");
 
         // Give lots of ERC20 tokens to alice
-        erc20Token.mint(address(alice), type(uint256).max - 1000000000);
+        erc20Token.mint(address(alice), type(uint256).max - 1000000000 * ONE);
 
         // Give 1000 ERC20 tokens to bob
-        erc20Token.mint(address(bob), 1000000);
+        erc20Token.mint(address(bob), 1000000 * ONE);
     }
 }
