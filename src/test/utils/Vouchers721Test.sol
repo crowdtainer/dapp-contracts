@@ -197,6 +197,11 @@ contract VouchersTest is CrowdtainerTestHelpers {
         alice = new VoucherParticipant(address(vouchers), address(erc20Token));
         bob = new VoucherParticipant(address(vouchers), address(erc20Token));
 
+        // Note: The labels below can only be enabled if using `forge test` (helpful for debugging)
+        // vm.label(address(bob), "bob");
+        // vm.label(address(alice), "alice");
+        // vm.label(address(0), "none");
+
         // Give lots of ERC20 tokens to alice
         erc20Token.mint(address(alice), type(uint256).max - 1000000000);
 
