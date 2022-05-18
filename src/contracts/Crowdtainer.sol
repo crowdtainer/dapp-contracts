@@ -319,7 +319,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             finalCost += unitPricePerType[i] * _quantities[i];
         }
 
-        if(finalCost < ONE) {
+        if (finalCost < ONE) {
             revert Errors.InvalidNumberOfQuantities();
         }
 
