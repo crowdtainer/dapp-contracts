@@ -23,8 +23,16 @@ async function main() {
   const metadataServiceV1Factory = await ethers.getContractFactory(
     "MetadataServiceV1"
   );
+
+  const coinFactory = await ethers.getContractFactory("Coin");
+  const coin = await coinFactory.deploy("Token", "TST", 1);
+  await coin.deployed();
+  const erc20Decimals = await coin.decimals();
+  console.log("Coin deployed to:", crowdtainer.address);
+
   const metadataService = await metadataServiceV1Factory.deploy(
     "DAI",
+    erc20Decimals,
     "This ticket is not valid as an invoice"
   );
   await metadataService.deployed();
@@ -36,10 +44,7 @@ async function main() {
 
   console.log("Vouchers721 deployed to:", crowdtainer.address);
 
-  const coinFactory = await ethers.getContractFactory("Coin");
-  const coin = await coinFactory.deploy("Token", "TST", 1);
-  await coin.deployed();
-  console.log("Coin deployed to:", crowdtainer.address);
+  const [agent] = await ethers.getSigners();
 
   let arrayOfBigNumbers: [
     BigNumberish,
@@ -47,22 +52,23 @@ async function main() {
     BigNumberish,
     BigNumberish
   ];
-  arrayOfBigNumbers = [1, 2, 3, 4];
+
+  arrayOfBigNumbers = [parseUnits('1', erc20Decimals),
+                       parseUnits('2', erc20Decimals),
+                       parseUnits('3', erc20Decimals),
+                       parseUnits('4', erc20Decimals)];
 
   const currentTime = (await ethers.provider.getBlock("latest")).timestamp;
-  const erc20Decimals = await coin.decimals();
-
-  const [agent] = await ethers.getSigners();
 
   const campaignData = {
     shippingAgent: agent.address,
     openingTime: currentTime + 10,
     expireTime: currentTime + 10 + 3601,
-    targetMinimum: parseUnits("10000", erc20Decimals),
-    targetMaximum: parseUnits("10000000", erc20Decimals),
+    targetMinimum: parseUnits('10000', erc20Decimals),
+    targetMaximum: parseUnits('10000000', erc20Decimals),
     unitPricePerType: arrayOfBigNumbers,
     referralRate: 20,
-    referralEligibilityValue: parseUnits("50", erc20Decimals),
+    referralEligibilityValue: parseUnits('50', erc20Decimals),
     token: coin.address,
   };
 
