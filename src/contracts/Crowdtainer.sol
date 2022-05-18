@@ -319,7 +319,9 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             finalCost += unitPricePerType[i] * _quantities[i];
         }
 
-        assert(finalCost >= ONE);
+        if(finalCost < ONE) {
+            revert Errors.InvalidNumberOfQuantities();
+        }
 
         if (_enableReferral && finalCost < referralEligibilityValue)
             revert Errors.MinimumPurchaseValueForReferralNotMet({

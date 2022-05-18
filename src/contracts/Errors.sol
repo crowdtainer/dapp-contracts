@@ -13,6 +13,8 @@ library Errors {
     error InvalidTokenId(uint256 tokenId);
     // @notice: Prices lower than 1 * 1^6 not supported.
     error PriceTooLow();
+    // @notice: Attempted to join with all product quantities set to zero.
+    error InvalidNumberOfQuantities();
     // @notice: Account cannot be of address(0).
     error AccountAddressIsZero();
     // @notice: Metadata service contract cannot be of address(0).

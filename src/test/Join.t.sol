@@ -258,6 +258,8 @@ contract JoinFuzzer is CrowdtainerTest {
         if (amountB > MAX_NUMBER_OF_PURCHASED_ITEMS) return;
         if (amountC > MAX_NUMBER_OF_PURCHASED_ITEMS) return;
 
+        if (amountA == 0 && amountB == 0 && amountC == 0) return;
+
         uint256 previousAliceBalance = erc20Token.balanceOf(address(alice));
 
         uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
