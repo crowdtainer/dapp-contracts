@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.11;
 
-import "ds-test/test.sol";
+// import "ds-test/test.sol";
+import "forge-std/Test.sol";
 import "./Hevm.sol";
 
-contract CrowdtainerTestHelpers is DSTest {
+contract CrowdtainerTestHelpers is Test {
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
+
+    uint256 internal constant ONE = 10**6; // 6 decimal places
 
     // @dev Helper function to check wheether the thrown Custom Error type matches expectation.
     function assertEqSignature(

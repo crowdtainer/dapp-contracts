@@ -66,6 +66,57 @@ contract CrowdtainerValidLeaveTester is CrowdtainerTest {
         // alice is back with her initial funds.
         assertEq(erc20Token.balanceOf(address(alice)), previousAliceBalance);
     }
+
+    function testJoinAndLeaveMustHaveAccumulatedRewardsAsZero() public {
+        init();
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
+            uint256(1),
+            2,
+            10,
+            0
+        ];
+
+        uint256 totalCost = quantities[0] * unitPricePerType[0];
+        totalCost += quantities[1] * unitPricePerType[1];
+        totalCost += quantities[2] * unitPricePerType[2];
+        uint256 discount = ((totalCost * referralRate) / 100) / 2;
+
+        uint256 previousBobBalance = erc20Token.balanceOf(address(bob));
+
+        bob.doJoin(quantities, true, address(0));
+
+        // no discount for bob
+        assertEq(
+            erc20Token.balanceOf(address(bob)),
+            previousBobBalance - totalCost
+        );
+
+        emit log_named_uint("Total cost:", totalCost);
+        emit log_named_uint("Referral rate:", referralRate);
+        emit log_named_uint("Discount:", discount);
+
+        uint256 previousAliceBalance = erc20Token.balanceOf(address(alice));
+
+        // alice joins with discount
+        alice.doJoin(quantities, false, address(bob));
+
+        assertEq(
+            erc20Token.balanceOf(address(alice)),
+            previousAliceBalance - (totalCost - discount)
+        );
+
+        // verify that bob received referral credits
+        assertEq(crowdtainer.accumulatedRewardsOf(address(bob)), discount);
+
+        // alice leaves
+        alice.doLeave();
+
+        // verify that bob's received referral credits is back to zero
+        assertEq(crowdtainer.accumulatedRewardsOf(address(bob)), 0);
+
+        // verify that contract reward accumulator is back to zero
+        assertEq(crowdtainer.accumulatedRewards(), 0);
+    }
 }
 
 contract CrowdtainerInvalidLeaveTester is CrowdtainerTest {

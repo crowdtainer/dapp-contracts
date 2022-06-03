@@ -6,6 +6,8 @@ import "./CrowdtainerTestHelpers.sol";
 import "../../contracts/Crowdtainer.sol";
 import "../../contracts/Constants.sol";
 
+uint256 constant ONE = 1e6; // 6 decimal places
+
 // Participant represents a user that joins / interacts directly with a Crowdtainer (created by the ShippingAgent)
 contract Participant {
     Crowdtainer internal crowdtainer;
@@ -87,25 +89,22 @@ contract CrowdtainerTest is CrowdtainerTestHelpers {
     // Default valid constructor values
     uint256 internal openingTime;
     uint256 internal closingTime;
-    uint256 internal targetMinimum = 20000;
-    uint256 internal targetMaximum = 26000;
+    uint256 internal targetMinimum = 20000 * ONE;
+    uint256 internal targetMaximum = 26000 * ONE;
 
     uint256[MAX_NUMBER_OF_PRODUCTS] internal unitPricePerType = [
-        10,
-        20,
-        25,
-        30
+        10 * ONE,
+        20 * ONE,
+        25 * ONE,
+        30 * ONE
     ];
 
-    uint256 internal discountRate = 10;
     uint256 internal referralRate = 10;
     uint256 internal referralEligibilityValue = 50;
 
     // Create a token
-    uint8 internal numberOfDecimals = 18;
-    uint256 internal multiplier = (10**uint256(numberOfDecimals));
-
-    Coin internal erc20Token = new Coin("StableToken", "STK", 1);
+    uint8 internal numberOfDecimals = 6;
+    Coin internal erc20Token = new Coin("StableToken", "STK", numberOfDecimals);
     IERC20 internal iERC20Token = IERC20(erc20Token);
 
     address internal owner = address(this);
@@ -141,14 +140,22 @@ contract CrowdtainerTest is CrowdtainerTestHelpers {
         alice = new Participant(address(crowdtainer), address(erc20Token));
         bob = new Participant(address(crowdtainer), address(erc20Token));
 
+        // Note: The labels below can only be enabled if using `forge test` (helpful for debugging)
+        // vm.label(address(bob), "bob");
+        // vm.label(address(alice), "alice");
+        // vm.label(address(0), "none");
+
         // Give lots of tokens to alice
-        erc20Token.mint(address(alice), type(uint256).max - 1000);
+        erc20Token.mint(address(alice), type(uint256).max - (1000 * ONE));
         // Alice allows Crowdtainer to pull the value
-        alice.doApprovePayment(address(crowdtainer), type(uint256).max - 1000);
+        alice.doApprovePayment(
+            address(crowdtainer),
+            type(uint256).max - (1000 * ONE)
+        );
 
         // Give 1000 tokens to bob
-        erc20Token.mint(address(bob), 1000);
+        erc20Token.mint(address(bob), 1000 * ONE);
         // Bob allows Crowdtainer to pull the value
-        bob.doApprovePayment(address(crowdtainer), 1000);
+        bob.doApprovePayment(address(crowdtainer), 1000 * ONE);
     }
 }

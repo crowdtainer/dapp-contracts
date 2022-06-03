@@ -55,6 +55,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     // @dev The total value raised/accumulated by this contract.
     uint256 public totalValueRaised;
 
+    uint256 internal constant ONE = 1e6; // 6 decimal places
+
     // -----------------------------------------------
     //  Modifiers
     // -----------------------------------------------
@@ -63,7 +65,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
      */
     modifier onlyAddress(address requiredAddress) {
         if (owner == address(0)) {
-            // This branch means this contract is being used as a stand-alone contract (e.g., not managed by EIP-1155 owning it)
+            // This branch means this contract is being used as a stand-alone contract, not managed/owned by a EIP-721/1155 contract
             // E.g.: A Crowdtainer instance interacted directly by an EOA.
             _;
             return;
@@ -228,8 +230,15 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
             if (_campaignData.unitPricePerType[i] == 0) {
                 break;
+            } else if (_campaignData.unitPricePerType[i] < ONE) {
+                revert Errors.PriceTooLow();
             }
+
             numberOfProducts++;
+        }
+
+        if (numberOfProducts == 0) {
+            revert Errors.InvalidProductNumberAndPrices();
         }
 
         if (_campaignData.referralRate > SAFETY_MAX_REFERRAL_RATE)
@@ -288,6 +297,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         onlyActive
         nonReentrant
     {
+        if (owner == address(0)) {
+            requireAddress(_wallet);
+        }
+
         enableReferral[_wallet] = _enableReferral;
 
         // @dev Check if wallet didn't already join
@@ -306,6 +319,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             finalCost += unitPricePerType[i] * _quantities[i];
         }
 
+        if (finalCost < ONE) {
+            revert Errors.InvalidNumberOfQuantities();
+        }
+
         if (_enableReferral && finalCost < referralEligibilityValue)
             revert Errors.MinimumPurchaseValueForReferralNotMet({
                 received: finalCost,
@@ -315,7 +332,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         // @dev Apply discounts to `finalCost` if applicable.
         bool eligibleForDiscount;
         // @dev Verify validity of given `referrer`
-        if (_referrer != address(0)) {
+        if (_referrer != address(0) && referralRate > 0) {
             // @dev Check if referrer participated
             if (costForWallet[_referrer] == 0) {
                 revert Errors.ReferralInexistent();
@@ -336,10 +353,9 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             //    2 - Half of the referral rate is credited to the referrer.
 
             // @dev Calculate the discount value
-            discount = ((finalCost * referralRate) / 100) / 2;
+            discount = (finalCost * referralRate) / 100 / 2;
 
             // @dev 1- Apply discount
-            assert(discount < finalCost);
             finalCost -= discount;
             discountForUser[_wallet] += discount;
 
@@ -348,8 +364,6 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             accumulatedRewards += discount;
 
             referrerOfReferee[_wallet] = _referrer;
-
-            assert(discount != 0);
         }
 
         costForWallet[_wallet] = finalCost;
@@ -390,6 +404,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         onlyActive
         nonReentrant
     {
+        if (owner == address(0)) {
+            requireAddress(_wallet);
+        }
+
         uint256 withdrawalTotal = costForWallet[_wallet];
 
         // @dev Subtract formerly given referral rewards originating from this account.
@@ -405,6 +423,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         }
 
         totalValueRaised -= costForWallet[_wallet];
+        accumulatedRewards -= discountForUser[_wallet];
+
         costForWallet[_wallet] = 0;
         discountForUser[_wallet] = 0;
         referrerOfReferee[_wallet] = address(0);
@@ -425,8 +445,6 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         onlyInState(CrowdtainerState.Funding)
         nonReentrant
     {
-        assert(accumulatedRewards < totalValueRaised);
-
         uint256 availableForAgent = totalValueRaised - accumulatedRewards;
 
         if (availableForAgent < targetMinimum) {
@@ -473,8 +491,6 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         if (crowdtainerState == CrowdtainerState.Delivery)
             revert Errors.InvalidOperationFor({state: crowdtainerState});
 
-        assert(accumulatedRewards < totalValueRaised);
-
         // The first interaction with this function 'nudges' the state to `Failed` if
         // the project didn't reach the goal in time.
         if (
@@ -491,6 +507,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         costForWallet[msg.sender] = 0;
         discountForUser[msg.sender] = 0;
         referrerOfReferee[msg.sender] = address(0);
+
+        if (withdrawalTotal == 0) {
+            revert Errors.InsufficientBalance();
+        }
 
         // @dev transfer the owed funds from this contract back to the user.
         token.safeTransferFrom(address(this), msg.sender, withdrawalTotal);
@@ -522,6 +542,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             assert(targetMaximum > 0);
             assert(targetMinimum <= targetMaximum);
             assert(referralRate <= SAFETY_MAX_REFERRAL_RATE);
+
+            assert(accumulatedRewards < totalValueRaised);
         }
     }
 }

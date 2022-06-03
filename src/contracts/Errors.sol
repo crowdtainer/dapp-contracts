@@ -11,6 +11,10 @@ library Errors {
     error CrowdtainerInexistent();
     // @notice: Invalid token id.
     error InvalidTokenId(uint256 tokenId);
+    // @notice: Prices lower than 1 * 1^6 not supported.
+    error PriceTooLow();
+    // @notice: Attempted to join with all product quantities set to zero.
+    error InvalidNumberOfQuantities();
     // @notice: Account cannot be of address(0).
     error AccountAddressIsZero();
     // @notice: Metadata service contract cannot be of address(0).
@@ -21,8 +25,8 @@ library Errors {
     error IDsAmountsLengthMismatch();
     // @notice: Cannot set approval for the same account.
     error CannotSetApprovalForSelf();
-    // @notice: Caller is not owner nor approved.
-    error AccountNotOwnerOrApproved();
+    // @notice: Caller is not owner or has correct permission.
+    error AccountNotOwner();
     // @notice: Only the shipping agent is able to set a voucher/tokenId as "claimed".
     error SetClaimedOnlyAllowedByShippingAgent();
     // @notice: Cannot transfer someone else's tokens.
@@ -33,6 +37,8 @@ library Errors {
     error ERC1155ReceiverRejectedTokens();
     // @notice: Invalid receiver (non ERC155Receiver).
     error NonERC1155Receiver();
+    // @notice: Can't initialize with all their prices set to zero.
+    error InvalidProductNumberAndPrices();
     // @notice: Can't make transfers in given state.
     error TransferNotAllowed(address crowdtainer, CrowdtainerState state);
     // @notice: No further participants possible in a given Crowdtainer.

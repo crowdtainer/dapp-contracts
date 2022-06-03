@@ -19,7 +19,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // Deploy ERC-721 containing tokenURI implementation
   await deploy("MetadataServiceV1", {
     from: deployer,
-    args: [symbol, "This ticket is not valid as an invoice."],
+    args: [symbol, 18, "This ticket is not valid as an invoice."],
     log: true,
   });
 

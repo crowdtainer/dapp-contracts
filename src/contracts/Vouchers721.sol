@@ -2,7 +2,6 @@
 pragma solidity ^0.8.11;
 
 // @dev External dependencies
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 // import "@openzeppelin/contracts/interfaces/IERC721.sol";
@@ -21,9 +20,7 @@ import "./Metadata/IMetadataService.sol";
  * @dev Essentially, a Crowdtainer factory with ERC721 compliance.
  * @dev Each token id represents a "sold voucher", a set of one or more products or services of a specific Crowdtainer.
  */
-contract Vouchers721 is ERC721, ReentrancyGuard {
-    // using Clones for address;
-
+contract Vouchers721 is ERC721 {
     // @dev Each Crowdtainer project is alloacted a range.
     // @dev This is used as a multiple to deduce the crowdtainer id from a given token id.
     uint256 public constant ID_MULTIPLE = 1000000;
@@ -175,7 +172,7 @@ contract Vouchers721 is ERC721, ReentrancyGuard {
      */
     function leave(uint256 _tokenId) external {
         if (ownerOf(_tokenId) != msg.sender) {
-            revert Errors.AccountNotOwnerOrApproved();
+            revert Errors.AccountNotOwner();
         }
 
         address crowdtainerAddress = crowdtainerIdToAddress(
