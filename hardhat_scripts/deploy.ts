@@ -25,13 +25,13 @@ async function main() {
   );
 
   const coinFactory = await ethers.getContractFactory("Coin");
-  const coin = await coinFactory.deploy("Token", "TST", 1);
+  const coin = await coinFactory.deploy("Token", "USDC", 1);
   await coin.deployed();
   const erc20Decimals = await coin.decimals();
   console.log("Coin deployed to:", crowdtainer.address);
 
   const metadataService = await metadataServiceV1Factory.deploy(
-    "DAI",
+    "USDC",
     erc20Decimals,
     "This ticket is not valid as an invoice"
   );
@@ -53,10 +53,10 @@ async function main() {
     BigNumberish
   ];
 
-  arrayOfBigNumbers = [parseUnits('1', erc20Decimals),
-                       parseUnits('2', erc20Decimals),
-                       parseUnits('3', erc20Decimals),
-                       parseUnits('4', erc20Decimals)];
+  arrayOfBigNumbers = [parseUnits('10', erc20Decimals),
+                       parseUnits('20', erc20Decimals),
+                       parseUnits('30', erc20Decimals),
+                       parseUnits('40', erc20Decimals)];
 
   const currentTime = (await ethers.provider.getBlock("latest")).timestamp;
 
@@ -67,7 +67,7 @@ async function main() {
     targetMinimum: parseUnits('10000', erc20Decimals),
     targetMaximum: parseUnits('10000000', erc20Decimals),
     unitPricePerType: arrayOfBigNumbers,
-    referralRate: 20,
+    referralRate: 0,
     referralEligibilityValue: parseUnits('50', erc20Decimals),
     token: coin.address,
   };
@@ -78,7 +78,10 @@ async function main() {
     metadataService.address
   );
 
-  console.log(`${agent.address} created a new Crowdtainer project.`);
+  let crowdtainerId = (await vouchers721.crowdtainerCount()).toNumber();
+  let crowdtainerAddress = await vouchers721.crowdtainerIdToAddress(crowdtainerId);
+
+  console.log(`${agent.address} created a new Crowdtainer project. Id: ${crowdtainerId} @ ${crowdtainerAddress}`);
 }
 
 main().catch((error) => {

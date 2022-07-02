@@ -82,7 +82,7 @@ contract Vouchers721 is ERC721 {
      * @param _campaignData Data defining all rules and values of this Crowdtainer instance.
      * @param _productDescription An array with the description of each item.
      * @param _metadataService Contract address used to fetch metadata about the token.
-     * @return crowdtainerId The identifier for the created Crowdtainer.
+     * @return crowdtainerId The contract address and id for the created Crowdtainer.
      */
     function createCrowdtainer(
         CampaignData calldata _campaignData,

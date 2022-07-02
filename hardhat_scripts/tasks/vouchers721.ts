@@ -2,15 +2,20 @@ import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-ethers";
 import { BigNumberish } from "@ethersproject/bignumber/lib/bignumber";
 import { parseUnits } from "ethers/lib/utils";
+import { Coin, Crowdtainer, Vouchers721 } from "../../out/typechain/";
+import { assert } from "console";
 
 task(
   "createCrowdtainer",
   "Create/initialize a new Crowdtainer project with default values."
-).setAction(async function ({ _ }, { ethers }) {
-  const coin = await ethers.getContract("Coin");
-  const [agent] = await ethers.getSigners();
+).setAction(async function ({ _ }, hre) {
+  let { ethers } = hre;
+  const coin = <Coin>(await ethers.getContract("Coin"));
 
-  const vouchers721 = await ethers.getContract("Vouchers721");
+  const namedAccounts = await hre.getNamedAccounts();
+  const agent = await ethers.getSigner(namedAccounts['agent']);
+
+  const vouchers721 = await ethers.getContract<Vouchers721>("Vouchers721");
   const metadataService = await ethers.getContract("MetadataServiceV1");
 
   console.log(`MetadataServiceV1 address: ${metadataService.address}`);
@@ -26,17 +31,19 @@ task(
     BigNumberish
   ];
 
-  arrayOfBigNumbers = [parseUnits('1', erc20Decimals),
-                       parseUnits('2', erc20Decimals),
-                       parseUnits('3', erc20Decimals),
-                       parseUnits('4', erc20Decimals)];
+  arrayOfBigNumbers = [parseUnits('10', erc20Decimals),
+                       parseUnits('20', erc20Decimals),
+                       parseUnits('30', erc20Decimals),
+                       parseUnits('40', erc20Decimals)];
 
   const currentTime = (await ethers.provider.getBlock("latest")).timestamp;
 
+  // + (5*3600)
+
   const campaignData = {
     shippingAgent: agent.address,
-    openingTime: currentTime + 10,
-    expireTime: currentTime + 10 + 3601,
+    openingTime: currentTime,
+    expireTime: currentTime + 3600,
     targetMinimum: parseUnits('10000', erc20Decimals),
     targetMaximum: parseUnits('10000000', erc20Decimals),
     unitPricePerType: arrayOfBigNumbers,
@@ -51,5 +58,28 @@ task(
     metadataService.address
   );
 
-  console.log(`${agent.address} created a new Crowdtainer project.`);
+  let crowdtainerId = (await vouchers721.crowdtainerCount()).toNumber();
+  let crowdtainerAddress = await vouchers721.crowdtainerIdToAddress(crowdtainerId);
+
+  console.log(`${agent.address} created a new Crowdtainer project. Id: ${crowdtainerId} @ ${crowdtainerAddress}`);
 });
+
+task("join", "Join a Crowdtainer with the given parameters.")
+  .addParam("user", "Named account from which the operation should be executed")
+  .addParam("crowdtainerid", "Crowdtainer id")
+  .addParam("quantities", "Single value used as quantity for all products")
+  .setAction(async function ({ user, crowdtainerid, quantities }, hre) {
+
+    let {ethers} = hre;
+    const namedAccounts = await hre.getNamedAccounts();
+    const sender = await hre.ethers.getSigner(namedAccounts[user]);
+
+    const vouchers721 = await ethers.getContract<Vouchers721>("Vouchers721");
+    let crowdtainerAddress = await vouchers721.crowdtainerIdToAddress(crowdtainerid);
+    console.log(`Crowdtainer address: ${crowdtainerAddress}`);
+
+    let quantity: [BigNumberish,BigNumberish,BigNumberish,BigNumberish]= [quantities, quantities, quantities, quantities];
+    await vouchers721.connect(sender).join(crowdtainerAddress, quantity, false, '0x0000000000000000000000000000000000000000');
+
+    console.log(`${sender.address} has joined crowdtainerId ${crowdtainerid}`);
+  });
