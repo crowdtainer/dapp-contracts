@@ -20,8 +20,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   await hre.run("createCrowdtainer", {
     /* params */
   });
-
-  console.log(`Created Crowdtainer project.`);
 };
 
 export default func;

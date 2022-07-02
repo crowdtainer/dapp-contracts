@@ -22,7 +22,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // Deploy Coin.sol, a fake ERC20 contract for testing purposes.
   await deploy("Coin", {
     from: deployer,
-    args: ["FakeERC20", "TST", chainId],
+    args: ["FakeERC20", "USDC", chainId],
     log: true,
   });
 

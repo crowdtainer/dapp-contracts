@@ -47,21 +47,24 @@ task("mint", "ERC-20 mint.")
   .addParam("receiver", "Receiver address")
   .addParam("amount", "Token amount")
   .setAction(async function ({ receiver, amount }, hre) {
-    const token = <Coin>(await hre.ethers.getContract("Coin"));
+    const token = await hre.ethers.getContract<Coin>("Coin");
     const [deployer] = await hre.ethers.getSigners();
     await (await token.connect(deployer).mint(receiver, amount)).wait();
-    console.log(`${deployer.address} has minted ${amount} to ${receiver}`);
+
+    const supply = await token.totalSupply();
+    const symbol = await token.symbol();
+    console.log(`${deployer.address} has minted ${amount} to ${receiver}. Current supply of ${supply} ${symbol}.`);
   });
 
 task("approve", "ERC-20 approve.")
-  .addParam("erc20", "ERC-20 Contract address")
+  .addParam("from", "Named account allowing spending (from hardhat.config)")
   .addParam("spender", "Spender address")
   .addParam("amount", "Token amount")
-  .setAction(async function ({ erc20, spender, amount }, hre) {
-    const tokenFactory = await hre.ethers.getContractFactory("Coin");
-    const token = <Coin>tokenFactory.attach(erc20);
-    const [sender] = await hre.ethers.getSigners();
-    await token.approve(spender, amount);
+  .setAction(async function ({  from, spender, amount }, hre) {
+    const token = await hre.ethers.getContract<Coin>("Coin");
+    const sender = await hre.ethers.getSigner(from);
+
+    await token.connect(sender).approve(spender, amount);
     console.log(
       `${sender.address} has approved ${amount} tokens to ${spender}`
     );

@@ -116,6 +116,18 @@ yarn build # generates smartcontract <-> typescript bindings with typechain
 npx hardhat # show all available tasks
 ```
 
+Important: With `npx hardhat node` running in a separate terminal, in order to use
+tasks to e.g. manually interact with the contract state, hardhat requires specifying the network:
+
+```sh
+// E.g.:
+// To create a new crowdtainer:
+npx hardhat createCrowdtainer --network localhost
+
+// To make a user join a crowdtainer project:
+npx hardhat join --user neo --crowdtainerid 1 --quantities 200 --network localhost
+```
+
 Copy the `.env.example` file to `.env`.
 
 ### Local instance + deployment

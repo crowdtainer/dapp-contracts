@@ -59,7 +59,7 @@ contract Coin is IERC20 {
     // The version of this Coin contract
     string public version = "1";
     // The number of decimals that this coin has
-    uint8 public constant decimals = 18;
+    uint8 public constant decimals = 6;
 
     // The id of the chain where this coin was deployed
     uint256 public chainId;
