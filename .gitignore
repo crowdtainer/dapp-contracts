@@ -7,6 +7,7 @@ node_modules
 
 # Dapptools / Foundry
 out/
+.gas-snapshot
 
 # Hardhat files
 cache

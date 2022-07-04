@@ -2,8 +2,7 @@ import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-ethers";
 import { BigNumberish } from "@ethersproject/bignumber/lib/bignumber";
 import { parseUnits } from "ethers/lib/utils";
-import { Coin, Crowdtainer, Vouchers721 } from "../../out/typechain/";
-import { assert } from "console";
+import { Coin, Vouchers721 } from "../../out/typechain/";
 
 task(
   "createCrowdtainer",
@@ -42,8 +41,8 @@ task(
 
   const campaignData = {
     shippingAgent: agent.address,
-    openingTime: currentTime,
-    expireTime: currentTime + 3600,
+    openingTime: currentTime + 30,
+    expireTime: currentTime + 3600 * 5,
     targetMinimum: parseUnits('10000', erc20Decimals),
     targetMaximum: parseUnits('10000000', erc20Decimals),
     unitPricePerType: arrayOfBigNumbers,
@@ -82,4 +81,25 @@ task("join", "Join a Crowdtainer with the given parameters.")
     await vouchers721.connect(sender).join(crowdtainerAddress, quantity, false, '0x0000000000000000000000000000000000000000');
 
     console.log(`${sender.address} has joined crowdtainerId ${crowdtainerid}`);
+  });
+
+  task("leave", "Leave the specified Crowdtainer")
+  .addParam("user", "Named account from which the operation should be executed")
+  .addParam("crowdtainerid", "Crowdtainer id")
+  .setAction(async function ({ user, crowdtainerid }, hre) {
+
+    let {ethers} = hre;
+    const namedAccounts = await hre.getNamedAccounts();
+    const sender = await hre.ethers.getSigner(namedAccounts[user]);
+
+    const vouchers721 = await ethers.getContract<Vouchers721>("Vouchers721");
+    let crowdtainerAddress = await vouchers721.crowdtainerIdToAddress(crowdtainerid);
+    console.log(`Crowdtainer address: ${crowdtainerAddress}`);
+
+    let tokenId = await vouchers721.connect(sender).tokenOfOwnerByIndex(sender.address, 0);
+    console.log(`Found tokenId: ${tokenId}`);
+
+    await vouchers721.connect(sender).leave(tokenId);
+
+    console.log(`${sender.address} has left crowdtainerId ${crowdtainerid}`);
   });

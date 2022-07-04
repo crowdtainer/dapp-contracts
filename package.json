@@ -51,5 +51,6 @@
     "solhint:check": "solhint --config ./.solhint.json \"src/**/*.sol\"",
     "typechain": "typechain --target ethers-v5 \"./out/**/*.json\" --out-dir=out/typechain/",
     "build": "forge build && yarn typechain"
-  }
+  },
+  "dependencies": {}
 }
