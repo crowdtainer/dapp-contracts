@@ -126,6 +126,9 @@ npx hardhat createCrowdtainer --network localhost
 
 // To make a user join a crowdtainer project:
 npx hardhat join --user neo --crowdtainerid 1 --quantities 200 --network localhost
+
+// To fast forward in time:
+npx hardhat timetravel --seconds 2000
 ```
 
 Copy the `.env.example` file to `.env`.
@@ -181,8 +184,12 @@ make solcheck
 
 ### Estimation of gas costs:
 
+With dapp.tools:
 - First run a local testnet with `dapp testnet`.
 - Then run e.g.: `make contract=Crowdtainer estimate`
+
+With Foundry:
+- forge test --gas-estimate
 
 ### Contract size estimation:
 - Example: `make contract=Vouchers721 size`

@@ -13,6 +13,7 @@ import {
 } from "./network_utils/network";
 
 import "./hardhat_scripts/tasks/erc20";
+import "./hardhat_scripts/tasks/time";
 import "./hardhat_scripts/tasks/vouchers721";
 
 dotenv.config();
