@@ -26,7 +26,8 @@ contract CrowdtainerRewardsTester is CrowdtainerTest {
                 _unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                address(iERC20Token)
+                address(iERC20Token),
+                ""
             )
         );
 

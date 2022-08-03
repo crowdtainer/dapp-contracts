@@ -20,7 +20,8 @@ contract ValidInitializeTester is CrowdtainerTest {
                 unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                address(erc20Token)
+                address(erc20Token),
+                ""
             )
         );
     }
@@ -41,7 +42,8 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     referralRate,
                     referralEligibilityValue,
-                    address(invalidTokenAddress)
+                    address(invalidTokenAddress),
+                    ""
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -66,7 +68,8 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     referralRate,
                     referralEligibilityValue,
-                    address(erc20Token)
+                    address(erc20Token),
+                    ""
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -90,7 +93,8 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     referralRate,
                     targetMinimum + 1,
-                    address(erc20Token)
+                    address(erc20Token),
+                    ""
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -114,7 +118,8 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     referralRate,
                     referralEligibilityValue,
-                    address(erc20Token)
+                    address(erc20Token),
+                    ""
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -138,7 +143,8 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     referralRate,
                     referralEligibilityValue,
-                    address(erc20Token)
+                    address(erc20Token),
+                    ""
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -162,7 +168,8 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     referralRate,
                     0,
-                    address(erc20Token)
+                    address(erc20Token),
+                    ""
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -186,7 +193,8 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     referralRate,
                     referralEligibilityValue,
-                    address(erc20Token)
+                    address(erc20Token),
+                    ""
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -210,7 +218,8 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     referralRate,
                     referralEligibilityValue,
-                    address(erc20Token)
+                    address(erc20Token),
+                    ""
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -234,7 +243,8 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     160,
                     referralEligibilityValue,
-                    address(erc20Token)
+                    address(erc20Token),
+                    ""
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -258,7 +268,8 @@ contract InvalidInitializeTester is CrowdtainerTest {
                     unitPricePerType,
                     3,
                     referralEligibilityValue,
-                    address(erc20Token)
+                    address(erc20Token),
+                    ""
                 )
             )
         {} catch (bytes memory lowLevelData) {
@@ -317,7 +328,8 @@ contract InitializeFuzzer is CrowdtainerTest {
                 _unitPricePerType,
                 _referralRate,
                 _referralEligibilityValue,
-                address(_token)
+                address(_token),
+                ""
             )
         );
 
@@ -364,7 +376,8 @@ contract InitializeProver is CrowdtainerTest {
                     unitPricePerType,
                     referralRate,
                     referralEligibilityValue,
-                    address(erc20Token)
+                    address(erc20Token),
+                    ""
                 )
             );
 

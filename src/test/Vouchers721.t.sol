@@ -360,7 +360,8 @@ contract Vouchers721CreateInvalidTester is VouchersTest {
                     unitPricePerType,
                     referralRate,
                     referralEligibilityValue,
-                    address(iERC20Token)
+                    address(iERC20Token),
+                    ""
                 ),
                 _productDescription: ["", "", "", ""],
                 _metadataService: address(metadataService)

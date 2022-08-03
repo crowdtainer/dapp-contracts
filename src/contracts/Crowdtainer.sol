@@ -24,8 +24,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     CrowdtainerState public crowdtainerState;
 
     // @dev Owner of this contract.
-    // @notice Has permissions to call: initialize(), join() and leave() functions. These functions are gated so
-    // that an owner contract can do special accounting (such as an EIP1155 compliant contract).
+    // @notice Has permissions to call: initialize(), join() and leave() functions. These functions are optionally
+    //  gated so that an owner contract can do special accounting (such as an EIP721-compliant contract).
     address public owner;
 
     // @dev The entity or person responsible for the delivery of this crowdtainer project.
@@ -135,6 +135,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     uint256 public referralRate;
     // @note Address of the ERC20 token used for payment.
     IERC20 public token;
+    // @dev URI string pointing to the legal terms and conditions ruling this project.
+    string public legalContractURI;
 
     // -----------------------------------------------
     //  Events
@@ -154,7 +156,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         uint256 _targetMinimum,
         uint256 _targetMaximum,
         uint256[MAX_NUMBER_OF_PRODUCTS] _unitPricePerType,
-        uint256 _referralRate
+        uint256 _referralRate,
+        string _legalContractURI
     );
 
     // @note Emmited when a user joins, signalling participation intent.
@@ -256,6 +259,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         referralRate = _campaignData.referralRate;
         referralEligibilityValue = _campaignData.referralEligibilityValue;
         token = IERC20(_campaignData.token);
+        legalContractURI = _campaignData.legalContractURI;
 
         crowdtainerState = CrowdtainerState.Funding;
 
@@ -266,7 +270,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             targetMinimum,
             targetMaximum,
             unitPricePerType,
-            referralRate
+            referralRate,
+            legalContractURI
         );
     }
 

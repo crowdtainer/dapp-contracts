@@ -43,7 +43,8 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
                 [ONE, 0, 0, 0],
                 referralRate,
                 0,
-                address(iERC20Token)
+                address(iERC20Token),
+                ""
             )
         );
 
@@ -159,7 +160,8 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
                 _unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                address(iERC20Token)
+                address(iERC20Token),
+                ""
             )
         );
 
@@ -202,7 +204,8 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
                 _unitPricePerType,
                 referralRate,
                 20,
-                address(iERC20Token)
+                address(iERC20Token),
+                ""
             )
         );
 

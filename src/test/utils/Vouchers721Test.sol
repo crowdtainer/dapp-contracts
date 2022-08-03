@@ -156,7 +156,8 @@ contract VouchersTest is CrowdtainerTestHelpers {
                 unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                address(iERC20Token)
+                address(iERC20Token),
+                ""
             ),
             _productDescription: productDescription,
             _metadataService: address(metadataService)

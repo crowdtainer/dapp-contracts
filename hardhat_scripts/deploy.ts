@@ -70,6 +70,7 @@ async function main() {
     referralRate: 0,
     referralEligibilityValue: parseUnits('50', erc20Decimals),
     token: coin.address,
+    legalContractURI: ""
   };
 
   await vouchers721.createCrowdtainer(

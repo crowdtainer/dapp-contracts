@@ -6,7 +6,7 @@ import "./States.sol";
 
 // Data defining all rules and values of a Crowdtainer instance.
 struct CampaignData {
-    // Address that represents the product or service provider.
+    // Ethereum Address that represents the product or service provider.
     address shippingAgent;
     // Funding opening time.
     uint256 openingTime;
@@ -24,6 +24,8 @@ struct CampaignData {
     uint256 referralEligibilityValue;
     // Address of the ERC20 token used for payment.
     address token;
+    // URI string pointing to the legal terms and conditions ruling this project.
+    string legalContractURI;
 }
 
 /**
