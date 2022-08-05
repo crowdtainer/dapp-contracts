@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "./utils/CrowdtainerTest.sol";
 import {Errors} from "../contracts/Crowdtainer.sol";

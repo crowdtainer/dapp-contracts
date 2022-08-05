@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 // @dev External dependencies
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -143,7 +143,44 @@ contract Vouchers721 is ERC721Enumerable {
 
         ICrowdtainer crowdtainer = ICrowdtainer(_crowdtainer);
 
-        crowdtainer.join(msg.sender, _quantities, _enableReferral, _referrer);
+        try
+            crowdtainer.join(
+                msg.sender,
+                _quantities,
+                _enableReferral,
+                _referrer
+            )
+        {} catch (bytes memory receivedBytes) {
+            bytes4 receivedErrorSignature = this.getSignature(receivedBytes);
+            assert(
+                receivedErrorSignature ==
+                    bytes4(abi.encode(Errors.OffchainLookup.selector))
+            );
+
+            // decode error parameters
+            (
+                address sender,
+                string[] memory urls,
+                bytes memory callData,
+                bytes4 callbackFunction,
+                bytes memory extraData
+            ) = abi.decode(
+                    this.getParametersBytes(receivedBytes),
+                    (address, string[], bytes, bytes4, bytes)
+                );
+
+            if (sender != address(crowdtainer)) {
+                revert Errors.CCIP_Read_InvalidOperation();
+            }
+
+            revert Errors.OffchainLookup(
+                address(this),
+                urls,
+                callData,
+                Vouchers721.joinWithSignature.selector,
+                abi.encode(address(crowdtainer), callbackFunction, extraData)
+            );
+        }
 
         uint256 nextAvailableTokenId = ++nextTokenIdForCrowdtainer[
             crowdtainerId
@@ -163,6 +200,73 @@ contract Vouchers721 is ERC721Enumerable {
 
         // Mint the voucher to the respective owner
         _safeMint(msg.sender, newTokenID);
+
+        return newTokenID;
+    }
+
+    function getSignature(bytes calldata data) external view returns (bytes4) {
+        assert(data.length >= 4);
+        return bytes4(data[:4]);
+    }
+
+    function getParametersBytes(bytes calldata data)
+        external
+        view
+        returns (bytes calldata)
+    {
+        return data[4:];
+    }
+
+    // Allows joining with "native meta-transaction / sponsored gas", or by means of CCIP-READ (EIP-3668).
+    function joinWithSignature(
+        bytes calldata result, // off-chain signed payload
+        bytes calldata extraData // retained by client, passed for verification in this function
+    ) external returns (uint256) {
+        (
+            address crowdtainer, // Address of Crowdtainer contract
+            bytes4 innerCallbackFunction,
+            bytes memory innerExtraData
+        ) = abi.decode(extraData, (address, bytes4, bytes));
+
+        (
+            address _wallet,
+            uint256[MAX_NUMBER_OF_PRODUCTS] memory _quantities,
+            ,
+
+        ) = abi.decode(extraData, (address, uint256[4], bool, address));
+
+        uint256 crowdtainerId = idForCrowdtainer[crowdtainer];
+
+        if (crowdtainerId == 0) {
+            revert Errors.CrowdtainerInexistent();
+        }
+
+        crowdtainer.call( // Crowdtainer address
+            abi.encodeWithSelector(
+                innerCallbackFunction, // joinWithSignature()
+                result,
+                innerExtraData
+            )
+        );
+
+        uint256 nextAvailableTokenId = ++nextTokenIdForCrowdtainer[
+            crowdtainerId
+        ];
+
+        if (nextAvailableTokenId >= ID_MULTIPLE) {
+            revert Errors.MaximumNumberOfParticipantsReached(
+                ID_MULTIPLE,
+                crowdtainer
+            );
+        }
+
+        uint256 newTokenID = (ID_MULTIPLE * crowdtainerId) +
+            nextAvailableTokenId;
+
+        tokenIdQuantities[newTokenID] = _quantities;
+
+        // Mint the voucher to the respective owner
+        _safeMint(_wallet, newTokenID);
 
         return newTokenID;
     }

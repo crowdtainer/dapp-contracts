@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 // import "ds-test/test.sol";
 import "forge-std/Test.sol";
@@ -9,6 +9,21 @@ contract CrowdtainerTestHelpers is Test {
     Hevm internal constant hevm = Hevm(HEVM_ADDRESS);
 
     uint256 internal constant ONE = 10**6; // 6 decimal places
+
+    // @dev Helper function used to slice bytes, and get a custom error revert signature.
+    function getSignature(bytes calldata data) external view returns (bytes4) {
+        assert(data.length >= 4);
+        return bytes4(data[:4]);
+    }
+
+    // @dev Helper function used to get the parameters of a custom error revert.
+    function getParametersBytes(bytes calldata data)
+        external
+        view
+        returns (bytes calldata)
+    {
+        return data[4:];
+    }
 
     // @dev Helper function to check wheether the thrown Custom Error type matches expectation.
     function assertEqSignature(

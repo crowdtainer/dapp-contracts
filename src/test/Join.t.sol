@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "./utils/CrowdtainerTest.sol";
 
@@ -7,7 +7,76 @@ import {Errors} from "../contracts/Crowdtainer.sol";
 
 /* solhint-disable no-empty-blocks */
 
+interface Cheats {
+    // Signs data, (privateKey, digest) => (v, r, s)
+    function sign(uint256, bytes32)
+        external
+        returns (
+            uint8,
+            bytes32,
+            bytes32
+        );
+}
+
 contract CrowdtainerValidJoinTester is CrowdtainerTest {
+    Cheats internal constant cheats = Cheats(HEVM_ADDRESS);
+    uint256 internal signerPrivateKey;
+    address internal signer;
+
+    function testJoinUsingSignatureMustSucceed() public {
+        signerPrivateKey = 0xA11CE;
+        signer = vm.addr(signerPrivateKey);
+
+        initWithSignature(signer);
+
+        uint256 previousBalance = erc20Token.balanceOf(address(bob));
+
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
+            uint256(0),
+            2,
+            10,
+            0
+        ];
+
+        bytes memory payload = abi.encode(
+            address(bob),
+            quantities,
+            false,
+            address(0)
+        );
+
+        bytes32 messageHash = keccak256(payload);
+        bytes32 message = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash)
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
+            signerPrivateKey,
+            message
+        );
+
+        bytes memory signature = bytes.concat(r, s, bytes1(v));
+
+        bytes memory proof = abi.encode(signature);
+
+        bytes memory extraData = abi.encode(
+            address(bob),
+            quantities,
+            false,
+            address(0)
+        );
+
+        bob.doJoinWithSignature(proof, extraData);
+
+        uint256 totalCost = quantities[1] * unitPricePerType[1];
+        totalCost += quantities[2] * unitPricePerType[2];
+
+        assertEq(
+            erc20Token.balanceOf(address(bob)),
+            (previousBalance - totalCost)
+        );
+    }
+
     function testNoDiscountAndNoReferralCodeMustSucceed() public {
         init();
 
@@ -36,6 +105,7 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
             address(0),
             CampaignData(
                 address(agent),
+                address(0),
                 openingTime,
                 closingTime,
                 targetMinimum,
@@ -93,10 +163,11 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
             // bob can't use referral code coming from the same wallet
             bob.doJoin(quantities, true, address(bob))
         {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
+            bool failed = this.assertEqSignature(
                 makeError(Errors.UserAlreadyJoined.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 
@@ -114,10 +185,11 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
         try alice.doJoin(quantities, false, address(bob)) {} catch (
             bytes memory lowLevelData
         ) {
-            failed = this.assertEqSignature(
+            bool failed = this.assertEqSignature(
                 makeError(Errors.ReferralInexistent.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 
@@ -133,11 +205,12 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
         try alice.doJoin(quantities, false, address(0)) {} catch (
             bytes memory lowLevelData
         ) {
-            failed = this.assertEqSignature(
+            bool failed = this.assertEqSignature(
                 makeError(Errors.ExceededNumberOfItemsAllowed.selector),
                 lowLevelData
             );
             this.printTwoUint256(lowLevelData);
+            if (failed) fail();
         }
     }
 
@@ -153,6 +226,7 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
             address(0),
             CampaignData(
                 address(agent),
+                address(0),
                 openingTime,
                 closingTime,
                 20000,
@@ -175,11 +249,12 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
         try alice.doJoin(quantities, false, address(0)) {} catch (
             bytes memory lowLevelData
         ) {
-            failed = this.assertEqSignature(
+            bool failed = this.assertEqSignature(
                 makeError(Errors.PurchaseExceedsMaximumTarget.selector),
                 lowLevelData
             );
             this.printTwoUint256(lowLevelData);
+            if (failed) fail();
         }
     }
 
@@ -197,6 +272,7 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
             address(0),
             CampaignData(
                 address(agent),
+                address(0),
                 openingTime,
                 closingTime,
                 20000,
@@ -214,13 +290,14 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
         try alice.doJoin(quantities, true, address(0)) {} catch (
             bytes memory lowLevelData
         ) {
-            failed = this.assertEqSignature(
+            bool failed = this.assertEqSignature(
                 makeError(
                     Errors.MinimumPurchaseValueForReferralNotMet.selector
                 ),
                 lowLevelData
             );
             this.printTwoUint256(lowLevelData);
+            if (failed) fail();
         }
     }
 
@@ -238,10 +315,11 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
         try bob.doJoin(quantities, true, address(alice)) {} catch (
             bytes memory lowLevelData
         ) {
-            failed = this.assertEqSignature(
+            bool failed = this.assertEqSignature(
                 makeError(Errors.ReferralDisabledForProvidedCode.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 }

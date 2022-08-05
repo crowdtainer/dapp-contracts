@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "./Constants.sol";
 import "./States.sol";
@@ -8,6 +8,8 @@ import "./States.sol";
 struct CampaignData {
     // Ethereum Address that represents the product or service provider.
     address shippingAgent;
+    // Address used for signing authorizations.
+    address signer;
     // Funding opening time.
     uint256 openingTime;
     // Time after which the owner can no longer withdraw funds.

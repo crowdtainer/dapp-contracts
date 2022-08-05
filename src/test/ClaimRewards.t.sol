@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "./utils/CrowdtainerTest.sol";
 import {Errors} from "../contracts/Crowdtainer.sol";
@@ -19,6 +19,7 @@ contract CrowdtainerRewardsTester is CrowdtainerTest {
             address(0),
             CampaignData(
                 address(agent),
+                address(0),
                 openingTime,
                 closingTime,
                 20000 * ONE,

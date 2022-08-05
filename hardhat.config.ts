@@ -24,7 +24,7 @@ const config: HardhatUserConfig = {
     cache: "./out/hardhat/cache",
     artifacts: "./out/hardhat/artifacts",
   },
-  solidity: "0.8.11",
+  solidity: "0.8.16",
   namedAccounts: {
     deployer: 0,
     neo: 1, // participant

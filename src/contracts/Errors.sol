@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "./States.sol";
 
@@ -33,10 +33,6 @@ library Errors {
     error UnauthorizedTransfer();
     // @notice: Insufficient balance.
     error InsufficientBalance();
-    // @notice: ERC1155: ERC1155Receiver rejected tokens.
-    error ERC1155ReceiverRejectedTokens();
-    // @notice: Invalid receiver (non ERC155Receiver).
-    error NonERC1155Receiver();
     // @notice: Can't initialize with all their prices set to zero.
     error InvalidProductNumberAndPrices();
     // @notice: Can't make transfers in given state.
@@ -46,6 +42,17 @@ library Errors {
         uint256 maximum,
         address crowdtainer
     );
+    // Used to apply off-chain verifications/rules per CCIP-read (EIP-3668),
+    // see https://eips.ethereum.org/EIPS/eip-3668 for description.
+    error OffchainLookup(
+        address sender,
+        string[] urls,
+        bytes callData,
+        bytes4 callbackFunction,
+        bytes extraData
+    );
+
+    error CCIP_Read_InvalidOperation();
 
     // -----------------------------------------------
     //  Initialization with invalid parameters
@@ -95,6 +102,8 @@ library Errors {
         uint256 received,
         uint256 minimum
     );
+    // @notice: Invalid signature provided for joinWithSignature() function.
+    error InvalidSignature();
 
     // -----------------------------------------------
     //  Leave() operation

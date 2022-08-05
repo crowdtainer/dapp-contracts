@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "./utils/CrowdtainerTest.sol";
 import {Errors} from "../contracts/Crowdtainer.sol";
@@ -13,6 +13,7 @@ contract ValidInitializeTester is CrowdtainerTest {
             address(0),
             CampaignData(
                 address(agent),
+                address(0),
                 openingTime,
                 closingTime,
                 targetMinimum,
@@ -35,6 +36,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 address(0),
                 CampaignData(
                     address(agent),
+                    address(0),
                     openingTime,
                     closingTime,
                     targetMinimum,
@@ -47,10 +49,11 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
+            bool failed = this.assertEqSignature(
                 makeError(Errors.TokenAddressIsZero.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 
@@ -61,6 +64,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 address(0),
                 CampaignData(
                     address(invalidTokenAddress),
+                    address(0),
                     openingTime,
                     closingTime,
                     targetMinimum,
@@ -73,10 +77,11 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
+            bool failed = this.assertEqSignature(
                 makeError(Errors.ShippingAgentAddressIsZero.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 
@@ -86,6 +91,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 address(0),
                 CampaignData(
                     address(agent),
+                    address(0),
                     openingTime,
                     closingTime,
                     targetMinimum,
@@ -98,10 +104,11 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
+            bool failed = this.assertEqSignature(
                 makeError(Errors.ReferralMinimumValueTooHigh.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 
@@ -111,6 +118,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 address(0),
                 CampaignData(
                     address(agent),
+                    address(0),
                     openingTime,
                     openingTime,
                     targetMinimum,
@@ -123,10 +131,11 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
+            bool failed = this.assertEqSignature(
                 makeError(Errors.ClosingTimeTooEarly.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 
@@ -136,6 +145,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 address(0),
                 CampaignData(
                     address(agent),
+                    address(0),
                     openingTime,
                     openingTime,
                     targetMaximum + 1,
@@ -148,10 +158,11 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
+            bool failed = this.assertEqSignature(
                 makeError(Errors.ClosingTimeTooEarly.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 
@@ -161,6 +172,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 address(0),
                 CampaignData(
                     address(agent),
+                    address(0),
                     openingTime,
                     closingTime,
                     0,
@@ -173,10 +185,11 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
+            bool failed = this.assertEqSignature(
                 makeError(Errors.InvalidMinimumTarget.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 
@@ -186,6 +199,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 address(0),
                 CampaignData(
                     address(agent),
+                    address(0),
                     openingTime,
                     closingTime,
                     targetMaximum + 1,
@@ -198,10 +212,11 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
+            bool failed = this.assertEqSignature(
                 makeError(Errors.MinimumTargetHigherThanMaximum.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 
@@ -211,6 +226,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 address(0),
                 CampaignData(
                     address(agent),
+                    address(0),
                     openingTime,
                     closingTime,
                     targetMinimum,
@@ -223,10 +239,11 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
+            bool failed = this.assertEqSignature(
                 makeError(Errors.InvalidMaximumTarget.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 
@@ -236,6 +253,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 address(0),
                 CampaignData(
                     address(agent),
+                    address(0),
                     openingTime,
                     closingTime,
                     targetMinimum,
@@ -248,10 +266,11 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
+            bool failed = this.assertEqSignature(
                 makeError(Errors.InvalidReferralRate.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 
@@ -261,6 +280,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 address(0),
                 CampaignData(
                     address(agent),
+                    address(0),
                     openingTime,
                     closingTime,
                     targetMinimum,
@@ -273,10 +293,11 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
+            bool failed = this.assertEqSignature(
                 makeError(Errors.ReferralRateNotMultipleOfTwo.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 }
@@ -321,6 +342,7 @@ contract InitializeFuzzer is CrowdtainerTest {
             address(0),
             CampaignData(
                 _agent,
+                address(0),
                 _openingTime,
                 _closingTime,
                 _targetMinimum,
@@ -369,6 +391,7 @@ contract InitializeProver is CrowdtainerTest {
 
         crowdtainer.initialize(address(this), CampaignData(
                     address(agent),
+                    address(0),
                     openingTime,
                     closingTime,
                     targetMinimum,

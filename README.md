@@ -58,7 +58,10 @@ root
 # Install yarn
 npm install --global yarn
 
-# Install Crowdtainer project dependencies
+# Install Solidity compiler:
+See instructions at https://docs.soliditylang.org/en/v0.8.16/installing-solidity.html
+
+# Install Crowdtainer node project dependencies
 yarn install
 ```
 

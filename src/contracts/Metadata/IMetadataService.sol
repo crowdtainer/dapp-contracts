@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 uint256 constant _MAX_NUMBER_OF_PRODUCTS = 4;
 
