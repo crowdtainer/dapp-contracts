@@ -78,7 +78,10 @@ contract Vouchers721CreateTester is VouchersTest {
         address crowdtainerAddress;
 
         (crowdtainerAddress, ) = createCrowdtainer(address(signer));
-        // uint256 bobPreviousBalance = erc20Token.balanceOf(address(bob));
+
+        vm.label(address(signer), "Signer");
+        vm.label(address(crowdtainerAddress), "Crowdtainer");
+
         uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
             uint256(0),
             2,
@@ -102,47 +105,54 @@ contract Vouchers721CreateTester is VouchersTest {
                 _referrer: address(0)
             })
         {} catch (bytes memory receivedBytes) {
-
-            // We except `join()` to revert with OffchainLookup()
-            bytes4 receivedErrorSignature = this.getSignature(receivedBytes);
-            assertEq(
-                receivedErrorSignature,
-                    bytes4(abi.encode(Errors.OffchainLookup.selector))
+            // We expect `join()` to revert with OffchainLookup()
+            bool correctRevert = this.isEqualSignature(
+                receivedBytes,
+                makeError(Errors.OffchainLookup.selector)
             );
 
-            // decode error parameters
-            (
-                sender,
-                ,
-                ,
-                callbackFunction,
-                extraData
-            ) = abi.decode(
-                    this.getParametersBytes(receivedBytes),
-                    (address, string[], bytes, bytes4, bytes)
-                );
+            require(correctRevert, "Invalid error. Expected: OffchainLookup.");
 
-            // The revert must be 'thrown' by vouchers itself
-            if (sender != address(vouchers)) {
-                revert Errors.CCIP_Read_InvalidOperation();
-            }
+            // decode OffchainLooup error parameters
+            // sender, ulrs, params for gateway, 4 byte selector, params for contract (extraData)
+            (sender, , , callbackFunction, extraData) = abi.decode(
+                this.getParameters(receivedBytes),
+                (address, string[], bytes, bytes4, bytes)
+            );
 
-            assertEq(callbackFunction, vouchers.joinWithSignature.selector);
+            require(
+                sender == address(vouchers),
+                "The revert must be 'thrown' by Vouchers721 itself"
+            );
+
+            assertEq(callbackFunction, Vouchers721.joinWithSignature.selector);
 
             offchainLookupErrorThrown = true;
         }
 
-        assertTrue(offchainLookupErrorThrown);
+        require(
+            offchainLookupErrorThrown,
+            "OffChainLookup invalid or not thrown."
+        );
+
+        // Craft auth/proof
+        uint64 epochExpiration = uint64(block.timestamp) + uint64(1000); // signature expiration
+        bytes32 bobNonce = keccak256("random");
 
         bytes memory bobPayload = abi.encode(
             address(bob),
             quantities,
             false,
-            address(0)
+            address(0),
+            epochExpiration,
+            bobNonce
         );
 
         bytes32 bobMessage = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(bobPayload))
+            abi.encodePacked(
+                "\x19Ethereum Signed Message:\n32",
+                keccak256(bobPayload)
+            )
         );
 
         // Sign permit for Bob
@@ -151,18 +161,15 @@ contract Vouchers721CreateTester is VouchersTest {
             bobMessage
         );
         bytes memory bobSignature = bytes.concat(r, s, bytes1(v));
-        bytes memory bobProof = abi.encode(bobSignature);
+        bytes memory bobProof = abi.encode(
+            epochExpiration,
+            bobNonce,
+            bobSignature
+        );
 
         uint256 bobTokenId = bob.doJoinWithSignature(bobProof, extraData);
 
         assertEq(bobTokenId, vouchers.ID_MULTIPLE() + 1);
-
-        // uint256 totalCost = (quantities[1] * unitPricePerType[1]) + (quantities[2] * unitPricePerType[2]);
-
-        // assertEq(
-        //     erc20Token.balanceOf(address(bob)),
-        //     (bobPreviousBalance - totalCost)
-        // );
     }
 
     function testTokenIdToCrowdtainerIdMustSucceed(uint256 randomTokenId)
@@ -360,7 +367,7 @@ contract Vouchers721CreateTester is VouchersTest {
                 _referrer: address(0)
             })
         {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.CrowdtainerInexistent.selector),
                 lowLevelData
             );
@@ -387,7 +394,7 @@ contract Vouchers721CreateTester is VouchersTest {
                 _enableReferral: false,
                 _referrer: address(0)
             }) {} catch (bytes memory lowLevelData) {
-                bool failed = this.assertEqSignature(
+                bool failed = this.isEqualSignature(
                 makeError(Errors.MaximumNumberOfParticipantsReached.selector),
                 lowLevelData
                 );
@@ -453,7 +460,7 @@ contract Vouchers721FailureTester is VouchersTest {
         try alice.doSafeTransferTo(address(bob), tokenId) {} catch (
             bytes memory lowLevelData
         ) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.TransferNotAllowed.selector),
                 lowLevelData
             );
@@ -483,7 +490,7 @@ contract Vouchers721CreateInvalidTester is VouchersTest {
                 _metadataService: address(metadataService)
             })
         {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.MetadataServiceAddressIsZero.selector),
                 lowLevelData
             );

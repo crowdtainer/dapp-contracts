@@ -49,7 +49,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.TokenAddressIsZero.selector),
                 lowLevelData
             );
@@ -77,7 +77,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.ShippingAgentAddressIsZero.selector),
                 lowLevelData
             );
@@ -104,7 +104,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.ReferralMinimumValueTooHigh.selector),
                 lowLevelData
             );
@@ -131,7 +131,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.ClosingTimeTooEarly.selector),
                 lowLevelData
             );
@@ -158,7 +158,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.ClosingTimeTooEarly.selector),
                 lowLevelData
             );
@@ -185,7 +185,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.InvalidMinimumTarget.selector),
                 lowLevelData
             );
@@ -212,7 +212,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.MinimumTargetHigherThanMaximum.selector),
                 lowLevelData
             );
@@ -239,7 +239,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.InvalidMaximumTarget.selector),
                 lowLevelData
             );
@@ -266,7 +266,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.InvalidReferralRate.selector),
                 lowLevelData
             );
@@ -293,7 +293,7 @@ contract InvalidInitializeTester is CrowdtainerTest {
                 )
             )
         {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.ReferralRateNotMultipleOfTwo.selector),
                 lowLevelData
             );

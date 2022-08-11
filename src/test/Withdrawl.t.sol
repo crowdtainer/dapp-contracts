@@ -87,7 +87,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
         assert(crowdtainer.crowdtainerState() == CrowdtainerState.Delivery);
 
         try alice.doClaimFunds() {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.InvalidOperationFor.selector),
                 lowLevelData
             );
@@ -133,7 +133,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
         bob.doJoin(quantities, false, address(alice));
 
         try agent.doGetPaidAndDeliver() {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.MinimumTargetNotReached.selector),
                 lowLevelData
             );
@@ -179,7 +179,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
         hevm.warp(openingTime - 1 seconds);
 
         try alice.doClaimFunds() {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.OpeningTimeNotReachedYet.selector),
                 lowLevelData
             );
@@ -224,7 +224,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
         hevm.warp(closingTime + 1 hours);
 
         try agent.doGetPaidAndDeliver() {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.MinimumTargetNotReached.selector),
                 lowLevelData
             );
@@ -235,13 +235,12 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
 
 contract CrowdtainerAuthorizationTester is CrowdtainerTest {
     function testGetPaidAndDeliverCalledByNonAgentMustFail() public {
-        bool failed = true; // @dev: specific error must be thrown
+        bool failed; // @dev: specific error must be thrown
         try bob.doGetPaidAndDeliver() {} catch (bytes memory lowLevelData) {
-            this.assertEqSignature(
+            failed = this.isEqualSignature(
                 makeError(Errors.CallerNotAllowed.selector),
                 lowLevelData
             );
-            failed = false;
         }
         if (failed) fail();
     }

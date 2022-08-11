@@ -2,7 +2,6 @@
 pragma solidity ^0.8.16;
 
 // @dev External dependencies
-// import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -69,6 +68,9 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     // @dev Address owned by shipping agent to sign authorization transactions.
     address private signer;
 
+    // @dev Mapping of addresses to random nonces; Used for transaction replay protection.
+    mapping(address => mapping(bytes32 => bool)) public usedNonces;
+
     // @dev URL templates to the service provider's gateways that implement the CCIP-read protocol.
     string[] public urls;
 
@@ -132,7 +134,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
 
     // @dev Address used for signing authorizations. This allows for arbitrary
     // off-chain mechanisms to apply law-based restrictions and/or combat bots squatting offered items.
-    // @notice If equals to address(0), no additional restriction is applied.
+    // @notice If signer equals to address(0), no restriction is applied.
     function getSigner() external view returns (address) {
         return signer;
     }
@@ -332,6 +334,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
      * @param _enableReferral Informs whether the user would like to be eligible to collect rewards for being referred.
      * @param _referrer Optional referral code to be used to claim a discount.
      *
+     * @note Requires IRC20 permit.
+     *
      * @note referrer is the wallet address of a previous participant.
      *
      * @note if `enableReferral` is true, and the account has been used to claim a discount, then
@@ -369,10 +373,20 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             );
         }
 
+        if (owner == address(0)) {
+            requireAddress(_wallet);
+        }
+
         _join(_wallet, _quantities, _enableReferral, _referrer);
     }
 
-    // Allows joining with "native meta-transaction / sponsored gas", or by means of CCIP-READ (EIP-3668).
+    /*
+     * @dev Allows joining by means of CCIP-READ (EIP-3668).
+     * @param result (uint64, bytes) of signature validity and the signature itself.
+     * @param extraData ABI encoded parameters for _join() method.
+     *
+     * @note Requires IRC20 permit.
+     */
     function joinWithSignature(
         bytes calldata result, // off-chain signed payload
         bytes calldata extraData // retained by client, passed for verification in this function
@@ -383,6 +397,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         onlyActive
         nonReentrant
     {
+        require(signer != address(0));
+
         // decode extraData provided by client
         (
             address _wallet,
@@ -391,23 +407,63 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             address _referrer
         ) = abi.decode(extraData, (address, uint256[4], bool, address));
 
-        // Get signature from server response
-        bytes memory signature = abi.decode(result, (bytes));
+        if (owner == address(0)) {
+            requireAddress(_wallet);
+        }
 
-        address recoveredPublicKey = keccak256(
-            abi.encodePacked(
-                "\x19Ethereum Signed Message:\n32",
-                keccak256(
-                    abi.encode(_wallet, _quantities, _enableReferral, _referrer)
-                )
+        // Get signature from server response
+        (uint64 epochExpiration, bytes32 nonce, bytes memory signature) = abi
+            .decode(result, (uint64, bytes32, bytes));
+
+        bytes32 messageDigest = keccak256(
+            abi.encode(
+                _wallet,
+                _quantities,
+                _enableReferral,
+                _referrer,
+                epochExpiration,
+                nonce
             )
+        );
+
+        require(
+            signaturePayloadValid(
+                messageDigest,
+                signer,
+                epochExpiration,
+                nonce,
+                signature
+            )
+        );
+        usedNonces[signer][nonce] = true;
+
+        _join(_wallet, _quantities, _enableReferral, _referrer);
+    }
+
+    function signaturePayloadValid(
+        bytes32 messageDigest,
+        address expectedPublicKey,
+        uint64 expiration,
+        bytes32 nonce,
+        bytes memory signature
+    ) internal view returns (bool) {
+        address recoveredPublicKey = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", messageDigest)
         ).recover(signature);
 
-        if (recoveredPublicKey != signer) {
+        if (recoveredPublicKey != expectedPublicKey) {
             revert Errors.InvalidSignature();
         }
 
-        _join(_wallet, _quantities, _enableReferral, _referrer);
+        if (expiration <= block.timestamp) {
+            revert Errors.SignatureExpired(uint64(block.timestamp), expiration);
+        }
+
+        if (usedNonces[expectedPublicKey][nonce]) {
+            revert Errors.NonceAlreadyUsed(expectedPublicKey, nonce);
+        }
+
+        return true;
     }
 
     function _join(
@@ -416,10 +472,6 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         bool _enableReferral,
         address _referrer
     ) internal {
-        if (owner == address(0)) {
-            requireAddress(_wallet);
-        }
-
         enableReferral[_wallet] = _enableReferral;
 
         // @dev Check if wallet didn't already join

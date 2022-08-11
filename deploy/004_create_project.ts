@@ -6,6 +6,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const chainId = await hre.getChainId();
   const { agent } = await hre.getNamedAccounts();
 
+  console.log("Detected accounts: ", await hre.getNamedAccounts());
+
   const mainnetChainId = "1";
   const isMainnet = chainId === mainnetChainId;
 
@@ -18,7 +20,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
 
   await hre.run("createCrowdtainer", {
-    /* params */
+    agent: agent
   });
 };
 

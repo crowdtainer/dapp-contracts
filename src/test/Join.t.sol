@@ -38,11 +38,16 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
             0
         ];
 
+        uint64 epochExpiration = uint64(block.timestamp) + uint64(1000); // signature expiration
+        bytes32 aliceNonce = keccak256("random");
+
         bytes memory payload = abi.encode(
             address(bob),
             quantities,
             false,
-            address(0)
+            address(0),
+            epochExpiration,
+            aliceNonce
         );
 
         bytes32 messageHash = keccak256(payload);
@@ -55,9 +60,12 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
             message
         );
 
-        bytes memory signature = bytes.concat(r, s, bytes1(v));
-
-        bytes memory proof = abi.encode(signature);
+        // bytes memory signature = bytes.concat(r, s, bytes1(v));
+        bytes memory proof = abi.encode(
+            epochExpiration,
+            aliceNonce,
+            bytes.concat(r, s, bytes1(v))
+        );
 
         bytes memory extraData = abi.encode(
             address(bob),
@@ -70,11 +78,12 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
 
         uint256 totalCost = quantities[1] * unitPricePerType[1];
         totalCost += quantities[2] * unitPricePerType[2];
-
-        assertEq(
-            erc20Token.balanceOf(address(bob)),
-            (previousBalance - totalCost)
-        );
+        {
+            assertEq(
+                erc20Token.balanceOf(address(bob)),
+                (previousBalance - totalCost)
+            );
+        }
     }
 
     function testNoDiscountAndNoReferralCodeMustSucceed() public {
@@ -163,7 +172,7 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
             // bob can't use referral code coming from the same wallet
             bob.doJoin(quantities, true, address(bob))
         {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.UserAlreadyJoined.selector),
                 lowLevelData
             );
@@ -185,7 +194,7 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
         try alice.doJoin(quantities, false, address(bob)) {} catch (
             bytes memory lowLevelData
         ) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.ReferralInexistent.selector),
                 lowLevelData
             );
@@ -205,7 +214,7 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
         try alice.doJoin(quantities, false, address(0)) {} catch (
             bytes memory lowLevelData
         ) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.ExceededNumberOfItemsAllowed.selector),
                 lowLevelData
             );
@@ -249,7 +258,7 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
         try alice.doJoin(quantities, false, address(0)) {} catch (
             bytes memory lowLevelData
         ) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.PurchaseExceedsMaximumTarget.selector),
                 lowLevelData
             );
@@ -290,7 +299,7 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
         try alice.doJoin(quantities, true, address(0)) {} catch (
             bytes memory lowLevelData
         ) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(
                     Errors.MinimumPurchaseValueForReferralNotMet.selector
                 ),
@@ -315,7 +324,7 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
         try bob.doJoin(quantities, true, address(alice)) {} catch (
             bytes memory lowLevelData
         ) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.ReferralDisabledForProvidedCode.selector),
                 lowLevelData
             );

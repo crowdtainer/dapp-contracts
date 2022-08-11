@@ -5,7 +5,10 @@ import { parseUnits } from "ethers/lib/utils";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const chainId = await hre.getChainId();
-  const { neo, trinity } = await hre.getNamedAccounts();
+  const namedAccounts = await hre.getNamedAccounts();
+  console.log("Accounts available:", namedAccounts);
+
+  const { neo, trinity } = namedAccounts;
 
   const mainnetChainId = "1";
   const isMainnet = chainId === mainnetChainId;

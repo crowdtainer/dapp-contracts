@@ -53,6 +53,9 @@ library Errors {
     );
 
     error CCIP_Read_InvalidOperation();
+    error SignatureExpired(uint64 current, uint64 expires);
+    error NonceAlreadyUsed(address wallet, bytes32 nonce);
+    error InvalidSignature();
 
     // -----------------------------------------------
     //  Initialization with invalid parameters
@@ -102,8 +105,6 @@ library Errors {
         uint256 received,
         uint256 minimum
     );
-    // @notice: Invalid signature provided for joinWithSignature() function.
-    error InvalidSignature();
 
     // -----------------------------------------------
     //  Leave() operation

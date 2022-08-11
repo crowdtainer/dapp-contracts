@@ -57,7 +57,7 @@ contract CrowdtainerValidProjectTerminationTester is CrowdtainerTest {
         hevm.warp(openingTime - 1 seconds);
 
         try bob.doClaimFunds() {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.OpeningTimeNotReachedYet.selector),
                 lowLevelData
             ) &&
@@ -84,7 +84,7 @@ contract CrowdtainerValidProjectTerminationTester is CrowdtainerTest {
         bob.doJoin(quantities, false, address(0));
 
         try bob.doClaimFunds() {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.CantClaimFundsOnActiveProject.selector),
                 lowLevelData
             ) &&
@@ -166,7 +166,7 @@ contract CrowdtainerInvalidProjectTerminationTester is CrowdtainerTest {
         assert(crowdtainer.crowdtainerState() == CrowdtainerState.Delivery);
 
         try agent.doAbortProject() {} catch (bytes memory lowLevelData) {
-            bool failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.InvalidOperationFor.selector),
                 lowLevelData
             );

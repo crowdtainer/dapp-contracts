@@ -24,23 +24,46 @@ const config: HardhatUserConfig = {
     cache: "./out/hardhat/cache",
     artifacts: "./out/hardhat/artifacts",
   },
-  solidity: "0.8.16",
+  solidity: {
+    version: "0.8.16",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 100
+      }
+    }
+  },
   namedAccounts: {
     deployer: 0,
     neo: 1, // participant
     trinity: 2, // participant
-    agent: 3, // agent / service provider
+    agent: 0, // agent / service provider
   },
   networks: {
+    // for mainnet
+    // optimism: {
+    //   url: "https://mainnet.optimism.io",
+    //   accounts: privateKeysFor('optimismmainnet'),
+    // },
+    // Testnets
     rinkeby: {
       url: nodeUrlFor("rinkeby"),
       accounts: privateKeysFor("rinkeby"),
+      // gas: 2100000,
+      // gasPrice: 1003244855,
       // accounts: mnemonicAccountsFor('rinkeby'),
+    },
+    optimismgoerli: {
+      url: "https://goerli.optimism.io",
+      accounts: privateKeysFor('optimismgoerli'),
     },
     localhost: {
       gas: 2100000,
       gasPrice: 8000000000,
     },
+    // hardhat: {
+    //   allowUnlimitedContractSize: true
+    // },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,

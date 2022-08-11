@@ -17,7 +17,7 @@ contract CrowdtainerTestHelpers is Test {
     }
 
     // @dev Helper function used to get the parameters of a custom error revert.
-    function getParametersBytes(bytes calldata data)
+    function getParameters(bytes calldata data)
         external
         view
         returns (bytes calldata)
@@ -26,7 +26,7 @@ contract CrowdtainerTestHelpers is Test {
     }
 
     // @dev Helper function to check wheether the thrown Custom Error type matches expectation.
-    function assertEqSignature(
+    function isEqualSignature(
         bytes calldata expectedSignature,
         bytes calldata receivedBytes
     ) external returns (bool) {

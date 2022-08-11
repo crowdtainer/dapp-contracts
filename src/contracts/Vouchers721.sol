@@ -120,6 +120,8 @@ contract Vouchers721 is ERC721Enumerable {
      * @param _referrer Optional referral code to be used to claim a discount.
      * @return The token id that represents the created voucher.
      *
+     * @note Requires IERC20 permit.
+     *
      * @note referrer is the wallet address of a previous participant.
      *
      * @note if `enableReferral` is true, and the user decides to leave after the wallet has been used to claim a discount,
@@ -151,35 +153,47 @@ contract Vouchers721 is ERC721Enumerable {
                 _referrer
             )
         {} catch (bytes memory receivedBytes) {
-            bytes4 receivedErrorSignature = this.getSignature(receivedBytes);
-            assert(
-                receivedErrorSignature ==
-                    bytes4(abi.encode(Errors.OffchainLookup.selector))
-            );
+            bytes4 receivedErrorSelector = this.getSignature(receivedBytes);
 
-            // decode error parameters
-            (
-                address sender,
-                string[] memory urls,
-                bytes memory callData,
-                bytes4 callbackFunction,
-                bytes memory extraData
-            ) = abi.decode(
-                    this.getParametersBytes(receivedBytes),
-                    (address, string[], bytes, bytes4, bytes)
+            if (receivedErrorSelector == Errors.OffchainLookup.selector) {
+                // decode error parameters
+                (
+                    address sender,
+                    string[] memory urls,
+                    bytes memory callData,
+                    bytes4 callbackFunction,
+                    bytes memory extraData
+                ) = abi.decode(
+                        this.getParameters(receivedBytes),
+                        (address, string[], bytes, bytes4, bytes)
+                    );
+
+                if (sender != address(crowdtainer)) {
+                    revert Errors.CCIP_Read_InvalidOperation();
+                }
+
+                revert Errors.OffchainLookup(
+                    address(this),
+                    urls,
+                    callData,
+                    Vouchers721.joinWithSignature.selector,
+                    abi.encode(
+                        address(crowdtainer),
+                        callbackFunction,
+                        extraData
+                    )
                 );
-
-            if (sender != address(crowdtainer)) {
-                revert Errors.CCIP_Read_InvalidOperation();
+            } else if (
+                receivedErrorSelector == Errors.SignatureExpired.selector
+            ) {
+                (uint64 current, uint64 expires) = abi.decode(
+                    this.getParameters(receivedBytes),
+                    (uint64, uint64)
+                );
+                revert Errors.SignatureExpired(current, expires);
+            } else {
+                require(false, "Other exception thrown, must halt execution.");
             }
-
-            revert Errors.OffchainLookup(
-                address(this),
-                urls,
-                callData,
-                Vouchers721.joinWithSignature.selector,
-                abi.encode(address(crowdtainer), callbackFunction, extraData)
-            );
         }
 
         uint256 nextAvailableTokenId = ++nextTokenIdForCrowdtainer[
@@ -204,20 +218,27 @@ contract Vouchers721 is ERC721Enumerable {
         return newTokenID;
     }
 
-    function getSignature(bytes calldata data) external view returns (bytes4) {
-        assert(data.length >= 4);
+    function getSignature(bytes calldata data) external pure returns (bytes4) {
+        require(data.length >= 4);
         return bytes4(data[:4]);
     }
 
-    function getParametersBytes(bytes calldata data)
+    function getParameters(bytes calldata data)
         external
-        view
+        pure
         returns (bytes calldata)
     {
+        require(data.length > 4);
         return data[4:];
     }
 
-    // Allows joining with "native meta-transaction / sponsored gas", or by means of CCIP-READ (EIP-3668).
+    /*
+     * @dev Allows joining by means of CCIP-READ (EIP-3668).
+     * @param result ABI encoded (uint64, bytes) for signature time validity and the signature itself.
+     * @param extraData ABI encoded (address, bytes4, bytes), with the 3rd parameter contains encoded values for Crowdtainer._join() method.
+     *
+     * @note Requires IRC20 permit.
+     */
     function joinWithSignature(
         bytes calldata result, // off-chain signed payload
         bytes calldata extraData // retained by client, passed for verification in this function
@@ -228,26 +249,31 @@ contract Vouchers721 is ERC721Enumerable {
             bytes memory innerExtraData
         ) = abi.decode(extraData, (address, bytes4, bytes));
 
+        assert(innerCallbackFunction == Crowdtainer.joinWithSignature.selector);
+
         (
             address _wallet,
             uint256[MAX_NUMBER_OF_PRODUCTS] memory _quantities,
             ,
 
-        ) = abi.decode(extraData, (address, uint256[4], bool, address));
+        ) = abi.decode(innerExtraData, (address, uint256[4], bool, address));
 
+        if (msg.sender != _wallet)
+            revert Errors.CallerNotAllowed({
+                expected: msg.sender,
+                actual: _wallet
+            });
+
+        assert(crowdtainer != address(0));
         uint256 crowdtainerId = idForCrowdtainer[crowdtainer];
 
         if (crowdtainerId == 0) {
             revert Errors.CrowdtainerInexistent();
         }
 
-        crowdtainer.call( // Crowdtainer address
-            abi.encodeWithSelector(
-                innerCallbackFunction, // joinWithSignature()
-                result,
-                innerExtraData
-            )
-        );
+        assert(crowdtainer.code.length > 0);
+
+        Crowdtainer(crowdtainer).joinWithSignature(result, innerExtraData);
 
         uint256 nextAvailableTokenId = ++nextTokenIdForCrowdtainer[
             crowdtainerId

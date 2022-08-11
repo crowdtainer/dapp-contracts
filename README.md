@@ -192,7 +192,7 @@ With dapp.tools:
 - Then run e.g.: `make contract=Crowdtainer estimate`
 
 With Foundry:
-- forge test --gas-estimate
+- forge test --gas-report
 
 ### Contract size estimation:
 - Example: `make contract=Vouchers721 size`
