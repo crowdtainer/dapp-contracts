@@ -11,6 +11,7 @@ What follows is a detailed description of the smart contract expectations in Use
 ```
     /**
      * @param _shippingAgent Address that represents the product or service provider.
+     * @param _signer Optional field to do off-chain restrictions.
      * @param _openingTime Funding opening time.
      * @param _expireTime Time after which the shipping agent can no longer withdraw funds.
      * @param _targetMinimum Amount in ERC20 units required for the Crowdtainer to be considered to be successful.
@@ -34,9 +35,11 @@ What follows is a detailed description of the smart contract expectations in Use
 
 - ✅ I need a method to cancel a project, so that I can signal participants that the project will no longer be possible, and participants are therefore able to leave taking their money without waiting for expiration.
 
+- ✅ I need a way to set restrictions based on off-chain rules (e.g. CCIP-read) and only allow users to join if an approval is given (based on signature).
+
 ### As a buyer/participant
 
-- ◻️ I'd like way to read the IPFS/HASH data so that I can verify that the legal term is the same as provided in a frontend interface.
+- ✅ I'd like way to read the IPFS/HASH data so that I can verify that the legal term is the same as provided in a frontend interface.
 
 - ✅ I'd like to specify my details of order and sign such transaction, so that I can participate in a group buying.
 

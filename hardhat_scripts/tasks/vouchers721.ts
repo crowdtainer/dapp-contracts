@@ -41,6 +41,7 @@ task(
 
   const campaignData = {
     shippingAgent: agent.address,
+    signer: '0x0000000000000000000000000000000000000000',
     openingTime: currentTime + 30,
     expireTime: currentTime + 3600 * 5,
     targetMinimum: parseUnits('10000', erc20Decimals),

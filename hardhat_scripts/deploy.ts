@@ -62,6 +62,7 @@ async function main() {
 
   const campaignData = {
     shippingAgent: agent.address,
+    signer: '0x0000000000000000000000000000000000000000',
     openingTime: currentTime + 10,
     expireTime: currentTime + 10 + 3601,
     targetMinimum: parseUnits('10000', erc20Decimals),
