@@ -11,7 +11,7 @@ contract CrowdtainerTestHelpers is Test {
     uint256 internal constant ONE = 10**6; // 6 decimal places
 
     // @dev Helper function used to slice bytes, and get a custom error revert signature.
-    function getSignature(bytes calldata data) external view returns (bytes4) {
+    function getSignature(bytes calldata data) external pure returns (bytes4) {
         assert(data.length >= 4);
         return bytes4(data[:4]);
     }
@@ -19,7 +19,7 @@ contract CrowdtainerTestHelpers is Test {
     // @dev Helper function used to get the parameters of a custom error revert.
     function getParameters(bytes calldata data)
         external
-        view
+        pure
         returns (bytes calldata)
     {
         return data[4:];
