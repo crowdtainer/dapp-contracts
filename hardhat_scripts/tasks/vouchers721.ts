@@ -7,18 +7,18 @@ import { Coin, Vouchers721 } from "../../out/typechain/";
 task(
   "createCrowdtainer",
   "Create/initialize a new Crowdtainer project with default values."
-).setAction(async function ({ _ }, hre) {
+).addParam("agent", "The agent/service provider address")
+.setAction(async function ({ agent }, hre) {
   let { ethers } = hre;
   const coin = <Coin>(await ethers.getContract("Coin"));
 
-  const namedAccounts = await hre.getNamedAccounts();
-  const agent = await ethers.getSigner(namedAccounts['agent']);
+  const agentSigner = await ethers.getSigner(agent);
 
   const vouchers721 = await ethers.getContract<Vouchers721>("Vouchers721");
   const metadataService = await ethers.getContract("MetadataServiceV1");
 
   console.log(`MetadataServiceV1 address: ${metadataService.address}`);
-  console.log(`Agent address: ${agent.address}`);
+  console.log(`Agent address: ${agentSigner.address}`);
   console.log(`token address: ${coin.address}`);
 
   const erc20Decimals = await coin.decimals();
@@ -40,7 +40,8 @@ task(
   // + (5*3600)
 
   const campaignData = {
-    shippingAgent: agent.address,
+    shippingAgent: agent,
+    signer: '0x0000000000000000000000000000000000000000',
     openingTime: currentTime + 30,
     expireTime: currentTime + 3600 * 5,
     targetMinimum: parseUnits('10000', erc20Decimals),
@@ -49,6 +50,7 @@ task(
     referralRate: 20,
     referralEligibilityValue: parseUnits('50', erc20Decimals),
     token: coin.address,
+    legalContractURI: ""
   };
 
   await vouchers721.createCrowdtainer(
@@ -58,9 +60,10 @@ task(
   );
 
   let crowdtainerId = (await vouchers721.crowdtainerCount()).toNumber();
+  console.log(`Crowdtainer count: ${crowdtainerId}`);
   let crowdtainerAddress = await vouchers721.crowdtainerIdToAddress(crowdtainerId);
 
-  console.log(`${agent.address} created a new Crowdtainer project. Id: ${crowdtainerId} @ ${crowdtainerAddress}`);
+  console.log(`${agent} created a new Crowdtainer project. Id: ${crowdtainerId} @ ${crowdtainerAddress}`);
 });
 
 task("join", "Join a Crowdtainer with the given parameters.")

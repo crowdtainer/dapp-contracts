@@ -2,7 +2,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import "@nomiclabs/hardhat-ethers";
 import { parseUnits } from "ethers/lib/utils";
-import { Crowdtainer, Vouchers721 } from "../out/typechain/";
+import { Crowdtainer, Vouchers721, Coin } from "../out/typechain/";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const chainId = await hre.getChainId();
@@ -19,7 +19,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     return;
   }
 
-  const token = await hre.ethers.getContract("Coin");
+  const token = await hre.ethers.getContract<Coin>("Coin");
   const symbol = await token.symbol();
   const { neo, trinity } = await hre.getNamedAccounts();
 
@@ -29,8 +29,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const crowdtainerFactory = await hre.ethers.getContractFactory("Crowdtainer");
   const crowdtainer = <Crowdtainer>crowdtainerFactory.attach(crowdtainerAddress);
 
-  const quantity = parseUnits("100000000000", 6);
-
+  const quantity = parseUnits("1000000000", 6);
   console.log(`Approve ${quantity} ${symbol} from neo to Crowdtainer @ (${crowdtainer.address}).`);
   // Give tokens to neo
   await hre.run("approve", {

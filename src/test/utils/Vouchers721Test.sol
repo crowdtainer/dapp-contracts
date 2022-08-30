@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "../../contracts/external/Coin.sol";
 
@@ -34,6 +34,13 @@ contract VoucherParticipant {
                 _enableReferral,
                 _referrer
             );
+    }
+
+    function doJoinWithSignature(
+        bytes calldata result, // off-chain signed payload
+        bytes calldata extraData // retained by client, passed for verification in this function
+    ) public returns (uint256) {
+        return vouchers.joinWithSignature(result, extraData);
     }
 
     // Comply with IERC721Receiver
@@ -143,12 +150,16 @@ contract VouchersTest is CrowdtainerTestHelpers {
 
     address internal owner = address(this);
 
-    function createCrowdtainer() internal returns (address, uint256) {
+    function createCrowdtainer(address signer)
+        internal
+        returns (address, uint256)
+    {
         uint256 crowdtainerId;
         address crowdtainerAddress;
         (crowdtainerAddress, crowdtainerId) = vouchers.createCrowdtainer({
             _campaignData: CampaignData(
                 address(agent),
+                address(signer),
                 openingTime,
                 closingTime,
                 targetMinimum,
@@ -156,7 +167,8 @@ contract VouchersTest is CrowdtainerTestHelpers {
                 unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                address(iERC20Token)
+                address(iERC20Token),
+                ""
             ),
             _productDescription: productDescription,
             _metadataService: address(metadataService)
@@ -196,9 +208,12 @@ contract VouchersTest is CrowdtainerTestHelpers {
         bob = new VoucherParticipant(address(vouchers), address(erc20Token));
 
         // Note: The labels below can only be enabled if using `forge test` (helpful for debugging)
-        // vm.label(address(bob), "bob");
-        // vm.label(address(alice), "alice");
-        // vm.label(address(0), "none");
+        vm.label(address(bob), "bob");
+        vm.label(address(alice), "alice");
+        vm.label(address(agent), "agent");
+        vm.label(address(0), "none");
+        vm.label(address(erc20Token), "Erc20Token");
+        vm.label(address(vouchers), "Vouchers721");
 
         // Give lots of ERC20 tokens to alice
         erc20Token.mint(address(alice), type(uint256).max - 1000000000 * ONE);

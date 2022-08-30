@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "./utils/Vouchers721Test.sol";
 import {Errors} from "../contracts/Crowdtainer.sol";
@@ -8,13 +8,24 @@ import "../contracts/Metadata/MetadataServiceV1.sol";
 
 /* solhint-disable no-empty-blocks */
 
+interface Cheats {
+    // Signs data, (privateKey, digest) => (v, r, s)
+    function sign(uint256, bytes32)
+        external
+        returns (
+            uint8,
+            bytes32,
+            bytes32
+        );
+}
+
 contract Vouchers721CreateTester is VouchersTest {
     function testCreateCrowdtainerMustSucceed() public {
         metadataService = IMetadataService(address(1));
 
         uint256 crowdtainerId1;
         address crowdtainerAddress1;
-        (crowdtainerAddress1, crowdtainerId1) = createCrowdtainer();
+        (crowdtainerAddress1, crowdtainerId1) = createCrowdtainer(address(0));
 
         assert(
             vouchers.crowdtainerForId(crowdtainerId1) == crowdtainerAddress1
@@ -25,7 +36,7 @@ contract Vouchers721CreateTester is VouchersTest {
 
         uint256 crowdtainerId2;
         address crowdtainerAddress2;
-        (crowdtainerAddress2, crowdtainerId2) = createCrowdtainer();
+        (crowdtainerAddress2, crowdtainerId2) = createCrowdtainer(address(0));
 
         assertEq(crowdtainerId2, 2);
         assertTrue(crowdtainerAddress1 != crowdtainerAddress2);
@@ -35,7 +46,7 @@ contract Vouchers721CreateTester is VouchersTest {
         metadataService = IMetadataService(address(1));
         address crowdtainerAddress;
 
-        (crowdtainerAddress, ) = createCrowdtainer();
+        (crowdtainerAddress, ) = createCrowdtainer(address(0));
         uint256 tokenId = alice.doJoin({
             _crowdtainerAddress: crowdtainerAddress,
             _quantities: [uint256(1), 4, 3, 1],
@@ -53,6 +64,114 @@ contract Vouchers721CreateTester is VouchersTest {
         });
 
         assertEq(tokenId, vouchers.ID_MULTIPLE() + 2);
+    }
+
+    Cheats internal constant cheats = Cheats(HEVM_ADDRESS);
+    uint256 internal signerPrivateKey;
+    address internal signer;
+
+    function testJoinUsingSignatureMustReturnTokenId() public {
+        signerPrivateKey = 0xA11CE;
+        signer = vm.addr(signerPrivateKey);
+
+        metadataService = IMetadataService(address(1));
+        address crowdtainerAddress;
+
+        (crowdtainerAddress, ) = createCrowdtainer(address(signer));
+
+        vm.label(address(signer), "Signer");
+        vm.label(address(crowdtainerAddress), "Crowdtainer");
+
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
+            uint256(0),
+            2,
+            10,
+            0
+        ];
+
+        bool offchainLookupErrorThrown;
+
+        address sender;
+        // string[] memory urls;
+        // bytes memory callData;
+        bytes4 callbackFunction;
+        bytes memory extraData;
+
+        try
+            bob.doJoin({
+                _crowdtainerAddress: crowdtainerAddress,
+                _quantities: quantities,
+                _enableReferral: false,
+                _referrer: address(0)
+            })
+        {} catch (bytes memory receivedBytes) {
+            // We expect `join()` to revert with OffchainLookup()
+            bool correctRevert = this.isEqualSignature(
+                receivedBytes,
+                makeError(Errors.OffchainLookup.selector)
+            );
+
+            require(correctRevert, "Invalid error. Expected: OffchainLookup.");
+
+            // decode OffchainLooup error parameters
+            // sender, ulrs, params for gateway, 4 byte selector, params for contract (extraData)
+            (sender, , , callbackFunction, extraData) = abi.decode(
+                this.getParameters(receivedBytes),
+                (address, string[], bytes, bytes4, bytes)
+            );
+
+            require(
+                sender == address(vouchers),
+                "The revert must be 'thrown' by Vouchers721 itself"
+            );
+
+            assertEq(callbackFunction, Vouchers721.joinWithSignature.selector);
+
+            offchainLookupErrorThrown = true;
+        }
+
+        require(
+            offchainLookupErrorThrown,
+            "OffChainLookup invalid or not thrown."
+        );
+
+        // Craft auth/proof
+        uint64 epochExpiration = uint64(block.timestamp) + uint64(1000); // signature expiration
+        bytes32 bobNonce = keccak256("random");
+
+        bytes memory bobPayload = abi.encode(
+            crowdtainerAddress,
+            address(bob),
+            quantities,
+            false,
+            address(0),
+            epochExpiration,
+            bobNonce
+        );
+
+        bytes32 bobMessage = keccak256(
+            abi.encodePacked(
+                "\x19Ethereum Signed Message:\n32",
+                keccak256(bobPayload)
+            )
+        );
+
+        // Sign permit for Bob
+        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
+            signerPrivateKey,
+            bobMessage
+        );
+        bytes memory bobSignature = bytes.concat(r, s, bytes1(v));
+        bytes memory bobProof = abi.encode(
+            crowdtainerAddress,
+            epochExpiration,
+            bobNonce,
+            bobSignature
+        );
+
+        uint256 bobTokenId = bob.doJoinWithSignature(bobProof, extraData);
+
+        assertEq(bobTokenId, vouchers.ID_MULTIPLE() + 1);
     }
 
     function testTokenIdToCrowdtainerIdMustSucceed(uint256 randomTokenId)
@@ -85,7 +204,7 @@ contract Vouchers721CreateTester is VouchersTest {
 
         uint256 crowdtainerId1;
         address crowdtainerAddress1;
-        (crowdtainerAddress1, crowdtainerId1) = createCrowdtainer();
+        (crowdtainerAddress1, crowdtainerId1) = createCrowdtainer(address(0));
 
         uint256 aliceCrowdtainer1TokenId = alice.doJoin({
             _crowdtainerAddress: crowdtainerAddress1,
@@ -96,7 +215,7 @@ contract Vouchers721CreateTester is VouchersTest {
 
         uint256 crowdtainerId2;
         address crowdtainerAddress2;
-        (crowdtainerAddress2, crowdtainerId2) = createCrowdtainer();
+        (crowdtainerAddress2, crowdtainerId2) = createCrowdtainer(address(0));
 
         uint256 bobCrowdtainer2TokenId = bob.doJoin({
             _crowdtainerAddress: crowdtainerAddress2,
@@ -119,7 +238,7 @@ contract Vouchers721CreateTester is VouchersTest {
 
         uint256 crowdtainerId3;
         address crowdtainerAddress3;
-        (crowdtainerAddress3, crowdtainerId3) = createCrowdtainer();
+        (crowdtainerAddress3, crowdtainerId3) = createCrowdtainer(address(0));
 
         georg.doApprovePayment(
             crowdtainerAddress3,
@@ -177,7 +296,7 @@ contract Vouchers721CreateTester is VouchersTest {
         // This test is just a 'sanity check' on our ERC721 open zeppelin implementation.
         metadataService = IMetadataService(address(1));
 
-        createCrowdtainer();
+        createCrowdtainer(address(0));
 
         uint256 aliceCrowdtainerTokenId = alice.doJoin({
             _crowdtainerAddress: address(defaultCrowdtainer),
@@ -203,7 +322,7 @@ contract Vouchers721CreateTester is VouchersTest {
         // Bob must be able to transfer his voucher to another account.
         bob.doSafeTransferTo(address(10), bobCrowdtainer1TokenId);
 
-        failed = true;
+        bool failed = true;
         // Alice attempts transfer her 'non-existent' voucher.
         try
             alice.doSafeTransferTo(address(11), aliceCrowdtainerTokenId)
@@ -212,12 +331,14 @@ contract Vouchers721CreateTester is VouchersTest {
         ) {
             failed = false;
         }
+
+        if (failed) fail();
     }
 
     function testShippingAgentAbleToSetVoucherClaimStatus() public {
         metadataService = IMetadataService(address(1));
 
-        createCrowdtainer();
+        createCrowdtainer(address(0));
 
         // Bob purchases enough to make project succeed its target
         uint256 aliceCrowdtainerTokenId = alice.doJoin({
@@ -248,10 +369,11 @@ contract Vouchers721CreateTester is VouchersTest {
                 _referrer: address(0)
             })
         {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.CrowdtainerInexistent.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 
@@ -261,7 +383,7 @@ contract Vouchers721CreateTester is VouchersTest {
         metadataService = IMetadataService(address(1));
 
         address crowdtainerAddress;
-        (crowdtainerAddress,) = createCrowdtainer();
+        (crowdtainerAddress,) = createCrowdtainer(address(0));
 
         for(uint256 i = 0; i < vouchers.ID_MULTIPLE(); ++i) {
             VoucherParticipant smith = new VoucherParticipant(address(vouchers), address(erc20Token));
@@ -274,10 +396,11 @@ contract Vouchers721CreateTester is VouchersTest {
                 _enableReferral: false,
                 _referrer: address(0)
             }) {} catch (bytes memory lowLevelData) {
-                failed = this.assertEqSignature(
+                bool failed = this.isEqualSignature(
                 makeError(Errors.MaximumNumberOfParticipantsReached.selector),
                 lowLevelData
                 );
+                if(failed) fail();
                 break;
             }
         }
@@ -301,7 +424,7 @@ contract Vouchers721CreateTester is VouchersTest {
 
         address crowdtainerAddress;
 
-        (crowdtainerAddress, ) = createCrowdtainer();
+        (crowdtainerAddress, ) = createCrowdtainer(address(0));
 
         uint256 tokenID = alice.doJoin({
             _crowdtainerAddress: crowdtainerAddress,
@@ -325,7 +448,7 @@ contract Vouchers721FailureTester is VouchersTest {
         metadataService = IMetadataService(address(1));
         address crowdtainerAddress;
 
-        (crowdtainerAddress, ) = createCrowdtainer();
+        (crowdtainerAddress, ) = createCrowdtainer(address(0));
 
         uint256 tokenId = alice.doJoin({
             _crowdtainerAddress: crowdtainerAddress,
@@ -339,10 +462,11 @@ contract Vouchers721FailureTester is VouchersTest {
         try alice.doSafeTransferTo(address(bob), tokenId) {} catch (
             bytes memory lowLevelData
         ) {
-            failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.TransferNotAllowed.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 }
@@ -353,6 +477,7 @@ contract Vouchers721CreateInvalidTester is VouchersTest {
             vouchers.createCrowdtainer({
                 _campaignData: CampaignData(
                     address(agent),
+                    address(0),
                     openingTime,
                     closingTime,
                     targetMinimum,
@@ -360,16 +485,18 @@ contract Vouchers721CreateInvalidTester is VouchersTest {
                     unitPricePerType,
                     referralRate,
                     referralEligibilityValue,
-                    address(iERC20Token)
+                    address(iERC20Token),
+                    ""
                 ),
                 _productDescription: ["", "", "", ""],
                 _metadataService: address(metadataService)
             })
         {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.MetadataServiceAddressIsZero.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 }

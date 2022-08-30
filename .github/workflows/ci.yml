@@ -15,33 +15,34 @@ env:
   FORCE_COLOR: 2
 
 jobs:
-  tests:
-    runs-on: ubuntu-latest
+  # Disabling dapptools until support for solidity 0.8.16 is available.
+  # dapptools-tests:
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v2
-        with:
-           submodules: recursive
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #          submodules: recursive
 
-      - uses: actions/setup-node@v2
-      - uses: cachix/install-nix-action@v13
-      - uses: cachix/cachix-action@v10
-        with:
-          name: dapp
+  #     - uses: actions/setup-node@v2
+  #     - uses: cachix/install-nix-action@v13
+  #     - uses: cachix/cachix-action@v10
+  #       with:
+  #         name: dapp
 
-      - name: Install dependencies
-        run: nix-shell --run 'make'
+  #     - name: Install dependencies
+  #       run: nix-shell --run 'make'
         
-      - name: Check contracts are linted
-        id: lint-check
-        run: yarn lint:check
+  #     - name: Check contracts are linted
+  #       id: lint-check
+  #       run: yarn lint:check
 
-      - name: Run tests
-        id: tests-run
-        run: nix-shell --run 'make test'
-        # Enable this if using forking tests
-        # env:
-        #  ETH_RPC_URL: https://eth-mainnet.alchemyapi.io/v2/${{ secrets.ALCHEMY_API_KEY }}
+  #     - name: Run tests
+  #       id: tests-run
+  #       run: nix-shell --run 'make test'
+  #       # Enable this if using forking tests
+  #       # env:
+  #       #  ETH_RPC_URL: https://eth-mainnet.alchemyapi.io/v2/${{ secrets.ALCHEMY_API_KEY }}
 
   deploy-test:
     # The type of runner that the job will run on

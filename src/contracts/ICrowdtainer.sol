@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "./Constants.sol";
 import "./States.sol";
 
 // Data defining all rules and values of a Crowdtainer instance.
 struct CampaignData {
-    // Address that represents the product or service provider.
+    // Ethereum Address that represents the product or service provider.
     address shippingAgent;
+    // Address used for signing authorizations.
+    address signer;
     // Funding opening time.
     uint256 openingTime;
     // Time after which the owner can no longer withdraw funds.
@@ -24,6 +26,8 @@ struct CampaignData {
     uint256 referralEligibilityValue;
     // Address of the ERC20 token used for payment.
     address token;
+    // URI string pointing to the legal terms and conditions ruling this project.
+    string legalContractURI;
 }
 
 /**

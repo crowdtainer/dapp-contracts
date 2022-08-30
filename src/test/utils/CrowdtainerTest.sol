@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "../../contracts/external/Coin.sol";
 import "./CrowdtainerTestHelpers.sol";
@@ -24,6 +24,13 @@ contract Participant {
         address referrer
     ) public {
         crowdtainer.join(address(this), quantities, enableReferral, referrer);
+    }
+
+    function doJoinWithSignature(
+        bytes calldata result, // off-chain signed payload
+        bytes calldata extraData // retained by client, passed for verification in this function
+    ) public {
+        crowdtainer.joinWithSignature(result, extraData);
     }
 
     function doLeave() public {
@@ -114,6 +121,7 @@ contract CrowdtainerTest is CrowdtainerTestHelpers {
             address(0),
             CampaignData(
                 address(agent),
+                address(0),
                 openingTime,
                 closingTime,
                 targetMinimum,
@@ -121,7 +129,27 @@ contract CrowdtainerTest is CrowdtainerTestHelpers {
                 unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                address(iERC20Token)
+                address(iERC20Token),
+                ""
+            )
+        );
+    }
+
+    function initWithSignature(address signer) internal {
+        crowdtainer.initialize(
+            address(0),
+            CampaignData(
+                address(agent),
+                signer,
+                openingTime,
+                closingTime,
+                targetMinimum,
+                targetMaximum,
+                unitPricePerType,
+                referralRate,
+                referralEligibilityValue,
+                address(iERC20Token),
+                ""
             )
         );
     }
@@ -141,9 +169,9 @@ contract CrowdtainerTest is CrowdtainerTestHelpers {
         bob = new Participant(address(crowdtainer), address(erc20Token));
 
         // Note: The labels below can only be enabled if using `forge test` (helpful for debugging)
-        // vm.label(address(bob), "bob");
-        // vm.label(address(alice), "alice");
-        // vm.label(address(0), "none");
+        vm.label(address(bob), "bob");
+        vm.label(address(alice), "alice");
+        vm.label(address(0), "none");
 
         // Give lots of tokens to alice
         erc20Token.mint(address(alice), type(uint256).max - (1000 * ONE));

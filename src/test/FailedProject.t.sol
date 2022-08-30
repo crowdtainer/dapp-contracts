@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "./utils/CrowdtainerTest.sol";
 import {Errors} from "../contracts/Crowdtainer.sol";
@@ -57,13 +57,14 @@ contract CrowdtainerValidProjectTerminationTester is CrowdtainerTest {
         hevm.warp(openingTime - 1 seconds);
 
         try bob.doClaimFunds() {} catch (bytes memory lowLevelData) {
-            failed =
-                this.assertEqSignature(
-                    makeError(Errors.OpeningTimeNotReachedYet.selector),
-                    lowLevelData
-                ) &&
+            bool failed = this.isEqualSignature(
+                makeError(Errors.OpeningTimeNotReachedYet.selector),
+                lowLevelData
+            ) &&
                 (erc20Token.balanceOf(address(bob)) ==
                     (previousBalance - totalCost));
+
+            if (failed) fail();
         }
     }
 
@@ -83,13 +84,13 @@ contract CrowdtainerValidProjectTerminationTester is CrowdtainerTest {
         bob.doJoin(quantities, false, address(0));
 
         try bob.doClaimFunds() {} catch (bytes memory lowLevelData) {
-            failed =
-                this.assertEqSignature(
-                    makeError(Errors.CantClaimFundsOnActiveProject.selector),
-                    lowLevelData
-                ) &&
+            bool failed = this.isEqualSignature(
+                makeError(Errors.CantClaimFundsOnActiveProject.selector),
+                lowLevelData
+            ) &&
                 (erc20Token.balanceOf(address(bob)) ==
                     (previousBalance - totalCost));
+            if (failed) fail();
         }
     }
 
@@ -139,6 +140,7 @@ contract CrowdtainerInvalidProjectTerminationTester is CrowdtainerTest {
             address(0),
             CampaignData(
                 address(agent),
+                address(0),
                 openingTime,
                 closingTime,
                 _targetMinimum,
@@ -146,7 +148,8 @@ contract CrowdtainerInvalidProjectTerminationTester is CrowdtainerTest {
                 _unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                address(iERC20Token)
+                address(iERC20Token),
+                ""
             )
         );
 
@@ -163,10 +166,11 @@ contract CrowdtainerInvalidProjectTerminationTester is CrowdtainerTest {
         assert(crowdtainer.crowdtainerState() == CrowdtainerState.Delivery);
 
         try agent.doAbortProject() {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.InvalidOperationFor.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 }

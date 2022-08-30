@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "./utils/CrowdtainerTest.sol";
 import {Errors} from "../contracts/Crowdtainer.sol";
@@ -22,6 +22,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
             address(0),
             CampaignData(
                 address(agent),
+                address(0),
                 openingTime,
                 closingTime,
                 _targetMinimum,
@@ -29,7 +30,8 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
                 _unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                address(iERC20Token)
+                address(iERC20Token),
+                ""
             )
         );
 
@@ -59,6 +61,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
             address(0),
             CampaignData(
                 address(agent),
+                address(0),
                 openingTime,
                 closingTime,
                 _targetMinimum,
@@ -66,7 +69,8 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
                 _unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                address(iERC20Token)
+                address(iERC20Token),
+                ""
             )
         );
 
@@ -83,10 +87,11 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
         assert(crowdtainer.crowdtainerState() == CrowdtainerState.Delivery);
 
         try alice.doClaimFunds() {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.InvalidOperationFor.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 
@@ -103,6 +108,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
             address(0),
             CampaignData(
                 address(agent),
+                address(0),
                 openingTime,
                 closingTime,
                 _targetMinimum,
@@ -110,7 +116,8 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
                 _unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                address(iERC20Token)
+                address(iERC20Token),
+                ""
             )
         );
 
@@ -126,10 +133,11 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
         bob.doJoin(quantities, false, address(alice));
 
         try agent.doGetPaidAndDeliver() {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.MinimumTargetNotReached.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 
@@ -146,6 +154,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
             address(0),
             CampaignData(
                 address(agent),
+                address(0),
                 openingTime,
                 closingTime,
                 _targetMinimum,
@@ -153,7 +162,8 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
                 _unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                address(iERC20Token)
+                address(iERC20Token),
+                ""
             )
         );
 
@@ -169,10 +179,11 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
         hevm.warp(openingTime - 1 seconds);
 
         try alice.doClaimFunds() {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.OpeningTimeNotReachedYet.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 
@@ -189,6 +200,7 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
             address(0),
             CampaignData(
                 address(agent),
+                address(0),
                 openingTime,
                 closingTime,
                 _targetMinimum,
@@ -196,7 +208,8 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
                 _unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
-                address(iERC20Token)
+                address(iERC20Token),
+                ""
             )
         );
 
@@ -211,24 +224,25 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
         hevm.warp(closingTime + 1 hours);
 
         try agent.doGetPaidAndDeliver() {} catch (bytes memory lowLevelData) {
-            failed = this.assertEqSignature(
+            bool failed = this.isEqualSignature(
                 makeError(Errors.MinimumTargetNotReached.selector),
                 lowLevelData
             );
+            if (failed) fail();
         }
     }
 }
 
 contract CrowdtainerAuthorizationTester is CrowdtainerTest {
     function testGetPaidAndDeliverCalledByNonAgentMustFail() public {
-        failed = true; // @dev: specific error must be thrown
+        bool failed; // @dev: specific error must be thrown
         try bob.doGetPaidAndDeliver() {} catch (bytes memory lowLevelData) {
-            this.assertEqSignature(
+            failed = this.isEqualSignature(
                 makeError(Errors.CallerNotAllowed.selector),
                 lowLevelData
             );
-            failed = false;
         }
+        if (failed) fail();
     }
 }
 

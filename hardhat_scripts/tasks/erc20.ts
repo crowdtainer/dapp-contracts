@@ -1,5 +1,4 @@
 import { task } from "hardhat/config";
-import "@nomiclabs/hardhat-ethers";
 import { Coin } from "../../out/typechain/";
 
 task("accounts", "Prints the list of accounts.", async (taskArgs, hre) => {
@@ -63,6 +62,8 @@ task("approve", "ERC-20 approve.")
   .setAction(async function ({  from, spender, amount }, hre) {
     const token = await hre.ethers.getContract<Coin>("Coin");
     const sender = await hre.ethers.getSigner(from);
+
+    console.log(`Gas price: ${await sender.getGasPrice()}`);
 
     await token.connect(sender).approve(spender, amount);
     console.log(

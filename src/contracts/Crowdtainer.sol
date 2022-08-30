@@ -1,22 +1,33 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 // @dev External dependencies
-// import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 // @dev Internal dependencies
 import "./ICrowdtainer.sol";
 import "./Errors.sol";
 import "./Constants.sol";
 
+interface AuthorizationGateway {
+    function getSignedJoinApproval(
+        address crowdtainerAddress,
+        address addr,
+        uint256[MAX_NUMBER_OF_PRODUCTS] calldata quantities,
+        bool _enableReferral,
+        address _referrer
+    ) external view returns (bytes memory signature);
+}
+
 /**
  * @title Crowdtainer contract
  */
 contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     using SafeERC20 for IERC20;
+    using ECDSA for bytes32;
 
     // -----------------------------------------------
     //  Main project state
@@ -24,12 +35,12 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     CrowdtainerState public crowdtainerState;
 
     // @dev Owner of this contract.
-    // @notice Has permissions to call: initialize(), join() and leave() functions. These functions are gated so
-    // that an owner contract can do special accounting (such as an EIP1155 compliant contract).
+    // @notice Has permissions to call: initialize(), join() and leave() functions. These functions are optionally
+    //  gated so that an owner contract can do special accounting (such as an EIP721-compliant contract as its owner).
     address public owner;
 
     // @dev The entity or person responsible for the delivery of this crowdtainer project.
-    // @notice Allowed to call getPaidAndDeliver().
+    // @notice Allowed to call getPaidAndDeliver() and set signers.
     address public shippingAgent;
 
     // @dev Maps wallets that joined this Crowdtainer to the values they paid to join.
@@ -54,6 +65,15 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
 
     // @dev The total value raised/accumulated by this contract.
     uint256 public totalValueRaised;
+
+    // @dev Address owned by shipping agent to sign authorization transactions.
+    address private signer;
+
+    // @dev Mapping of addresses to random nonces; Used for transaction replay protection.
+    mapping(address => mapping(bytes32 => bool)) public usedNonces;
+
+    // @dev URL templates to the service provider's gateways that implement the CCIP-read protocol.
+    string[] public urls;
 
     uint256 internal constant ONE = 1e6; // 6 decimal places
 
@@ -113,6 +133,26 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             revert Errors.CrowdtainerExpired(block.timestamp, expireTime);
     }
 
+    // @dev Address used for signing authorizations. This allows for arbitrary
+    // off-chain mechanisms to apply law-based restrictions and/or combat bots squatting offered items.
+    // @notice If signer equals to address(0), no restriction is applied.
+    function getSigner() external view returns (address) {
+        return signer;
+    }
+
+    function setSigner(address _signer) external onlyAddress(shippingAgent) {
+        signer = _signer;
+        emit SignerChanged(signer);
+    }
+
+    function setUrls(string[] memory _urls)
+        external
+        onlyAddress(shippingAgent)
+    {
+        urls = _urls;
+        emit CCIPURLChanged(urls);
+    }
+
     // -----------------------------------------------
     //  Values set by initialize function
     // -----------------------------------------------
@@ -135,10 +175,18 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     uint256 public referralRate;
     // @note Address of the ERC20 token used for payment.
     IERC20 public token;
+    // @dev URI string pointing to the legal terms and conditions ruling this project.
+    string public legalContractURI;
 
     // -----------------------------------------------
     //  Events
     // -----------------------------------------------
+
+    // @note Emmited when the signer changes.
+    event SignerChanged(address indexed newSigner);
+
+    // @note Emmited when CCIP-read URLs changes.
+    event CCIPURLChanged(string[] indexed newUrls);
 
     // @note Emmited when a Crowdtainer is created.
     event CrowdtainerCreated(
@@ -148,13 +196,17 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
 
     // @note Emmited when a Crowdtainer is initialized.
     event CrowdtainerInitialized(
-        IERC20 indexed _token,
+        address indexed _owner,
+        IERC20 _token,
         uint256 _openingTime,
         uint256 _expireTime,
         uint256 _targetMinimum,
         uint256 _targetMaximum,
         uint256[MAX_NUMBER_OF_PRODUCTS] _unitPricePerType,
-        uint256 _referralRate
+        uint256 _referralRate,
+        uint256 _referralEligibilityValue,
+        string _legalContractURI,
+        address _signer
     );
 
     // @note Emmited when a user joins, signalling participation intent.
@@ -248,6 +300,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             });
 
         shippingAgent = _campaignData.shippingAgent;
+        signer = _campaignData.signer;
         openingTime = _campaignData.openingTime;
         expireTime = _campaignData.expireTime;
         targetMinimum = _campaignData.targetMinimum;
@@ -256,17 +309,22 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         referralRate = _campaignData.referralRate;
         referralEligibilityValue = _campaignData.referralEligibilityValue;
         token = IERC20(_campaignData.token);
+        legalContractURI = _campaignData.legalContractURI;
 
         crowdtainerState = CrowdtainerState.Funding;
 
         emit CrowdtainerInitialized(
+            owner,
             token,
             openingTime,
             expireTime,
             targetMinimum,
             targetMaximum,
             unitPricePerType,
-            referralRate
+            referralRate,
+            referralEligibilityValue,
+            legalContractURI,
+            signer
         );
     }
 
@@ -276,6 +334,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
      * @param _quantities Array with the number of units desired for each product.
      * @param _enableReferral Informs whether the user would like to be eligible to collect rewards for being referred.
      * @param _referrer Optional referral code to be used to claim a discount.
+     *
+     * @note Requires IRC20 permit.
      *
      * @note referrer is the wallet address of a previous participant.
      *
@@ -297,10 +357,134 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         onlyActive
         nonReentrant
     {
+        if (signer != address(0)) {
+            // See https://eips.ethereum.org/EIPS/eip-3668
+            revert Errors.OffchainLookup(
+                address(this), // sender
+                urls, // gateway urls
+                abi.encodeWithSelector(
+                    AuthorizationGateway.getSignedJoinApproval.selector,
+                    address(this),
+                    _wallet,
+                    _quantities,
+                    _enableReferral,
+                    _referrer
+                ), // parameters/data for the gateway (callData)
+                Crowdtainer.joinWithSignature.selector, // 4-byte callback function selector
+                abi.encode(_wallet, _quantities, _enableReferral, _referrer) // parameters for the contract callback function
+            );
+        }
+
         if (owner == address(0)) {
             requireAddress(_wallet);
         }
 
+        _join(_wallet, _quantities, _enableReferral, _referrer);
+    }
+
+    /*
+     * @dev Allows joining by means of CCIP-READ (EIP-3668).
+     * @param result (uint64, bytes) of signature validity and the signature itself.
+     * @param extraData ABI encoded parameters for _join() method.
+     *
+     * @note Requires IRC20 permit.
+     */
+    function joinWithSignature(
+        bytes calldata result, // off-chain signed payload
+        bytes calldata extraData // retained by client, passed for verification in this function
+    )
+        external
+        onlyAddress(owner)
+        onlyInState(CrowdtainerState.Funding)
+        onlyActive
+        nonReentrant
+    {
+        require(signer != address(0));
+
+        // decode extraData provided by client
+        (
+            address _wallet,
+            uint256[MAX_NUMBER_OF_PRODUCTS] memory _quantities,
+            bool _enableReferral,
+            address _referrer
+        ) = abi.decode(extraData, (address, uint256[4], bool, address));
+
+        if (owner == address(0)) {
+            requireAddress(_wallet);
+        }
+
+        // Get signature from server response
+        (
+            address contractAddress,
+            uint64 epochExpiration,
+            bytes32 nonce,
+            bytes memory signature
+        ) = abi.decode(result, (address, uint64, bytes32, bytes));
+
+        bytes32 messageDigest = keccak256(
+            abi.encode(
+                contractAddress,
+                _wallet,
+                _quantities,
+                _enableReferral,
+                _referrer,
+                epochExpiration,
+                nonce
+            )
+        );
+
+        require(
+            signaturePayloadValid(
+                contractAddress,
+                messageDigest,
+                signer,
+                epochExpiration,
+                nonce,
+                signature
+            )
+        );
+        usedNonces[signer][nonce] = true;
+
+        _join(_wallet, _quantities, _enableReferral, _referrer);
+    }
+
+    function signaturePayloadValid(
+        address contractAddress,
+        bytes32 messageDigest,
+        address expectedPublicKey,
+        uint64 expiration,
+        bytes32 nonce,
+        bytes memory signature
+    ) internal view returns (bool) {
+        address recoveredPublicKey = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", messageDigest)
+        ).recover(signature);
+
+        if (recoveredPublicKey != expectedPublicKey) {
+            revert Errors.InvalidSignature();
+        }
+
+        if (contractAddress != address(this)) {
+            revert Errors.InvalidSignature();
+        }
+
+        if (expiration <= block.timestamp) {
+            revert Errors.SignatureExpired(uint64(block.timestamp), expiration);
+        }
+
+        if (usedNonces[expectedPublicKey][nonce]) {
+            revert Errors.NonceAlreadyUsed(expectedPublicKey, nonce);
+        }
+
+        return true;
+    }
+
+    function _join(
+        address _wallet,
+        uint256[MAX_NUMBER_OF_PRODUCTS] memory _quantities,
+        bool _enableReferral,
+        address _referrer
+    ) internal {
         enableReferral[_wallet] = _enableReferral;
 
         // @dev Check if wallet didn't already join
