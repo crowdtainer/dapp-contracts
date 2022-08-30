@@ -14,6 +14,7 @@ import "./Constants.sol";
 
 interface AuthorizationGateway {
     function getSignedJoinApproval(
+        address crowdtainerAddress,
         address addr,
         uint256[MAX_NUMBER_OF_PRODUCTS] calldata quantities,
         bool _enableReferral,
@@ -363,6 +364,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
                 urls, // gateway urls
                 abi.encodeWithSelector(
                     AuthorizationGateway.getSignedJoinApproval.selector,
+                    address(this),
                     _wallet,
                     _quantities,
                     _enableReferral,
@@ -412,11 +414,16 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         }
 
         // Get signature from server response
-        (uint64 epochExpiration, bytes32 nonce, bytes memory signature) = abi
-            .decode(result, (uint64, bytes32, bytes));
+        (
+            address contractAddress,
+            uint64 epochExpiration,
+            bytes32 nonce,
+            bytes memory signature
+        ) = abi.decode(result, (address, uint64, bytes32, bytes));
 
         bytes32 messageDigest = keccak256(
             abi.encode(
+                contractAddress,
                 _wallet,
                 _quantities,
                 _enableReferral,
@@ -428,6 +435,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
 
         require(
             signaturePayloadValid(
+                contractAddress,
                 messageDigest,
                 signer,
                 epochExpiration,
@@ -441,6 +449,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     }
 
     function signaturePayloadValid(
+        address contractAddress,
         bytes32 messageDigest,
         address expectedPublicKey,
         uint64 expiration,
@@ -452,6 +461,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         ).recover(signature);
 
         if (recoveredPublicKey != expectedPublicKey) {
+            revert Errors.InvalidSignature();
+        }
+
+        if (contractAddress != address(this)) {
             revert Errors.InvalidSignature();
         }
 

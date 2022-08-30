@@ -140,6 +140,7 @@ contract Vouchers721CreateTester is VouchersTest {
         bytes32 bobNonce = keccak256("random");
 
         bytes memory bobPayload = abi.encode(
+            crowdtainerAddress,
             address(bob),
             quantities,
             false,
@@ -162,6 +163,7 @@ contract Vouchers721CreateTester is VouchersTest {
         );
         bytes memory bobSignature = bytes.concat(r, s, bytes1(v));
         bytes memory bobProof = abi.encode(
+            crowdtainerAddress,
             epochExpiration,
             bobNonce,
             bobSignature

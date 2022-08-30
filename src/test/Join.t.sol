@@ -42,6 +42,7 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
         bytes32 aliceNonce = keccak256("random");
 
         bytes memory payload = abi.encode(
+            address(crowdtainer),
             address(bob),
             quantities,
             false,
@@ -62,6 +63,7 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
 
         // bytes memory signature = bytes.concat(r, s, bytes1(v));
         bytes memory proof = abi.encode(
+            address(crowdtainer),
             epochExpiration,
             aliceNonce,
             bytes.concat(r, s, bytes1(v))
