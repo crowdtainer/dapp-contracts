@@ -18,6 +18,12 @@ contract Participant {
         token = IERC20(_token);
     }
 
+    function doJoinSimple(uint256[MAX_NUMBER_OF_PRODUCTS] calldata quantities)
+        public
+    {
+        crowdtainer.join(address(this), quantities);
+    }
+
     function doJoin(
         uint256[MAX_NUMBER_OF_PRODUCTS] calldata quantities,
         bool enableReferral,

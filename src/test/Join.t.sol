@@ -100,7 +100,7 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
             0
         ];
 
-        bob.doJoin(quantities, false, address(0));
+        bob.doJoinSimple(quantities);
 
         uint256 totalCost = quantities[1] * unitPricePerType[1];
         totalCost += quantities[2] * unitPricePerType[2];

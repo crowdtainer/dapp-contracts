@@ -56,11 +56,9 @@ contract Vouchers721CreateTester is VouchersTest {
 
         assertEq(tokenId, vouchers.ID_MULTIPLE() + 1);
 
-        tokenId = bob.doJoin({
+        tokenId = bob.doJoinSimple({
             _crowdtainerAddress: crowdtainerAddress,
-            _quantities: [uint256(1), 4, 3, 1],
-            _enableReferral: false,
-            _referrer: address(0)
+            _quantities: [uint256(1), 4, 3, 1]
         });
 
         assertEq(tokenId, vouchers.ID_MULTIPLE() + 2);

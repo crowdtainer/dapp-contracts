@@ -21,6 +21,13 @@ contract VoucherParticipant {
         token = IERC20(_token);
     }
 
+    function doJoinSimple(
+        address _crowdtainerAddress,
+        uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities
+    ) public returns (uint256) {
+        return vouchers.join(_crowdtainerAddress, _quantities);
+    }
+
     function doJoin(
         address _crowdtainerAddress,
         uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities,

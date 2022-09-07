@@ -18,8 +18,10 @@ import "./Constants.sol";
 import "./Metadata/IMetadataService.sol";
 
 /**
- * @title Manages multiple Crowdtainer projects and ownership of its product/services by participants.
- * @dev Essentially, a Crowdtainer factory with ERC721 compliance.
+ * @title Crowdtainer's project manager contract.
+ * @author Crowdtainer.eth
+ * @notice Manages Crowdtainer projects and ownership of its product/services by participants.
+ * @dev Essentially, a Crowdtainer factory with ERC-721 compliance.
  * @dev Each token id represents a "sold voucher", a set of one or more products or services of a specific Crowdtainer.
  */
 contract Vouchers721 is ERC721Enumerable {
@@ -71,16 +73,21 @@ contract Vouchers721 is ERC721Enumerable {
     //  Contract functions
     // -----------------------------------------------
 
+    /**
+     * @notice Create and deploy a new Crowdtainer manager.
+     * @dev Uses contract factory pattern.
+     * @param _crowdtainerImplementation the address of the reference implementation.
+     */
     constructor(address _crowdtainerImplementation)
         ERC721("Vouchers721", "VV1")
     {
-        // implementation = address(new Crowdtainer(address(this)));
+        // equivalent to: crowdtainerImplementation = address(new Crowdtainer(address(this)));.
         crowdtainerImplementation = _crowdtainerImplementation;
         emit Vouchers721Created(address(this));
     }
 
     /**
-     * @dev Create and deploy a new Crowdtainer.
+     * @notice Create and deploy a new Crowdtainer.
      * @param _campaignData Data defining all rules and values of this Crowdtainer instance.
      * @param _productDescription An array with the description of each item.
      * @param _metadataService Contract address used to fetch metadata about the token.
@@ -112,31 +119,42 @@ contract Vouchers721 is ERC721Enumerable {
         return (address(crowdtainer), crowdtainerCount);
     }
 
-    /*
-     * @dev Join the pool.
-     * @param _crowdtainerId Crowdtainer project id; The token id base value.
+    /**
+     * @notice Join the specified Crowdtainer project.
+     * @param _crowdtainer Crowdtainer project address.
+     * @param _quantities Array with the number of units desired for each product.
+     *
+     * @dev This method is present to make wallet UX more friendly, by requiring fewer parameters (for projects with referral system disabled).
+     * @dev Requires IERC20 permit.
+     */
+    function join(
+        address _crowdtainer,
+        uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities
+    ) external returns (uint256) {
+        return join(_crowdtainer, _quantities, false, address(0));
+    }
+
+    /**
+     * @notice Join the specified Crowdtainer project with optional referral and discount.
+     * @param _crowdtainer Crowdtainer project address.
      * @param _quantities Array with the number of units desired for each product.
      * @param _enableReferral Informs whether the user would like to be eligible to collect rewards for being referred.
      * @param _referrer Optional referral code to be used to claim a discount.
-     * @return The token id that represents the created voucher.
+     * @return The token id that represents the created voucher / ownership.
      *
-     * @note Requires IERC20 permit.
-     *
-     * @note referrer is the wallet address of a previous participant.
-     *
-     * @note if `enableReferral` is true, and the user decides to leave after the wallet has been used to claim a discount,
+     * @dev Requires IERC20 permit.
+     * @dev referrer is the wallet address of a previous participant.
+     * @dev if `enableReferral` is true, and the user decides to leave after the wallet has been used to claim a discount,
      *       then the full value can't be claimed if deciding to leave the project.
-     *
-     * @note A same user is not allowed to increase the order amounts (i.e., by calling join multiple times).
-     *       To 'update' an order, the user must first 'leave' then join again with the new values.
-     *
+     * @dev A same user is not allowed to increase the order amounts (i.e., by calling join multiple times).
+     *      To 'update' an order, the user must first 'leave' then join again with the new values.
      */
     function join(
         address _crowdtainer,
         uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities,
         bool _enableReferral,
         address _referrer
-    ) external returns (uint256) {
+    ) public returns (uint256) {
         uint256 crowdtainerId = idForCrowdtainer[_crowdtainer];
 
         if (crowdtainerId == 0) {
@@ -152,7 +170,10 @@ contract Vouchers721 is ERC721Enumerable {
                 _enableReferral,
                 _referrer
             )
-        {} catch (bytes memory receivedBytes) {
+        /* solhint-disable-next-line no-empty-blocks */
+        {
+
+        } catch (bytes memory receivedBytes) {
             bytes4 receivedErrorSelector = this.getSignature(receivedBytes);
 
             if (receivedErrorSelector == Errors.OffchainLookup.selector) {
@@ -232,12 +253,13 @@ contract Vouchers721 is ERC721Enumerable {
         return data[4:];
     }
 
-    /*
-     * @dev Allows joining by means of CCIP-READ (EIP-3668).
+    /**
+     * @notice Allows joining by means of CCIP-READ (EIP-3668).
      * @param result ABI encoded (uint64, bytes) for signature time validity and the signature itself.
      * @param extraData ABI encoded (address, bytes4, bytes), with the 3rd parameter contains encoded values for Crowdtainer._join() method.
      *
-     * @note Requires IRC20 permit.
+     * @dev Requires IRC20 permit.
+     * @dev This function is called automatically by EIP-3668-compliant clients.
      */
     function joinWithSignature(
         bytes calldata result, // off-chain signed payload
@@ -297,10 +319,10 @@ contract Vouchers721 is ERC721Enumerable {
         return newTokenID;
     }
 
-    /*
-     * @dev Return the specified voucher and withdraw all deposited funds given when joining the Crowdtainer.
-     * @note Calling this method signals that the user is no longer interested in participating.
-     * @note Only allowed if the respective Crowdtainer is in active funding state.
+    /**
+     * @notice Returns the specified voucher and withdraw all deposited funds given when joining the Crowdtainer.
+     * @notice Calling this method signals that the participant is no longer interested in the project.
+     * @dev Only allowed if the respective Crowdtainer is in active funding state.
      */
     function leave(uint256 _tokenId) external {
         if (ownerOf(_tokenId) != msg.sender) {
