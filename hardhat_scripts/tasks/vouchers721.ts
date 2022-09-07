@@ -81,7 +81,7 @@ task("join", "Join a Crowdtainer with the given parameters.")
     console.log(`Crowdtainer address: ${crowdtainerAddress}`);
 
     let quantity: [BigNumberish,BigNumberish,BigNumberish,BigNumberish]= [quantities, quantities, quantities, quantities];
-    await vouchers721.connect(sender).join(crowdtainerAddress, quantity, false, '0x0000000000000000000000000000000000000000');
+    await vouchers721.connect(sender)["join(address,uint256[4])"](crowdtainerAddress, quantity);
 
     console.log(`${sender.address} has joined crowdtainerId ${crowdtainerid}`);
   });

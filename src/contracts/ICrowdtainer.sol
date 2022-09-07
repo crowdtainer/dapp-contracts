@@ -49,20 +49,32 @@ interface ICrowdtainer {
 
     function unitPricePerType(uint256) external view returns (uint256);
 
-    /*
-     * @dev Join the Crowdtainer project.
-     * @param _wallet The wallet that is joining the Crowdtainer.
+    /**
+     * @notice Join the Crowdtainer project.
+     * @param _wallet The wallet that is joining the Crowdtainer. Must be the msg.sender if Crowdtainer owner is address(0x0).
+     * @param _quantities Array with the number of units desired for each product.
+     *
+     * @dev This method is present to make wallet interactions more friendly, by requiring fewer parameters for projects with referral system disabled.
+     * @dev Requires IERC20 permit.
+     */
+    function join(
+        address _wallet,
+        uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities
+    ) external;
+
+    /**
+     * @notice Join the Crowdtainer project with optional referral and discount.
+     * @param _wallet The wallet that is joining the Crowdtainer. Must be the msg.sender if Crowdtainer owner is address(0x0).
      * @param _quantities Array with the number of units desired for each product.
      * @param _enableReferral Informs whether the user would like to be eligible to collect rewards for being referred.
      * @param _referrer Optional referral code to be used to claim a discount.
      *
-     * @note referrer is the wallet address of a previous participant.
-     *
-     * @note if `enableReferral` is true, and the account has been used to claim a discount, then
-     *       it is no longer possible to leave() during the funding phase.
-     *
-     * @note A same user is not allowed to increase the order amounts (i.e., by calling join multiple times).
-     *       To 'update' an order, the user must first 'leave' then join again with the new values.
+     * @dev Requires IERC20 permit.
+     * @dev referrer is the wallet address of a previous participant.
+     * @dev if `enableReferral` is true, and the user decides to leave after the wallet has been used to claim a discount,
+     *       then the full value can't be claimed if deciding to leave the project.
+     * @dev A same user is not allowed to increase the order amounts (i.e., by calling join multiple times).
+     *      To 'update' an order, the user must first 'leave' then join again with the new values.
      */
     function join(
         address _wallet,
