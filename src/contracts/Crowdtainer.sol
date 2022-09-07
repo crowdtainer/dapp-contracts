@@ -24,6 +24,7 @@ interface AuthorizationGateway {
 
 /**
  * @title Crowdtainer contract
+ * @author Crowdtainer.eth
  */
 contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     using SafeERC20 for IERC20;
@@ -34,45 +35,45 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     // -----------------------------------------------
     CrowdtainerState public crowdtainerState;
 
-    // @dev Owner of this contract.
-    // @notice Has permissions to call: initialize(), join() and leave() functions. These functions are optionally
-    //  gated so that an owner contract can do special accounting (such as an EIP721-compliant contract as its owner).
+    /// @notice Owner of this contract.
+    /// @dev Has permissions to call: initialize(), join() and leave() functions. These functions are optionally
+    /// @dev gated so that an owner contract can do special accounting (such as an EIP721-compliant contract as its owner).
     address public owner;
 
-    // @dev The entity or person responsible for the delivery of this crowdtainer project.
-    // @notice Allowed to call getPaidAndDeliver() and set signers.
+    /// @notice The entity or person responsible for the delivery of this crowdtainer project.
+    /// @dev Allowed to call getPaidAndDeliver() and set signers.
     address public shippingAgent;
 
-    // @dev Maps wallets that joined this Crowdtainer to the values they paid to join.
+    /// @notice Maps wallets that joined this Crowdtainer to the values they paid to join.
     mapping(address => uint256) private costForWallet;
 
-    // @dev Maps accounts to accumulated referral rewards.
+    /// @notice Maps accounts to accumulated referral rewards.
     mapping(address => uint256) public accumulatedRewardsOf;
 
-    // @dev Total rewards claimable for project.
+    /// @notice Total rewards claimable for project.
     uint256 public accumulatedRewards;
 
-    // @dev Maps referee to referrer.
+    /// @notice Maps referee to referrer.
     mapping(address => address) public referrerOfReferee;
 
     uint256 public referralEligibilityValue;
 
-    // @dev Wether an account has opted into being elibible for referral rewards.
+    /// @notice Wether an account has opted into being elibible for referral rewards.
     mapping(address => bool) private enableReferral;
 
-    // @dev Maps the total discount for each user.
+    /// @notice Maps the total discount for each user.
     mapping(address => uint256) public discountForUser;
 
-    // @dev The total value raised/accumulated by this contract.
+    /// @notice The total value raised/accumulated by this contract.
     uint256 public totalValueRaised;
 
-    // @dev Address owned by shipping agent to sign authorization transactions.
+    /// @notice Address owned by shipping agent to sign authorization transactions.
     address private signer;
 
-    // @dev Mapping of addresses to random nonces; Used for transaction replay protection.
+    /// @notice Mapping of addresses to random nonces; Used for transaction replay protection.
     mapping(address => mapping(bytes32 => bool)) public usedNonces;
 
-    // @dev URL templates to the service provider's gateways that implement the CCIP-read protocol.
+    /// @notice URL templates to the service provider's gateways that implement the CCIP-read protocol.
     string[] public urls;
 
     uint256 internal constant ONE = 1e6; // 6 decimal places
@@ -133,9 +134,9 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             revert Errors.CrowdtainerExpired(block.timestamp, expireTime);
     }
 
-    // @dev Address used for signing authorizations. This allows for arbitrary
-    // off-chain mechanisms to apply law-based restrictions and/or combat bots squatting offered items.
-    // @notice If signer equals to address(0), no restriction is applied.
+    /// @notice Address used for signing authorizations. This allows for arbitrary
+    /// off-chain mechanisms to apply law-based restrictions and/or combat bots squatting offered items.
+    /// @notice If signer equals to address(0), no restriction is applied.
     function getSigner() external view returns (address) {
         return signer;
     }
@@ -156,45 +157,45 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     // -----------------------------------------------
     //  Values set by initialize function
     // -----------------------------------------------
-    // @note Time after which it is possible to join this Crowdtainer.
+    /// @notice Time after which it is possible to join this Crowdtainer.
     uint256 public openingTime;
-    // @note Time after which it is no longer possible for the service or product provider to withdraw funds.
+    /// @notice Time after which it is no longer possible for the service or product provider to withdraw funds.
     uint256 public expireTime;
-    // @note Minimum amount in ERC20 units required for Crowdtainer to be considered to be successful.
+    /// @notice Minimum amount in ERC20 units required for Crowdtainer to be considered to be successful.
     uint256 public targetMinimum;
-    // @note Amount in ERC20 units after which no further participation is possible.
+    /// @notice Amount in ERC20 units after which no further participation is possible.
     uint256 public targetMaximum;
-    // @note Number of products/services variations offered by this project.
+    /// @notice Number of products/services variations offered by this project.
     uint256 public numberOfProducts;
-    // @note The price for each unit type.
-    // @dev The price should be given in the number of smallest unit for precision (e.g 10^18 == 1 DAI).
+    /// @notice The price for each unit type.
+    /// @dev The price should be given in the number of smallest unit for precision (e.g 10^18 == 1 DAI).
     uint256[MAX_NUMBER_OF_PRODUCTS] public unitPricePerType;
-    // @note Half of the value act as a discount for a new participant using an existing referral code, and the other
-    // half is given for the participant making a referral. The former is similar to the 'cash discount device' in stamp era,
-    // while the latter is a reward for contributing to the Crowdtainer by incentivising participation from others.
+    /// @notice Half of the value act as a discount for a new participant using an existing referral code, and the other
+    /// half is given for the participant making a referral. The former is similar to the 'cash discount device' in stamp era,
+    /// while the latter is a reward for contributing to the Crowdtainer by incentivising participation from others.
     uint256 public referralRate;
-    // @note Address of the ERC20 token used for payment.
+    /// @notice Address of the ERC20 token used for payment.
     IERC20 public token;
-    // @dev URI string pointing to the legal terms and conditions ruling this project.
+    /// @notice URI string pointing to the legal terms and conditions ruling this project.
     string public legalContractURI;
 
     // -----------------------------------------------
     //  Events
     // -----------------------------------------------
 
-    // @note Emmited when the signer changes.
+    /// @notice Emmited when the signer changes.
     event SignerChanged(address indexed newSigner);
 
-    // @note Emmited when CCIP-read URLs changes.
+    /// @notice Emmited when CCIP-read URLs changes.
     event CCIPURLChanged(string[] indexed newUrls);
 
-    // @note Emmited when a Crowdtainer is created.
+    /// @notice Emmited when a Crowdtainer is created.
     event CrowdtainerCreated(
         address indexed owner,
         address indexed shippingAgent
     );
 
-    // @note Emmited when a Crowdtainer is initialized.
+    /// @notice Emmited when a Crowdtainer is initialized.
     event CrowdtainerInitialized(
         address indexed _owner,
         IERC20 _token,
@@ -209,7 +210,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         address _signer
     );
 
-    // @note Emmited when a user joins, signalling participation intent.
+    /// @notice Emmited when a user joins, signalling participation intent.
     event Joined(
         address indexed wallet,
         uint256[MAX_NUMBER_OF_PRODUCTS] quantities,
@@ -235,7 +236,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     // -----------------------------------------------
 
     /**
-     * @dev Initializes a Crowdtainer.
+     * @notice Initializes a Crowdtainer.
+     * @param _owner The contract owning this Crowdtainer instance, if any (address(0x0) for no owner).
      * @param _campaignData Data defining all rules and values of this Crowdtainer instance.
      */
     function initialize(address _owner, CampaignData calldata _campaignData)
@@ -328,22 +330,34 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         );
     }
 
-    /*
-     * @dev Join the Crowdtainer project.
-     * @param _wallet The wallet that is joining the Crowdtainer.
+    /**
+     * @notice Join the Crowdtainer project.
+     * @param _wallet The wallet that is joining the Crowdtainer. Must be the msg.sender if Crowdtainer owner is address(0x0).
+     * @param _quantities Array with the number of units desired for each product.
+     *
+     * @dev This method is present to make wallet interactions more friendly, by requiring fewer parameters for projects with referral system disabled.
+     * @dev Requires IERC20 permit.
+     */
+    function join(
+        address _wallet,
+        uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities
+    ) public {
+        join(_wallet, _quantities, false, address(0));
+    }
+
+    /**
+     * @notice Join the Crowdtainer project with optional referral and discount.
+     * @param _wallet The wallet that is joining the Crowdtainer. Must be the msg.sender if Crowdtainer owner is address(0x0).
      * @param _quantities Array with the number of units desired for each product.
      * @param _enableReferral Informs whether the user would like to be eligible to collect rewards for being referred.
      * @param _referrer Optional referral code to be used to claim a discount.
      *
-     * @note Requires IRC20 permit.
-     *
-     * @note referrer is the wallet address of a previous participant.
-     *
-     * @note if `enableReferral` is true, and the account has been used to claim a discount, then
-     *       it is no longer possible to leave() during the funding phase.
-     *
-     * @note A same user is not allowed to increase the order amounts (i.e., by calling join multiple times).
-     *       To 'update' an order, the user must first 'leave' then join again with the new values.
+     * @dev Requires IERC20 permit.
+     * @dev referrer is the wallet address of a previous participant.
+     * @dev if `enableReferral` is true, and the user decides to leave after the wallet has been used to claim a discount,
+     *       then the full value can't be claimed if deciding to leave the project.
+     * @dev A same user is not allowed to increase the order amounts (i.e., by calling join multiple times).
+     *      To 'update' an order, the user must first 'leave' then join again with the new values.
      */
     function join(
         address _wallet,
@@ -351,7 +365,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         bool _enableReferral,
         address _referrer
     )
-        external
+        public
         onlyAddress(owner)
         onlyInState(CrowdtainerState.Funding)
         onlyActive
@@ -382,12 +396,12 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         _join(_wallet, _quantities, _enableReferral, _referrer);
     }
 
-    /*
-     * @dev Allows joining by means of CCIP-READ (EIP-3668).
+    /**
+     * @notice Allows joining by means of CCIP-READ (EIP-3668).
      * @param result (uint64, bytes) of signature validity and the signature itself.
      * @param extraData ABI encoded parameters for _join() method.
      *
-     * @note Requires IRC20 permit.
+     * @dev Requires IRC20 permit.
      */
     function joinWithSignature(
         bytes calldata result, // off-chain signed payload
@@ -575,11 +589,11 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         );
     }
 
-    /*
-     * @dev Leave the Crowdtainer and withdraw deposited funds given when joining.
-     * @note Calling this method signals that the user is no longer interested in participating.
-     * @note Only allowed if the respective Crowdtainer is in active `Funding` state.
+    /**
+     * @notice Leave the Crowdtainer and withdraw deposited funds given when joining.
+     * @notice Calling this method signals that the participant is no longer interested in the project.
      * @param _wallet The wallet that is leaving the Crowdtainer.
+     * @dev Only allowed if the respective Crowdtainer is in active `Funding` state.
      */
     function leave(address _wallet)
         external
@@ -621,7 +635,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     }
 
     /**
-     * @notice Function used by project deployer to signal commitment to ship service or product by withdrawing/receiving the payment.
+     * @notice Function used by the service provider to signal commitment to ship service or product by withdrawing/receiving the payment.
      */
     function getPaidAndDeliver()
         public
