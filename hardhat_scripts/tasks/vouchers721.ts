@@ -47,8 +47,8 @@ task(
     targetMinimum: parseUnits('10000', erc20Decimals),
     targetMaximum: parseUnits('10000000', erc20Decimals),
     unitPricePerType: arrayOfBigNumbers,
-    referralRate: 20,
-    referralEligibilityValue: parseUnits('50', erc20Decimals),
+    referralRate: 0,
+    referralEligibilityValue: parseUnits('0', erc20Decimals),
     token: coin.address,
     legalContractURI: ""
   };
