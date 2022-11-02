@@ -45,7 +45,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     address public shippingAgent;
 
     /// @notice Maps wallets that joined this Crowdtainer to the values they paid to join.
-    mapping(address => uint256) private costForWallet;
+    mapping(address => uint256) public costForWallet;
 
     /// @notice Maps accounts to accumulated referral rewards.
     mapping(address => uint256) public accumulatedRewardsOf;
@@ -118,8 +118,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     function requireAddress(address requiredAddress) internal view {
         if (msg.sender != requiredAddress)
             revert Errors.CallerNotAllowed({
-                expected: msg.sender,
-                actual: requiredAddress
+                expected: requiredAddress,
+                actual: msg.sender
             });
         require(msg.sender == requiredAddress);
     }

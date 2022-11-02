@@ -65,7 +65,7 @@ task("approve", "ERC-20 approve.")
 
     console.log(`Gas price: ${await sender.getGasPrice()}`);
 
-    await token.connect(sender).approve(spender, amount);
+    await (await token.connect(sender).approve(spender, amount)).wait();
     console.log(
       `${sender.address} has approved ${amount} tokens to ${spender}`
     );
