@@ -282,8 +282,8 @@ contract Vouchers721 is ERC721Enumerable {
 
         if (msg.sender != _wallet)
             revert Errors.CallerNotAllowed({
-                expected: msg.sender,
-                actual: _wallet
+                expected: _wallet,
+                actual: msg.sender
             });
 
         assert(crowdtainer != address(0));
