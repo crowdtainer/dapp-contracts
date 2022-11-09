@@ -24,7 +24,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const token = await hre.ethers.getContract("Coin");
   const symbol = await token.symbol();
 
-  const quantity = parseUnits("100000000000", 6);
+  const quantity = parseUnits("10000", 6);
 
   console.log(`Mint ${quantity} ${symbol} to trinity (${trinity}).`);
   await hre.run("mint", {

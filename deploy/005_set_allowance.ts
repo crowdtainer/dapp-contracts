@@ -27,22 +27,22 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const crowdtainerAddress = await vouchers721.crowdtainerIdToAddress(1);
 
   const crowdtainerFactory = await hre.ethers.getContractFactory("Crowdtainer");
-  const crowdtainer = <Crowdtainer>crowdtainerFactory.attach(crowdtainerAddress);
+  // const crowdtainer = <Crowdtainer>crowdtainerFactory.attach(crowdtainerAddress);
 
-  const quantity = parseUnits("1000000000", 6);
-  console.log(`Approve ${quantity} ${symbol} from neo to Crowdtainer @ (${crowdtainer.address}).`);
+  const quantity = parseUnits("10000", await token.decimals());
+  console.log(`Approve ${quantity} ${symbol} from neo to Crowdtainer @ (${crowdtainerAddress}).`);
   // Give tokens to neo
   await hre.run("approve", {
     from: neo,
-    spender: crowdtainer.address,
+    spender: crowdtainerAddress,
     amount: `${quantity}`,
   });
 
-  console.log(`Approve ${quantity} ${symbol} from trinity to Crowdtainer @ (${crowdtainer.address}).`);
-  // Give tokens to neo
+  console.log(`Approve ${quantity} ${symbol} from trinity to Crowdtainer @ (${crowdtainerAddress}).`);
+  // Give tokens to trinity
   await hre.run("approve", {
     from: trinity,
-    spender: crowdtainer.address,
+    spender: crowdtainerAddress,
     amount: `${quantity}`,
   });
 
