@@ -20,6 +20,7 @@ async function main() {
   await crowdtainer.deployed();
   console.log("Crowdtainer deployed to:", crowdtainer.address);
 
+
   const metadataServiceV1Factory = await ethers.getContractFactory(
     "MetadataServiceV1"
   );
@@ -62,7 +63,7 @@ async function main() {
 
   const campaignData = {
     shippingAgent: agent.address,
-    signer: '0x0000000000000000000000000000000000000000',
+    signer: '0x0000000000000000000000000000000000000000', // 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
     openingTime: currentTime + 10,
     expireTime: currentTime + 10 + 3601,
     targetMinimum: parseUnits('10000', erc20Decimals),
@@ -82,6 +83,8 @@ async function main() {
 
   let crowdtainerId = (await vouchers721.crowdtainerCount()).toNumber();
   let crowdtainerAddress = await vouchers721.crowdtainerIdToAddress(crowdtainerId);
+
+
 
   console.log(`${agent.address} created a new Crowdtainer project. Id: ${crowdtainerId} @ ${crowdtainerAddress}`);
 }

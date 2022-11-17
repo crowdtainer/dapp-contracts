@@ -436,7 +436,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         ) = abi.decode(result, (address, uint64, bytes32, bytes));
 
         bytes32 messageDigest = keccak256(
-            abi.encode(
+            abi.encodePacked(
                 contractAddress,
                 _wallet,
                 _quantities,
@@ -477,7 +477,6 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         if (recoveredPublicKey != expectedPublicKey) {
             revert Errors.InvalidSignature();
         }
-
         if (contractAddress != address(this)) {
             revert Errors.InvalidSignature();
         }

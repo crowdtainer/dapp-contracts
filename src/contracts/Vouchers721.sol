@@ -256,7 +256,7 @@ contract Vouchers721 is ERC721Enumerable {
     /**
      * @notice Allows joining by means of CCIP-READ (EIP-3668).
      * @param result ABI encoded (uint64, bytes) for signature time validity and the signature itself.
-     * @param extraData ABI encoded (address, bytes4, bytes), with the 3rd parameter contains encoded values for Crowdtainer._join() method.
+     * @param extraData ABI encoded (address, bytes4, bytes), 3rd parameter contains encoded values for Crowdtainer._join() method.
      *
      * @dev Requires IRC20 permit.
      * @dev This function is called automatically by EIP-3668-compliant clients.
@@ -272,7 +272,6 @@ contract Vouchers721 is ERC721Enumerable {
         ) = abi.decode(extraData, (address, bytes4, bytes));
 
         assert(innerCallbackFunction == Crowdtainer.joinWithSignature.selector);
-
         (
             address _wallet,
             uint256[MAX_NUMBER_OF_PRODUCTS] memory _quantities,

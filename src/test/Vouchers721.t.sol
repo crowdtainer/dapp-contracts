@@ -137,7 +137,7 @@ contract Vouchers721CreateTester is VouchersTest {
         uint64 epochExpiration = uint64(block.timestamp) + uint64(1000); // signature expiration
         bytes32 bobNonce = keccak256("random");
 
-        bytes memory bobPayload = abi.encode(
+        bytes memory bobPayload = abi.encodePacked(
             crowdtainerAddress,
             address(bob),
             quantities,
