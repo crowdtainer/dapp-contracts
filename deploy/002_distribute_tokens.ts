@@ -8,7 +8,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const namedAccounts = await hre.getNamedAccounts();
   console.log("Accounts available:", namedAccounts);
 
-  const { neo, trinity } = namedAccounts;
+  const { agent, neo, trinity } = namedAccounts;
 
   const mainnetChainId = "1";
   const isMainnet = chainId === mainnetChainId;
@@ -37,6 +37,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // Give tokens to neo
   await hre.run("mint", {
     receiver: neo,
+    amount: `${quantity}`,
+  });
+
+  console.log(`Mint ${quantity} ${symbol} to agent (${agent}).`);
+  console.log(`Give tokens to neo address: ${agent}`);
+  // Give tokens to neo
+  await hre.run("mint", {
+    receiver: agent,
     amount: `${quantity}`,
   });
 

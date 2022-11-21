@@ -46,9 +46,9 @@ const config: HardhatUserConfig = {
     //   accounts: privateKeysFor('optimismmainnet'),
     // },
     // Testnets
-    rinkeby: {
-      url: nodeUrlFor("rinkeby"),
-      accounts: privateKeysFor("rinkeby"),
+    goerli: {
+      url: nodeUrlFor("goerli"),
+      accounts: privateKeysFor("goerli"),
       // gas: 2100000,
       // gasPrice: 1003244855,
       // accounts: mnemonicAccountsFor('rinkeby'),
