@@ -2,7 +2,7 @@ import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-ethers";
 import { BigNumberish } from "@ethersproject/bignumber/lib/bignumber";
 import { parseUnits } from "ethers/lib/utils";
-import { Coin, Crowdtainer, Vouchers721 } from "../../out/typechain/";
+import { Coin, Vouchers721 } from "../../out/typechain/";
 
 task(
   "createCrowdtainer",
@@ -43,7 +43,7 @@ task(
       shippingAgent: agent,
       signer: agent, // to disable EIP-3668 use 0x0000000000000000000000000000000000000000
       openingTime: currentTime + 30,
-      expireTime: currentTime + 3600 * 5,
+      expireTime: currentTime + 1150,
       targetMinimum: parseUnits('10000', erc20Decimals),
       targetMaximum: parseUnits('10000000', erc20Decimals),
       unitPricePerType: arrayOfBigNumbers,
@@ -64,20 +64,6 @@ task(
     let crowdtainerAddress = await vouchers721.crowdtainerIdToAddress(crowdtainerId);
 
     console.log(`${agent} created a new Crowdtainer project. Id: ${crowdtainerId} @ ${crowdtainerAddress}`);
-  });
-
-task("setURLs", "Set url for CCIP-Read.")
-  .addParam("url", "The first URL to be passed to the client.")
-  .addParam("crowdtaineraddress", "The crowdtainerId.")
-  .setAction(async function ({ url, crowdtaineraddress }, hre) {
-    const crowdtainerFactory = await hre.ethers.getContractFactory("Crowdtainer");
-    const crowdtainer = <Crowdtainer>crowdtainerFactory.attach(crowdtaineraddress);
-    let urls = new Array<string>();
-    urls.push(url);
-    let setUrlTx = await crowdtainer.setUrls(urls);
-    console.log(`Waiting for transaction confirmation.. (hash ${setUrlTx.hash})`);
-    setUrlTx.wait();
-    console.log("setURL Transaction confirmed.");
   });
 
 task("join", "Join a Crowdtainer with the given parameters.")

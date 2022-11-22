@@ -15,6 +15,7 @@ import {
 import "./hardhat_scripts/tasks/erc20";
 import "./hardhat_scripts/tasks/time";
 import "./hardhat_scripts/tasks/vouchers721";
+import "./hardhat_scripts/tasks/shippingAgent";
 
 dotenv.config();
 
