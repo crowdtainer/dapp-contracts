@@ -41,7 +41,7 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
         uint64 epochExpiration = uint64(block.timestamp) + uint64(1000); // signature expiration
         bytes32 aliceNonce = keccak256("random");
 
-        bytes memory payload = abi.encode(
+        bytes memory payload = abi.encodePacked(
             address(crowdtainer),
             address(bob),
             quantities,
