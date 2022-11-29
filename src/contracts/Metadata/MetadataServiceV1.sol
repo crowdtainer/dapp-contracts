@@ -31,11 +31,16 @@ contract MetadataServiceV1 is IMetadataService {
             string(
                 abi.encodePacked(
                     quantities.toString(),
+                    unicode"\t",
                     "  x  ",
+                    unicode"\t",
                     description,
+                    unicode"\t",
                     " - ",
-                    _unitSymbol,
-                    price.toString()
+                    unicode"\t",
+                    price.toString(),
+                    unicode"\t",
+                    _unitSymbol
                 )
             );
     }
@@ -112,8 +117,8 @@ contract MetadataServiceV1 is IMetadataService {
                     "font-family:Helvetica;text-align:end;text-anchor:end;white-space:pre;"
                     "fill:#f9f9f9;}</style>"
                     "<linearGradient x1='0%' y1='30%' x2='60%' y2='90%' gradientUnits='userSpaceOnUse' id='SvgjsLinearGradient2561'>"
-                    "<stop stop-color='rgba(0, 52, 11, 111)' offset='0.02'></stop>"
-                    "<stop stop-color='rgba(90, 43, 30, 2)' offset='1'></stop></linearGradient>"
+                    "<stop stop-color='rgba(20, 110, 160, 100)' offset='0.02'></stop>"
+                    "<stop stop-color='rgba(25, 59, 90, 100)' offset='1'></stop></linearGradient>"
                     "</svg>"
                 )
             );
@@ -149,12 +154,14 @@ contract MetadataServiceV1 is IMetadataService {
         pure
         returns (string memory)
     {
-        string memory part1 = '<text xml:space="preserve" class="tiny" x="10.478354" y="0" id="text16280-6-9-7" '
-        'transform="matrix(16.4916,0,0,15.627547,5.7282884,90.160098)"><tspan x="15.478354" '
-        'y="1.5" id="tspan1163">Claimed: ';
-        string memory part2 = '</tspan></text><text xml:space="preserve" class="medium" '
-        'x="13.478354" y="14.1689944" id="text16280-6" transform="matrix(16.4916,0,0,15.627547,7.589772,6.9947903)">'
-        '<tspan x="15.478354" y="5.4" id="tspan1165">Voucher ';
+        string
+            memory part1 = '<text xml:space="preserve" class="tiny" x="10.478354" y="0" id="text16280-6-9-7" '
+            'transform="matrix(16.4916,0,0,15.627547,5.7282884,90.160098)"><tspan x="15.478354" '
+            'y="1.5" id="tspan1163">Claimed: ';
+        string
+            memory part2 = '</tspan></text><text xml:space="preserve" class="medium" '
+            'x="13.478354" y="14.1689944" id="text16280-6" transform="matrix(16.4916,0,0,15.627547,7.589772,6.9947903)">'
+            '<tspan x="15.478354" y="5.4" id="tspan1165">Voucher ';
         if (claimedStatus) {
             return string(abi.encodePacked(part1, "Yes", part2));
         } else {
@@ -218,10 +225,6 @@ contract MetadataServiceV1 is IMetadataService {
         uint256 totalCost;
 
         for (uint256 i = 0; i < _metadata.numberOfProducts; i++) {
-            if (_metadata.quantities[i] == 0) {
-                continue;
-            }
-
             productList = string(
                 abi.encodePacked(
                     productList,
@@ -269,7 +272,7 @@ contract MetadataServiceV1 is IMetadataService {
                                 _metadata.crowdtainerId.toString(),
                                 '", "voucherId":"',
                                 _metadata.tokenId.toString(),
-                                '", "currentOwner":"0x',
+                                '", "currentOwner":"',
                                 addressToString(_metadata.currentOwner),
                                 '", "description":',
                                 description,
