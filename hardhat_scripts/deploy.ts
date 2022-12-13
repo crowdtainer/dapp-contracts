@@ -84,8 +84,6 @@ async function main() {
   let crowdtainerId = (await vouchers721.crowdtainerCount()).toNumber();
   let crowdtainerAddress = await vouchers721.crowdtainerIdToAddress(crowdtainerId);
 
-
-
   console.log(`${agent.address} created a new Crowdtainer project. Id: ${crowdtainerId} @ ${crowdtainerAddress}`);
 }
 

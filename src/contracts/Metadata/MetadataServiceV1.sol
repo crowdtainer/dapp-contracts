@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/utils/Base64.sol";
 contract MetadataServiceV1 is IMetadataService {
     using Strings for uint256;
     using Strings for uint24;
+    using Strings for uint8;
 
     uint24 internal constant yIncrement = 1;
     uint24 internal constant yStartingPoint = 10;
@@ -274,6 +275,11 @@ contract MetadataServiceV1 is IMetadataService {
                                 _metadata.tokenId.toString(),
                                 '", "currentOwner":"',
                                 addressToString(_metadata.currentOwner),
+                                '", ',
+                                '"erc20Symbol":"',
+                                unitSymbol,
+                                '", "erc20Decimals":"',
+                                erc20Decimals.toString(),
                                 '", "description":',
                                 description,
                                 ', "image": "',

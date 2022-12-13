@@ -28,7 +28,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const quantity = parseUnits("10000", await token.decimals());
   console.log(`Approve ${quantity} ${symbol} from neo to Crowdtainer @ (${crowdtainerAddress}).`);
-  // Give tokens to neo
+  
+  // Give allowance to neo
   await hre.run("approve", {
     from: neo,
     spender: crowdtainerAddress,
@@ -36,7 +37,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   });
 
   console.log(`Approve ${quantity} ${symbol} from trinity to Crowdtainer @ (${crowdtainerAddress}).`);
-  // Give tokens to trinity
+  // Give allowance to trinity
   await hre.run("approve", {
     from: trinity,
     spender: crowdtainerAddress,
