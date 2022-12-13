@@ -60,6 +60,7 @@ task(
     );
 
     let crowdtainerId = (await vouchers721.crowdtainerCount()).toNumber();
+    console.log(`Vouchers721 address: ${vouchers721.address}`);
     console.log(`Crowdtainer count: ${crowdtainerId}`);
     let crowdtainerAddress = await vouchers721.crowdtainerIdToAddress(crowdtainerId);
 

@@ -41,12 +41,6 @@ const config: HardhatUserConfig = {
     agent: 0, // agent / service provider
   },
   networks: {
-    // for mainnet
-    // optimism: {
-    //   url: "https://mainnet.optimism.io",
-    //   accounts: privateKeysFor('optimismmainnet'),
-    // },
-    // Testnets
     goerli: {
       url: nodeUrlFor("goerli"),
       accounts: privateKeysFor("goerli"),
@@ -54,13 +48,17 @@ const config: HardhatUserConfig = {
       // gasPrice: 1003244855,
       // accounts: mnemonicAccountsFor('rinkeby'),
     },
+    optimism: {
+      url: nodeUrlFor("optimism"),
+      accounts: privateKeysFor('optimism'),
+    },
     optimismgoerli: {
       url: "https://goerli.optimism.io",
       accounts: privateKeysFor('optimismgoerli'),
     },
     localhost: {
-      gas: 2100000,
-      gasPrice: 8000000000,
+      // gas: 2100000,
+      // gasPrice: 8000000000,
     },
     // hardhat: {
     //   allowUnlimitedContractSize: true
