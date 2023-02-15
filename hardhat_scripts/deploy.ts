@@ -65,8 +65,8 @@ async function main() {
     shippingAgent: agent.address,
     signer: '0x0000000000000000000000000000000000000000', // 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
     openingTime: currentTime + 10,
-    expireTime: currentTime + 10 + 3601,
-    targetMinimum: parseUnits('10000', erc20Decimals),
+    expireTime: currentTime + 10 + 3601 * 100,
+    targetMinimum: parseUnits('1000', erc20Decimals),
     targetMaximum: parseUnits('10000000', erc20Decimals),
     unitPricePerType: arrayOfBigNumbers,
     referralRate: 0,
@@ -77,7 +77,7 @@ async function main() {
 
   await vouchers721.createCrowdtainer(
     campaignData,
-    ["250g", "500g", "1Kg", "2Kg"],
+    ["250g", "500g", "1kg", "2kg"],
     metadataService.address
   );
 

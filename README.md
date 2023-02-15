@@ -123,7 +123,8 @@ Important: With `npx hardhat node` running in a separate terminal, in order to u
 tasks to e.g. manually interact with the contract state, hardhat requires specifying the network:
 
 ```sh
-// E.g.:
+// A few examples:
+
 // To create a new crowdtainer:
 npx hardhat createCrowdtainer --network localhost
 
@@ -132,6 +133,9 @@ npx hardhat join --user neo --crowdtainerid 1 --quantities 200 --network localho
 
 // To fast forward in time:
 npx hardhat timetravel --seconds 2000
+
+// Service providing accepting funds and committing to delivery:
+npx hardhat getPaidAndDeliver --crowdtaineraddress 0x3B02fF1e626Ed7a8fd6eC5299e2C54e1421B626B --network localhost
 ```
 
 Copy the `.env.example` file to `.env`.
