@@ -38,13 +38,14 @@ task(
     const currentTime = (await ethers.provider.getBlock("latest")).timestamp;
 
     // + (5*3600)
+    // + 1150*100
 
     const campaignData = {
       shippingAgent: agent,
       signer: agent, // to disable EIP-3668 use 0x0000000000000000000000000000000000000000
-      openingTime: currentTime + 30,
-      expireTime: currentTime + 1150,
-      targetMinimum: parseUnits('10000', erc20Decimals),
+      openingTime: currentTime + 10,
+      expireTime: currentTime + 20*60,
+      targetMinimum: parseUnits('1000', erc20Decimals),
       targetMaximum: parseUnits('10000000', erc20Decimals),
       unitPricePerType: arrayOfBigNumbers,
       referralRate: 0,
@@ -55,7 +56,7 @@ task(
 
     await vouchers721.createCrowdtainer(
       campaignData,
-      ["250g", "500g", "1Kg", "2Kg"],
+      ["250g", "500g", "1kg", "2kg"],
       metadataService.address
     );
 

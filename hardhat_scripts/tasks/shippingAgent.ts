@@ -40,7 +40,7 @@ task("getPaidAndDeliver", "Call function to put crowdtainer state in 'delivery' 
   });
 
 task("abortProject", "Call function to put crowdtainer state in 'failed' mode.")
-  .addParam("crowdtaineraddress", "The crowdtainerId.")
+  .addParam("crowdtaineraddress", "The crowdtainer address.")
   .setAction(async function ({ crowdtaineraddress }, hre) {
     const crowdtainerFactory = await hre.ethers.getContractFactory("Crowdtainer");
     const crowdtainer = <Crowdtainer>crowdtainerFactory.attach(crowdtaineraddress);
