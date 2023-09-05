@@ -4,7 +4,7 @@ pragma solidity ^0.8.16;
 // -----------------------------------------------
 //  Safety margins to avoid impractical values
 // -----------------------------------------------
-uint256 constant SAFETY_TIME_RANGE = 1 minutes;
+uint256 constant SAFETY_TIME_RANGE = 1 hours;
 // @notice Maximum value for referral discounts and rewards
 uint256 constant SAFETY_MAX_REFERRAL_RATE = 50;
 // @notice Maximum number of different products for a given Crowdtainer deployment.
