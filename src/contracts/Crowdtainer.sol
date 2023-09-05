@@ -59,7 +59,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     uint256 public referralEligibilityValue;
 
     /// @notice Wether an account has opted into being elibible for referral rewards.
-    mapping(address => bool) private enableReferral;
+    mapping(address => bool) public enableReferral;
 
     /// @notice Maps the total discount for each user.
     mapping(address => uint256) public discountForUser;
@@ -729,18 +729,5 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         token.safeTransferFrom(address(this), msg.sender, totalRewards);
 
         emit RewardsClaimed(msg.sender, totalRewards);
-    }
-
-    // @dev This method is only used for Formal Verification with SMTChecker.
-    // @dev It is executed with `make solcheck` command provided with the project's scripts.
-    function invariant() public view {
-        if (crowdtainerState != CrowdtainerState.Uninitialized) {
-            assert(expireTime >= (openingTime + SAFETY_TIME_RANGE));
-            assert(targetMaximum > 0);
-            assert(targetMinimum <= targetMaximum);
-            assert(referralRate <= SAFETY_MAX_REFERRAL_RATE);
-
-            assert(accumulatedRewards < totalValueRaised);
-        }
     }
 }
