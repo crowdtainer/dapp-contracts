@@ -569,7 +569,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         totalValueRaised += finalCost;
 
         // @dev Check if the purchase order doesn't exceed the goal's `targetMaximum`.
-        if ((totalValueRaised - accumulatedRewards) > targetMaximum)
+        if (totalValueRaised > targetMaximum)
             revert Errors.PurchaseExceedsMaximumTarget({
                 received: totalValueRaised,
                 maximum: targetMaximum
@@ -644,7 +644,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     {
         uint256 availableForAgent = totalValueRaised - accumulatedRewards;
 
-        if (availableForAgent < targetMinimum) {
+        if (totalValueRaised < targetMinimum) {
             revert Errors.MinimumTargetNotReached(
                 targetMinimum,
                 totalValueRaised
@@ -692,7 +692,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         // the project didn't reach the goal in time.
         if (
             block.timestamp > expireTime &&
-            (totalValueRaised - accumulatedRewards) < targetMinimum
+            totalValueRaised < targetMinimum
         ) crowdtainerState = CrowdtainerState.Failed;
 
         if (crowdtainerState != CrowdtainerState.Failed)
