@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.16;
 
-import "../utils/CrowdtainerTest.sol";
+import "../utils/Vouchers721Test.sol";
 import "./Handler.t.sol";
 
 contract Invariants {
@@ -26,55 +26,80 @@ contract Invariants {
         frank
     ];
 
-    IERC20 token;
+    Vouchers721 vouchers;
+    IMetadataService metadataService;
+
+    Crowdtainer defaultCrowdtainer;
+    uint256 defaultCrowdtainerId;
 
     Handler handler;
-    Crowdtainer crowdtainer;
 
     function setUp() public {
-        vm.label(address(alice), "alice");
-        vm.label(address(bob), "bob");
-        vm.label(address(charlie), "charlie");
-        vm.label(address(dave), "dave");
-        vm.label(address(erin), "erin");
-        vm.label(address(frank), "frank");
-
-        uint tokenDecimals = token.decimals();
+        vm.label(signer, "signer");
+        vm.label(shippingAgent, "shippingAgent");
+        vm.label(alice, "alice");
+        vm.label(bob, "bob");
+        vm.label(charlie, "charlie");
+        vm.label(dave, "dave");
+        vm.label(erin, "erin");
+        vm.label(frank, "frank");
 
         address usdcAddress = address(0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48);
         IERC20 token = IERC20(usdcAddress);
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] internal unitPricePerType = [
+        uint tokenDecimals = token.decimals();
+
+        uint256[MAX_NUMBER_OF_PRODUCTS] unitPricePerType = [
             10 ** tokenDecimals,
             20 ** tokenDecimals,
             25 ** tokenDecimals,
             30 ** tokenDecimals
         ];
+        string[MAX_NUMBER_OF_PRODUCTS] productDescription = [
+            "",
+            "",
+            "",
+            ""
+        ];
 
-        uint256 internal referralRate = 10;
-        uint256 internal referralEligibilityValue = 50;
+        uint256 targetMinimum = 20000 ** tokenDecimals;
+        uint256 targetMaximum = 26000 ** tokenDecimals;
+        uint256 referralRate = 10;
+        uint256 referralEligibilityValue = 50;
+        uint256 discountRate = 10;
+        uint256 referralRate = 10;
+        uint256 referralEligibilityValue = 50 ** tokenDecimals;
 
-        crowdtainer = new Crowdtainer();
-        crowdtainer.initialize(
-            owner,
-            CampaignData(
-                shippingAgent,
-                signer,
-                block.timestamp,
-                block.timestamp + 2 hours,
-                20000 ** tokenDecimals,
-                26000 ** tokenDecimals,
+        vouchers = new Vouchers721(address(new Crowdtainer()));
+
+        (address crowdtainerAddress, uint crowdtainerId) = vouchers.createCrowdtainer({
+            _campaignData: CampaignData(
+                address(shippingAgent),
+                address(signer),
+                openingTime,
+                closingTime,
+                targetMinimum,
+                targetMaximum,
                 unitPricePerType,
                 referralRate,
                 referralEligibilityValue,
                 address(token),
                 ""
-            )
+            ),
+            _productDescription: productDescription,
+            _metadataService: address(metadataService)
+        });
+
+        defaultCrowdtainerId = crowdtainerId;
+        defaultCrowdtainer = Crowdtainer(
+            vouchers.crowdtainerForId(crowdtainerId)
         );
 
         handler = new Handler(
-            crowdtainer,
+            vouchers,
             participants
+            defaultCrowdtainerId,
+            defaultCrowdtainer,
         );
         bytes4[] memory selectors = new bytes4[](2);
         selectors[0] = Handler.join.selector;

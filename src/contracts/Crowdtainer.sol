@@ -79,6 +79,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
 
     uint256 internal oneUnit; // Smallest unit based on erc20 decimals.
 
+    // @audit-issue apparently missing disable initialization in constructor (see Initializable.sol definition). Try and initialize the implementation again
+
     // -----------------------------------------------
     //  Modifiers
     // -----------------------------------------------

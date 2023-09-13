@@ -1,18 +1,28 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
-import "../utils/CrowdtainerTest.sol";
+import "../utils/Vouchers721Test.sol";
 
 contract Handler is Test {
 
-    Crowdtainer crowdtainer;
+    Vouchers721 vouchers;
     address[] participants;
+
+    Crowdtainer defaultCrowdtainer;
+    uint256 defaultCrowdtainerId;
 
     uint nonce++;
 
-    constructor(address[] _participants, Crowdtainer _crowdtainer) {
-        crowdtainer = _crowdtainer;
+    constructor(
+        address[] _participants,
+        Vouchers721 _vouchers,
+        Crowdtainer _defaultCrowdtainer;
+        uint256 _defaultCrowdtainerId;
+    ) {
+        vouchers = _vouchers;
         participants = _participants;
+        defaultCrowdtainer = _defaultCrowdtainer;
+        defaultCrowdtainerId = _defaultCrowdtainerId;
     }
 
     modifier useRandomParticipant(uint _participantIndex) {
