@@ -56,6 +56,8 @@ library Errors {
     error SignatureExpired(uint64 current, uint64 expires);
     error NonceAlreadyUsed(address wallet, bytes32 nonce);
     error InvalidSignature();
+    // Errors that occur inside external function calls, provided without decoding.
+    error CrowdtainerLowLevelError(bytes reason);
 
     // -----------------------------------------------
     //  Initialization with invalid parameters

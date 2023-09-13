@@ -78,9 +78,9 @@ contract Vouchers721 is ERC721Enumerable {
      * @dev Uses contract factory pattern.
      * @param _crowdtainerImplementation the address of the reference implementation.
      */
-    constructor(address _crowdtainerImplementation)
-        ERC721("Vouchers721", "VV1")
-    {
+    constructor(
+        address _crowdtainerImplementation
+    ) ERC721("Vouchers721", "VV1") {
         // equivalent to: crowdtainerImplementation = address(new Crowdtainer(address(this)));.
         crowdtainerImplementation = _crowdtainerImplementation;
         emit Vouchers721Created(address(this));
@@ -244,11 +244,9 @@ contract Vouchers721 is ERC721Enumerable {
         return bytes4(data[:4]);
     }
 
-    function getParameters(bytes calldata data)
-        external
-        pure
-        returns (bytes calldata)
-    {
+    function getParameters(
+        bytes calldata data
+    ) external pure returns (bytes calldata) {
         require(data.length > 4);
         return data[4:];
     }
@@ -294,7 +292,15 @@ contract Vouchers721 is ERC721Enumerable {
 
         assert(crowdtainer.code.length > 0);
 
-        Crowdtainer(crowdtainer).joinWithSignature(result, innerExtraData);
+        uint256 costForWallet = Crowdtainer(crowdtainer).costForWallet(_wallet);
+        try Crowdtainer(crowdtainer).joinWithSignature(result, innerExtraData) {
+            // internal state invariant after joining
+            require(
+                Crowdtainer(crowdtainer).costForWallet(_wallet) > costForWallet
+            );
+        } catch (bytes memory reason) {
+            revert Errors.CrowdtainerLowLevelError(reason);
+        }
 
         uint256 nextAvailableTokenId = ++nextTokenIdForCrowdtainer[
             crowdtainerId
@@ -331,9 +337,15 @@ contract Vouchers721 is ERC721Enumerable {
         address crowdtainerAddress = crowdtainerIdToAddress(
             tokenIdToCrowdtainerId(_tokenId)
         );
-        ICrowdtainer crowdtainer = ICrowdtainer(crowdtainerAddress);
 
-        crowdtainer.leave(msg.sender);
+        try Crowdtainer(crowdtainerAddress).leave(msg.sender) {
+            // internal state invariant after leaving
+            require(
+                Crowdtainer(crowdtainerAddress).costForWallet(msg.sender) == 0
+            );
+        } catch (bytes memory reason) {
+            revert Errors.CrowdtainerLowLevelError(reason);
+        }
 
         delete tokenIdQuantities[_tokenId];
 
@@ -345,12 +357,9 @@ contract Vouchers721 is ERC721Enumerable {
      * @param _tokenId The encoded voucher token id.
      * @return Token URI String.
      */
-    function tokenURI(uint256 _tokenId)
-        public
-        view
-        override
-        returns (string memory)
-    {
+    function tokenURI(
+        uint256 _tokenId
+    ) public view override returns (string memory) {
         uint256 crowdtainerId = tokenIdToCrowdtainerId(_tokenId);
         address crowdtainerAddress = crowdtainerIdToAddress(crowdtainerId);
 
@@ -427,11 +436,9 @@ contract Vouchers721 is ERC721Enumerable {
         }
     }
 
-    function tokenIdToCrowdtainerId(uint256 _tokenId)
-        public
-        pure
-        returns (uint256)
-    {
+    function tokenIdToCrowdtainerId(
+        uint256 _tokenId
+    ) public pure returns (uint256) {
         if (_tokenId == 0) {
             revert Errors.InvalidTokenId(_tokenId);
         }
@@ -439,11 +446,9 @@ contract Vouchers721 is ERC721Enumerable {
         return _tokenId / ID_MULTIPLE;
     }
 
-    function crowdtainerIdToAddress(uint256 _crowdtainerId)
-        public
-        view
-        returns (address)
-    {
+    function crowdtainerIdToAddress(
+        uint256 _crowdtainerId
+    ) public view returns (address) {
         address crowdtainerAddress = crowdtainerForId[_crowdtainerId];
         if (crowdtainerAddress == address(0)) {
             revert Errors.CrowdtainerInexistent();

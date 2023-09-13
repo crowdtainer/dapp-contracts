@@ -15,7 +15,7 @@ contract MetadataServiceV1 is IMetadataService {
 
     uint24 internal constant yIncrement = 1;
     uint24 internal constant yStartingPoint = 10;
-    uint24 internal constant anchorX = 2;
+    uint24 internal constant anchorX = 1;
 
     uint8 private erc20Decimals;
 

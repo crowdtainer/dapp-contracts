@@ -2,6 +2,9 @@
 .env
 .DS_Store
 
+# Redis
+*.rdb
+
 # Node
 node_modules
 

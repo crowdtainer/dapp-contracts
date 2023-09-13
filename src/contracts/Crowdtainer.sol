@@ -146,10 +146,9 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         emit SignerChanged(signer);
     }
 
-    function setUrls(string[] memory _urls)
-        external
-        onlyAddress(shippingAgent)
-    {
+    function setUrls(
+        string[] memory _urls
+    ) external onlyAddress(shippingAgent) {
         urls = _urls;
         emit CCIPURLChanged(urls);
     }
@@ -240,11 +239,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
      * @param _owner The contract owning this Crowdtainer instance, if any (address(0x0) for no owner).
      * @param _campaignData Data defining all rules and values of this Crowdtainer instance.
      */
-    function initialize(address _owner, CampaignData calldata _campaignData)
-        external
-        initializer
-        onlyInState(CrowdtainerState.Uninitialized)
-    {
+    function initialize(
+        address _owner,
+        CampaignData calldata _campaignData
+    ) external initializer onlyInState(CrowdtainerState.Uninitialized) {
         owner = _owner;
 
         // @dev: Sanity checks
@@ -594,7 +592,9 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
      * @param _wallet The wallet that is leaving the Crowdtainer.
      * @dev Only allowed if the respective Crowdtainer is in active `Funding` state.
      */
-    function leave(address _wallet)
+    function leave(
+        address _wallet
+    )
         external
         onlyAddress(owner)
         onlyInState(CrowdtainerState.Funding)
@@ -609,7 +609,9 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
 
         // @dev Subtract formerly given referral rewards originating from this account.
         address referrer = referrerOfReferee[_wallet];
-        accumulatedRewardsOf[referrer] -= discountForUser[_wallet];
+        if (referrer != address(0)) {
+            accumulatedRewardsOf[referrer] -= discountForUser[_wallet];
+        }
 
         /* @dev If this wallet's referral was used, then it is no longer possible to leave().
          *      This is to discourage users from joining just to generate discount codes.
@@ -690,10 +692,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
 
         // The first interaction with this function 'nudges' the state to `Failed` if
         // the project didn't reach the goal in time.
-        if (
-            block.timestamp > expireTime &&
-            totalValueRaised < targetMinimum
-        ) crowdtainerState = CrowdtainerState.Failed;
+        if (block.timestamp > expireTime && totalValueRaised < targetMinimum)
+            crowdtainerState = CrowdtainerState.Failed;
 
         if (crowdtainerState != CrowdtainerState.Failed)
             revert Errors.CantClaimFundsOnActiveProject();
