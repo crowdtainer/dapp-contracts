@@ -170,6 +170,8 @@ npx solhint 'contracts/**/*.sol'
 npx solhint 'contracts/**/*.sol' --fix
 # Debug function with specific parameters; Eg.:
 forge run src/test/Join.t.sol -t JoinFuzzer --sig "testInvariantsHold(uint256,uint256,uint256)" --debug 0 0 0
+# Debugger for tests; E.g.:
+forge debug src/test/Leave.t.sol --tc CrowdtainerValidLeaveTester --sig "testJoinThenLeaveWithoutReferralsMustSucceed()"
 ```
 
 ## Solidity code development

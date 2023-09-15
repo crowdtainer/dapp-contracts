@@ -19,7 +19,7 @@ struct CampaignData {
     // Amount in ERC20 units after which no further participation is possible.
     uint256 targetMaximum;
     // Array with price of each item, in ERC2O units. Zero is an invalid value and will throw.
-    uint256[MAX_NUMBER_OF_PRODUCTS] unitPricePerType;
+    uint256[] unitPricePerType;
     // Percentage used for incentivising participation. Half the amount goes to the referee, and the other half to the referrer.
     uint256 referralRate;
     // The minimum purchase value required to be eligible to participate in referral rewards.
@@ -59,7 +59,7 @@ interface ICrowdtainer {
      */
     function join(
         address _wallet,
-        uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities
+        uint256[] calldata _quantities
     ) external;
 
     /**
@@ -78,7 +78,7 @@ interface ICrowdtainer {
      */
     function join(
         address _wallet,
-        uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities,
+        uint256[] calldata _quantities,
         bool _enableReferral,
         address _referrer
     ) external;

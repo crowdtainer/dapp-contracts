@@ -8,12 +8,11 @@ import {Errors} from "../contracts/Crowdtainer.sol";
 
 contract CrowdtainerRewardsTester is CrowdtainerTest {
     function testClaimRewardsMustSucceed() public {
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
-            uint256(10) * ONE,
-            20 * ONE,
-            25 * ONE,
-            5000 * ONE
-        ];
+        uint256[] memory _unitPricePerType = new uint256[](4);
+        _unitPricePerType[0] = 10 * ONE;
+        _unitPricePerType[1] = 20 * ONE;
+        _unitPricePerType[2] = 25 * ONE;
+        _unitPricePerType[3] = 5000 * ONE;
 
         crowdtainer.initialize(
             address(0),
@@ -32,18 +31,18 @@ contract CrowdtainerRewardsTester is CrowdtainerTest {
             )
         );
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(1),
-            10,
-            0,
-            0
-        ];
+        uint256[] memory quantities = new uint256[](4);
+        quantities[0] = 1;
+        quantities[1] = 10;
 
         bob.doJoin(quantities, true, address(0));
 
         uint256 previousBobBalance = erc20Token.balanceOf(address(bob));
 
-        quantities = [uint256(0), 0, 0, 5];
+        quantities[3] = 5;
+        quantities[0] = 0;
+        quantities[1] = 0;
+        quantities[2] = 0;
 
         uint256 totalCost = quantities[3] * _unitPricePerType[3];
 

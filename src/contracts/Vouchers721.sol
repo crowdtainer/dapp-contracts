@@ -49,12 +49,10 @@ contract Vouchers721 is ERC721Enumerable {
     mapping(uint256 => address) public metadataServiceForCrowdatinerId;
 
     // @dev Mapping of token ID => product quantities.
-    mapping(uint256 => uint256[MAX_NUMBER_OF_PRODUCTS])
-        public tokenIdQuantities;
+    mapping(uint256 => uint256[]) public tokenIdQuantities;
 
     // @dev Mapping of crowdtainer id => array of product descriptions.
-    mapping(uint256 => string[MAX_NUMBER_OF_PRODUCTS])
-        public productDescription;
+    mapping(uint256 => string[]) public productDescription;
 
     // -----------------------------------------------
     //  Events
@@ -78,9 +76,9 @@ contract Vouchers721 is ERC721Enumerable {
      * @dev Uses contract factory pattern.
      * @param _crowdtainerImplementation the address of the reference implementation.
      */
-    constructor(address _crowdtainerImplementation)
-        ERC721("Vouchers721", "VV1")
-    {
+    constructor(
+        address _crowdtainerImplementation
+    ) ERC721("Vouchers721", "VV1") {
         // equivalent to: crowdtainerImplementation = address(new Crowdtainer(address(this)));.
         crowdtainerImplementation = _crowdtainerImplementation;
         emit Vouchers721Created(address(this));
@@ -95,7 +93,7 @@ contract Vouchers721 is ERC721Enumerable {
      */
     function createCrowdtainer(
         CampaignData calldata _campaignData,
-        string[MAX_NUMBER_OF_PRODUCTS] memory _productDescription,
+        string[] memory _productDescription,
         address _metadataService
     ) external returns (address, uint256) {
         if (_metadataService == address(0)) {
@@ -129,7 +127,7 @@ contract Vouchers721 is ERC721Enumerable {
      */
     function join(
         address _crowdtainer,
-        uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities
+        uint256[] calldata _quantities
     ) external returns (uint256) {
         return join(_crowdtainer, _quantities, false, address(0));
     }
@@ -151,7 +149,7 @@ contract Vouchers721 is ERC721Enumerable {
      */
     function join(
         address _crowdtainer,
-        uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities,
+        uint256[] calldata _quantities,
         bool _enableReferral,
         address _referrer
     ) public returns (uint256) {
@@ -174,47 +172,7 @@ contract Vouchers721 is ERC721Enumerable {
         {
 
         } catch (bytes memory receivedBytes) {
-            bytes4 receivedErrorSelector = this.getSignature(receivedBytes);
-
-            if (receivedErrorSelector == Errors.OffchainLookup.selector) {
-                // decode error parameters
-                (
-                    address sender,
-                    string[] memory urls,
-                    bytes memory callData,
-                    bytes4 callbackFunction,
-                    bytes memory extraData
-                ) = abi.decode(
-                        this.getParameters(receivedBytes),
-                        (address, string[], bytes, bytes4, bytes)
-                    );
-
-                if (sender != address(crowdtainer)) {
-                    revert Errors.CCIP_Read_InvalidOperation();
-                }
-
-                revert Errors.OffchainLookup(
-                    address(this),
-                    urls,
-                    callData,
-                    Vouchers721.joinWithSignature.selector,
-                    abi.encode(
-                        address(crowdtainer),
-                        callbackFunction,
-                        extraData
-                    )
-                );
-            } else if (
-                receivedErrorSelector == Errors.SignatureExpired.selector
-            ) {
-                (uint64 current, uint64 expires) = abi.decode(
-                    this.getParameters(receivedBytes),
-                    (uint64, uint64)
-                );
-                revert Errors.SignatureExpired(current, expires);
-            } else {
-                require(false, "Other exception thrown, must halt execution.");
-            }
+            handleJoinError(_crowdtainer, receivedBytes);
         }
 
         uint256 nextAvailableTokenId = ++nextTokenIdForCrowdtainer[
@@ -239,16 +197,115 @@ contract Vouchers721 is ERC721Enumerable {
         return newTokenID;
     }
 
+    // @dev Decodes external Crowdtainer join function call errors.
+    // Most of this function code can be removed once Solidity supports
+    // 'rethrowing' an external call's custom error revert.
+    function handleJoinError(
+        address crowdtainer,
+        bytes memory receivedBytes
+    ) private view {
+        bytes4 receivedErrorSelector = this.getSignature(receivedBytes);
+
+        if (receivedErrorSelector == Errors.OffchainLookup.selector) {
+            // decode error parameters
+            (
+                address sender,
+                string[] memory urls,
+                bytes memory callData,
+                bytes4 callbackFunction,
+                bytes memory extraData
+            ) = abi.decode(
+                    this.getParameters(receivedBytes),
+                    (address, string[], bytes, bytes4, bytes)
+                );
+
+            if (sender != address(crowdtainer)) {
+                revert Errors.CCIP_Read_InvalidOperation();
+            }
+
+            revert Errors.OffchainLookup(
+                address(this),
+                urls,
+                callData,
+                Vouchers721.joinWithSignature.selector,
+                abi.encode(address(crowdtainer), callbackFunction, extraData)
+            );
+        } else if (receivedErrorSelector == Errors.SignatureExpired.selector) {
+            (uint64 current, uint64 expires) = abi.decode(
+                this.getParameters(receivedBytes),
+                (uint64, uint64)
+            );
+            revert Errors.SignatureExpired(current, expires);
+        } else if (receivedErrorSelector == Errors.CallerNotAllowed.selector) {
+            (address expected, address actual) = abi.decode(
+                this.getParameters(receivedBytes),
+                (address, address)
+            );
+            revert Errors.CallerNotAllowed(expected, actual);
+        } else if (
+            receivedErrorSelector ==
+            Errors.InvalidProductNumberAndPrices.selector
+        ) {
+            revert Errors.InvalidProductNumberAndPrices();
+        } else if (
+            receivedErrorSelector == Errors.InvalidNumberOfQuantities.selector
+        ) {
+            revert Errors.InvalidNumberOfQuantities();
+        } else if (
+            receivedErrorSelector == Errors.ReferralInexistent.selector
+        ) {
+            revert Errors.ReferralInexistent();
+        } else if (
+            receivedErrorSelector ==
+            Errors.PurchaseExceedsMaximumTarget.selector
+        ) {
+            (uint256 received, uint256 maximum) = abi.decode(
+                this.getParameters(receivedBytes),
+                (uint256, uint256)
+            );
+            revert Errors.PurchaseExceedsMaximumTarget(received, maximum);
+        } else if (
+            receivedErrorSelector ==
+            Errors.ExceededNumberOfItemsAllowed.selector
+        ) {
+            (uint256 received, uint256 maximum) = abi.decode(
+                this.getParameters(receivedBytes),
+                (uint256, uint256)
+            );
+            revert Errors.ExceededNumberOfItemsAllowed(received, maximum);
+        } else if (receivedErrorSelector == Errors.UserAlreadyJoined.selector) {
+            revert Errors.UserAlreadyJoined();
+        } else if (
+            receivedErrorSelector ==
+            Errors.ReferralDisabledForProvidedCode.selector
+        ) {
+            revert Errors.ReferralDisabledForProvidedCode();
+        } else if (
+            receivedErrorSelector ==
+            Errors.MinimumPurchaseValueForReferralNotMet.selector
+        ) {
+            (uint256 received, uint256 maximum) = abi.decode(
+                this.getParameters(receivedBytes),
+                (uint256, uint256)
+            );
+            revert Errors.MinimumPurchaseValueForReferralNotMet(
+                received,
+                maximum
+            );
+        } else {
+            // other
+            revert Errors.CrowdtainerLowLevelError(receivedBytes);
+        }
+    }
+
     function getSignature(bytes calldata data) external pure returns (bytes4) {
         require(data.length >= 4);
         return bytes4(data[:4]);
     }
 
-    function getParameters(bytes calldata data)
-        external
-        pure
-        returns (bytes calldata)
-    {
+    function getParameters(
+        bytes calldata data
+    ) external pure returns (bytes calldata) {
         require(data.length > 4);
         return data[4:];
     }
@@ -271,13 +328,12 @@ contract Vouchers721 is ERC721Enumerable {
             bytes memory innerExtraData
         ) = abi.decode(extraData, (address, bytes4, bytes));
 
-        assert(innerCallbackFunction == Crowdtainer.joinWithSignature.selector);
-        (
-            address _wallet,
-            uint256[MAX_NUMBER_OF_PRODUCTS] memory _quantities,
-            ,
-
-        ) = abi.decode(innerExtraData, (address, uint256[4], bool, address));
+        require(innerCallbackFunction == Crowdtainer.joinWithSignature.selector);
+    
+        (address _wallet, uint256[] memory _quantities, , ) = abi.decode(
+            innerExtraData,
+            (address, uint256[], bool, address)
+        );
 
         if (msg.sender != _wallet)
             revert Errors.CallerNotAllowed({
@@ -285,16 +341,24 @@ contract Vouchers721 is ERC721Enumerable {
                 actual: msg.sender
             });
 
-        assert(crowdtainer != address(0));
+        require(crowdtainer != address(0));
         uint256 crowdtainerId = idForCrowdtainer[crowdtainer];
 
         if (crowdtainerId == 0) {
             revert Errors.CrowdtainerInexistent();
         }
 
-        assert(crowdtainer.code.length > 0);
+        require(crowdtainer.code.length > 0);
 
-        Crowdtainer(crowdtainer).joinWithSignature(result, innerExtraData);
+        uint256 costForWallet = Crowdtainer(crowdtainer).costForWallet(_wallet);
+        try Crowdtainer(crowdtainer).joinWithSignature(result, innerExtraData) {
+            // internal state invariant after joining
+            require(
+                Crowdtainer(crowdtainer).costForWallet(_wallet) > costForWallet
+            );
+        } catch (bytes memory receivedBytes) {
+            handleJoinError(crowdtainer, receivedBytes);
+        }
 
         uint256 nextAvailableTokenId = ++nextTokenIdForCrowdtainer[
             crowdtainerId
@@ -331,9 +395,32 @@ contract Vouchers721 is ERC721Enumerable {
         address crowdtainerAddress = crowdtainerIdToAddress(
             tokenIdToCrowdtainerId(_tokenId)
         );
-        ICrowdtainer crowdtainer = ICrowdtainer(crowdtainerAddress);
 
-        crowdtainer.leave(msg.sender);
+        try Crowdtainer(crowdtainerAddress).leave(msg.sender) {
+            // internal state invariant after leaving
+            require(
+                Crowdtainer(crowdtainerAddress).costForWallet(msg.sender) == 0
+            );
+        } catch (bytes memory receivedBytes) {
+            bytes4 receivedErrorSelector = this.getSignature(receivedBytes);
+
+            if (
+                receivedErrorSelector ==
+                Errors.CannotLeaveDueAccumulatedReferralCredits.selector
+            ) {
+                revert Errors.CannotLeaveDueAccumulatedReferralCredits();
+            } else if (
+                receivedErrorSelector == Errors.CallerNotAllowed.selector
+            ) {
+                (address expected, address actual) = abi.decode(
+                    this.getParameters(receivedBytes),
+                    (address, address)
+                );
+                revert Errors.CallerNotAllowed(expected, actual);
+            } else {
+                revert Errors.CrowdtainerLowLevelError(receivedBytes);
+            }
+        }
 
         delete tokenIdQuantities[_tokenId];
 
@@ -345,36 +432,31 @@ contract Vouchers721 is ERC721Enumerable {
      * @param _tokenId The encoded voucher token id.
      * @return Token URI String.
      */
-    function tokenURI(uint256 _tokenId)
-        public
-        view
-        override
-        returns (string memory)
-    {
+    function tokenURI(
+        uint256 _tokenId
+    ) public view override returns (string memory) {
         uint256 crowdtainerId = tokenIdToCrowdtainerId(_tokenId);
         address crowdtainerAddress = crowdtainerIdToAddress(crowdtainerId);
 
         ICrowdtainer crowdtainer = ICrowdtainer(crowdtainerAddress);
 
         uint256 numberOfProducts = crowdtainer.numberOfProducts();
+        uint256[] memory unitPricePerType = new uint256[](numberOfProducts);
+
+        for (uint256 i = 0; i < numberOfProducts; i++) {
+            unitPricePerType[i] = crowdtainer.unitPricePerType(i);
+        }
 
         IMetadataService metadataService = IMetadataService(
             metadataServiceForCrowdatinerId[crowdtainerId]
         );
-
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory prices = [
-            crowdtainer.unitPricePerType(0),
-            crowdtainer.unitPricePerType(1),
-            crowdtainer.unitPricePerType(2),
-            crowdtainer.unitPricePerType(3)
-        ];
 
         Metadata memory metadata = Metadata(
             crowdtainerId,
             _tokenId - (tokenIdToCrowdtainerId(_tokenId) * ID_MULTIPLE),
             ownerOf(_tokenId),
             getClaimStatus(_tokenId),
-            prices,
+            unitPricePerType,
             tokenIdQuantities[_tokenId],
             productDescription[crowdtainerId],
             numberOfProducts
@@ -427,11 +509,9 @@ contract Vouchers721 is ERC721Enumerable {
         }
     }
 
-    function tokenIdToCrowdtainerId(uint256 _tokenId)
-        public
-        pure
-        returns (uint256)
-    {
+    function tokenIdToCrowdtainerId(
+        uint256 _tokenId
+    ) public pure returns (uint256) {
         if (_tokenId == 0) {
             revert Errors.InvalidTokenId(_tokenId);
         }
@@ -439,11 +519,9 @@ contract Vouchers721 is ERC721Enumerable {
         return _tokenId / ID_MULTIPLE;
     }
 
-    function crowdtainerIdToAddress(uint256 _crowdtainerId)
-        public
-        view
-        returns (address)
-    {
+    function crowdtainerIdToAddress(
+        uint256 _crowdtainerId
+    ) public view returns (address) {
         address crowdtainerAddress = crowdtainerForId[_crowdtainerId];
         if (crowdtainerAddress == address(0)) {
             revert Errors.CrowdtainerInexistent();

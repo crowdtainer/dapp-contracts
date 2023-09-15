@@ -33,7 +33,7 @@ library Errors {
     error UnauthorizedTransfer();
     // @notice: Insufficient balance.
     error InsufficientBalance();
-    // @notice: Can't initialize with all their prices set to zero.
+    // @notice: Quantities input length doesn't match number of available products.
     error InvalidProductNumberAndPrices();
     // @notice: Can't make transfers in given state.
     error TransferNotAllowed(address crowdtainer, CrowdtainerState state);
@@ -56,6 +56,8 @@ library Errors {
     error SignatureExpired(uint64 current, uint64 expires);
     error NonceAlreadyUsed(address wallet, bytes32 nonce);
     error InvalidSignature();
+    // Errors that occur inside external function calls, provided without decoding.
+    error CrowdtainerLowLevelError(bytes reason);
 
     // -----------------------------------------------
     //  Initialization with invalid parameters

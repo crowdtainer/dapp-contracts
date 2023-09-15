@@ -12,14 +12,13 @@ contract CrowdtainerValidLeaveTester is CrowdtainerTest {
 
         uint256 previousBalance = erc20Token.balanceOf(address(bob));
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(0),
-            2,
-            10,
-            0
-        ];
+        uint256[] memory quantities = new uint256[](4);
+        quantities[1] = 2;
+        quantities[2] = 10;
 
-        bob.doJoin(quantities, false, address(0));
+        try bob.doJoin(quantities, false, address(0)) {} catch (bytes memory) {
+            fail();
+        }
 
         uint256 totalCost = quantities[1] * unitPricePerType[1];
         totalCost += quantities[2] * unitPricePerType[2];
@@ -38,12 +37,10 @@ contract CrowdtainerValidLeaveTester is CrowdtainerTest {
         public
     {
         init();
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(1),
-            2,
-            10,
-            0
-        ];
+        uint256[] memory quantities = new uint256[](4);
+        quantities[0] = 1;
+        quantities[1] = 2;
+        quantities[2] = 10;
 
         uint256 totalCost = quantities[0] * unitPricePerType[0];
         totalCost += quantities[1] * unitPricePerType[1];
@@ -69,12 +66,11 @@ contract CrowdtainerValidLeaveTester is CrowdtainerTest {
 
     function testJoinAndLeaveMustHaveAccumulatedRewardsAsZero() public {
         init();
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(1),
-            2,
-            10,
-            0
-        ];
+
+        uint256[] memory quantities = new uint256[](4);
+        quantities[0] = 1;
+        quantities[1] = 2;
+        quantities[2] = 10;
 
         uint256 totalCost = quantities[0] * unitPricePerType[0];
         totalCost += quantities[1] * unitPricePerType[1];
@@ -83,7 +79,9 @@ contract CrowdtainerValidLeaveTester is CrowdtainerTest {
 
         uint256 previousBobBalance = erc20Token.balanceOf(address(bob));
 
-        bob.doJoin(quantities, true, address(0));
+        try bob.doJoin(quantities, true, address(0)) {} catch (bytes memory) {
+            fail();
+        }
 
         // no discount for bob
         assertEq(
@@ -98,7 +96,11 @@ contract CrowdtainerValidLeaveTester is CrowdtainerTest {
         uint256 previousAliceBalance = erc20Token.balanceOf(address(alice));
 
         // alice joins with discount
-        alice.doJoin(quantities, false, address(bob));
+        try alice.doJoin(quantities, false, address(bob)) {} catch (
+            bytes memory
+        ) {
+            fail();
+        }
 
         assertEq(
             erc20Token.balanceOf(address(alice)),
@@ -122,12 +124,11 @@ contract CrowdtainerValidLeaveTester is CrowdtainerTest {
 contract CrowdtainerInvalidLeaveTester is CrowdtainerTest {
     function testFailJoinUsingReferralThenLeaveWithAccumulatedRewards() public {
         init();
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(1),
-            2,
-            10,
-            0
-        ];
+
+        uint256[] memory quantities = new uint256[](4);
+        quantities[0] = 1;
+        quantities[1] = 2;
+        quantities[2] = 10;
 
         uint256 totalCost = quantities[0] * unitPricePerType[0];
         totalCost += quantities[1] * unitPricePerType[1];
@@ -160,7 +161,11 @@ contract CrowdtainerInvalidLeaveTester is CrowdtainerTest {
         // verify that bob received referral credits
         assertEq(crowdtainer.accumulatedRewardsOf(address(bob)), discount);
 
-        bob.doLeave();
+        try bob.doLeave() {} catch (bytes memory) {
+            if (crowdtainer.costForWallet(address(bob)) != 0) {
+                fail();
+            }
+        }
     }
 }
 
@@ -181,7 +186,7 @@ contract LeaveFuzzer is CrowdtainerTest {
 
         uint256 previousAliceBalance = erc20Token.balanceOf(address(alice));
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
+        uint256[] memory quantities = [
             amountA,
             amountB,
             amountC,
@@ -189,7 +194,7 @@ contract LeaveFuzzer is CrowdtainerTest {
         ];
 
         uint256 totalCost = 0;
-        for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
+        for (uint256 i = 0; i < ; i++) {
             totalCost += unitPricePerType[i] * quantities[i];
         }
 
@@ -227,10 +232,10 @@ contract LeaveProver is CrowdtainerTest {
     
         uint256 previousAliceBalance = erc20Token.balanceOf(address(alice));
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [amountA, amountB, amountC];
+        uint256[] memory quantities = [amountA, amountB, amountC];
 
         uint256 totalCost = 0;
-        for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
+        for (uint256 i = 0; i < ; i++) {
             totalCost += unitPricePerType[i] * quantities[i];
         }
 
