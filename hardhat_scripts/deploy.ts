@@ -47,17 +47,15 @@ async function main() {
 
   const [agent] = await ethers.getSigners();
 
-  let arrayOfBigNumbers: [
-    BigNumberish,
-    BigNumberish,
-    BigNumberish,
-    BigNumberish
-  ];
-
-  arrayOfBigNumbers = [parseUnits('10', erc20Decimals),
-                       parseUnits('20', erc20Decimals),
-                       parseUnits('30', erc20Decimals),
-                       parseUnits('40', erc20Decimals)];
+  let arrayOfPrices = new Array<BigNumberish>();
+  arrayOfPrices.push(parseUnits('120', erc20Decimals));
+  arrayOfPrices.push(parseUnits('90', erc20Decimals));
+  arrayOfPrices.push(parseUnits('15', erc20Decimals));
+  arrayOfPrices.push(parseUnits('30', erc20Decimals));
+  arrayOfPrices.push(parseUnits('140', erc20Decimals));
+  arrayOfPrices.push(parseUnits('144', erc20Decimals));
+  arrayOfPrices.push(parseUnits('25', erc20Decimals));
+  arrayOfPrices.push(parseUnits('48', erc20Decimals));
 
   const currentTime = (await ethers.provider.getBlock("latest")).timestamp;
 
@@ -68,7 +66,7 @@ async function main() {
     expireTime: currentTime + 10 + 3601 * 100,
     targetMinimum: parseUnits('1000', erc20Decimals),
     targetMaximum: parseUnits('10000000', erc20Decimals),
-    unitPricePerType: arrayOfBigNumbers,
+    unitPricePerType: arrayOfPrices,
     referralRate: 0,
     referralEligibilityValue: parseUnits('50', erc20Decimals),
     token: coin.address,
@@ -77,7 +75,14 @@ async function main() {
 
   await vouchers721.createCrowdtainer(
     campaignData,
-    ["250g", "500g", "1kg", "2kg"],
+    ["Germany Delivery | 3 Month Subscription | 500g",
+      "Germany Delivery | 3 Month Subscription | 1kg",
+      "Germany Delivery | Single | 500g",
+      "Germany Delivery | Single | 1kg",
+      "Europe Delivery | 3 Month Subscription | 500g",
+      "Europe Delivery | 3 Month Subscription | 1kg",
+      "Europe Delivery | Single | 500g",
+      "Europe Delivery | Single | 1kg"],
     metadataService.address
   );
 

@@ -9,13 +9,7 @@ import {Errors} from "../contracts/Crowdtainer.sol";
 
 interface Cheats {
     // Signs data, (privateKey, digest) => (v, r, s)
-    function sign(uint256, bytes32)
-        external
-        returns (
-            uint8,
-            bytes32,
-            bytes32
-        );
+    function sign(uint256, bytes32) external returns (uint8, bytes32, bytes32);
 }
 
 contract CrowdtainerValidJoinTester is CrowdtainerTest {
@@ -31,12 +25,9 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
 
         uint256 previousBalance = erc20Token.balanceOf(address(bob));
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(0),
-            2,
-            10,
-            0
-        ];
+        uint256[] memory quantities = new uint256[](4);
+        quantities[1] = 2;
+        quantities[2] = 10;
 
         uint64 epochExpiration = uint64(block.timestamp) + uint64(1000); // signature expiration
         bytes32 aliceNonce = keccak256("random");
@@ -76,7 +67,11 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
             address(0)
         );
 
-        bob.doJoinWithSignature(proof, extraData);
+        try bob.doJoinWithSignature(proof, extraData) {} catch (
+            bytes memory
+        ) {
+            fail();
+        }
 
         uint256 totalCost = quantities[1] * unitPricePerType[1];
         totalCost += quantities[2] * unitPricePerType[2];
@@ -93,14 +88,13 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
 
         uint256 previousBalance = erc20Token.balanceOf(address(bob));
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(0),
-            2,
-            10,
-            0
-        ];
+        uint256[] memory quantities = new uint256[](4);
+        quantities[1] = 2;
+        quantities[2] = 10;
 
-        bob.doJoinSimple(quantities);
+        try bob.doJoinSimple(quantities) {} catch (bytes memory) {
+            fail();
+        }
 
         uint256 totalCost = quantities[1] * unitPricePerType[1];
         totalCost += quantities[2] * unitPricePerType[2];
@@ -112,6 +106,11 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
     }
 
     function testSmallPricesAndDiscountsMustSucceed() public {
+        uint256[] memory prices = new uint256[](4);
+        prices[0] = ONE;
+        prices[1] = ONE;
+        prices[2] = ONE;
+        prices[3] = ONE;
         crowdtainer.initialize(
             address(0),
             CampaignData(
@@ -121,7 +120,7 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
                 closingTime,
                 targetMinimum,
                 targetMaximum,
-                [ONE, 0, 0, 0],
+                prices,
                 referralRate,
                 0,
                 address(iERC20Token),
@@ -129,12 +128,8 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
             )
         );
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(1),
-            0,
-            0,
-            0
-        ];
+        uint256[] memory quantities = new uint256[](4);
+        quantities[0] = 1;
 
         bob.doJoin(quantities, true, address(0));
 
@@ -160,12 +155,11 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
 contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
     function testFailUseOwnReferralCode() public {
         init();
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(1),
-            2,
-            10,
-            0
-        ];
+
+        uint256[] memory quantities = new uint256[](4);
+        quantities[0] = 1;
+        quantities[1] = 2;
+        quantities[2] = 10;
 
         // join with enabled referral code
         bob.doJoin(quantities, true, address(0));
@@ -184,12 +178,11 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
 
     function testFailUseOfInvalidReferralCode() public {
         init();
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(1),
-            2,
-            10,
-            0
-        ];
+
+        uint256[] memory quantities = new uint256[](4);
+        quantities[0] = 1;
+        quantities[1] = 2;
+        quantities[2] = 10;
 
         //bob.doJoin(quantities, true, address(0)); // not registered
 
@@ -206,12 +199,11 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
 
     function testFailExceedingNumberOfMaximumItemsPurchased() public {
         init();
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(2),
-            MAX_NUMBER_OF_PURCHASED_ITEMS + 1,
-            10,
-            0
-        ];
+
+        uint256[] memory quantities = new uint256[](4);
+        quantities[0] = 2;
+        quantities[1] = MAX_NUMBER_OF_PURCHASED_ITEMS + 1;
+        quantities[2] = 10;
 
         try alice.doJoin(quantities, false, address(0)) {} catch (
             bytes memory lowLevelData
@@ -226,12 +218,11 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
     }
 
     function testFailPurchaseExceedsMaximumTarget() public {
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
-            uint256(10) * ONE,
-            20 * ONE,
-            25 * ONE,
-            5000 * ONE
-        ];
+        uint256[] memory _unitPricePerType = new uint256[](4);
+        _unitPricePerType[0] = 10 * ONE;
+        _unitPricePerType[1] = 20 * ONE;
+        _unitPricePerType[2] = 25 * ONE;
+        _unitPricePerType[3] = 5000 * ONE;
 
         crowdtainer.initialize(
             address(0),
@@ -250,13 +241,12 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
             )
         );
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities;
-        quantities = [
-            uint256(MAX_NUMBER_OF_PURCHASED_ITEMS),
-            MAX_NUMBER_OF_PURCHASED_ITEMS,
-            MAX_NUMBER_OF_PURCHASED_ITEMS,
-            MAX_NUMBER_OF_PURCHASED_ITEMS
-        ];
+        uint256[] memory quantities = new uint256[](4);
+        _unitPricePerType[0] = MAX_NUMBER_OF_PURCHASED_ITEMS;
+        _unitPricePerType[1] = MAX_NUMBER_OF_PURCHASED_ITEMS;
+        _unitPricePerType[2] = MAX_NUMBER_OF_PURCHASED_ITEMS;
+        _unitPricePerType[3] = MAX_NUMBER_OF_PURCHASED_ITEMS;
+
         try alice.doJoin(quantities, false, address(0)) {} catch (
             bytes memory lowLevelData
         ) {
@@ -272,12 +262,11 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
     function testFailJoinWithReferralEnabledAndTotalCostLowerThanMinimum()
         public
     {
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
-            uint256(10),
-            20,
-            25,
-            50
-        ];
+        uint256[] memory _unitPricePerType = new uint256[](4);
+        _unitPricePerType[0] = 10;
+        _unitPricePerType[1] = 20;
+        _unitPricePerType[2] = 25;
+        _unitPricePerType[3] = 50;
 
         crowdtainer.initialize(
             address(0),
@@ -296,8 +285,9 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
             )
         );
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities;
-        quantities = [uint256(1), 0, 0, 0];
+        uint256[] memory quantities = new uint256[](4);
+        quantities[0] = 1;
+
         try alice.doJoin(quantities, true, address(0)) {} catch (
             bytes memory lowLevelData
         ) {
@@ -314,12 +304,11 @@ contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
 
     function testFailUserJoinWithReferralCodeThatIsNotEnabled() public {
         init();
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(2),
-            MAX_NUMBER_OF_PURCHASED_ITEMS,
-            10,
-            0
-        ];
+
+        uint256[] memory quantities = new uint256[](4);
+        quantities[0] = 2;
+        quantities[1] = MAX_NUMBER_OF_PURCHASED_ITEMS;
+        quantities[2] = 10;
 
         alice.doJoin(quantities, false, address(0));
 
@@ -354,15 +343,13 @@ contract JoinFuzzer is CrowdtainerTest {
 
         uint256 previousAliceBalance = erc20Token.balanceOf(address(alice));
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            amountA,
-            amountB,
-            amountC,
-            0
-        ];
+        uint256[] memory quantities = new uint256[](4);
+        quantities[0] = amountA;
+        quantities[1] = amountB;
+        quantities[2] = amountC;
 
         uint256 totalCost = 0;
-        for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
+        for (uint256 i = 0; i < unitPricePerType.length; i++) {
             totalCost += unitPricePerType[i] * quantities[i];
         }
 
@@ -400,10 +387,10 @@ contract JoinProver is CrowdtainerTest {
     
         uint256 previousAliceBalance = erc20Token.balanceOf(address(alice));
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [amountA, amountB, amountC];
+        uint256[] memory quantities = [amountA, amountB, amountC];
 
         uint256 totalCost = 0;
-        for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
+        for (uint256 i = 0; i < ; i++) {
             totalCost += unitPricePerType[i] * quantities[i];
         }
 

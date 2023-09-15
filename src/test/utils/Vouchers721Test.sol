@@ -23,14 +23,14 @@ contract VoucherParticipant {
 
     function doJoinSimple(
         address _crowdtainerAddress,
-        uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities
+        uint256[] calldata _quantities
     ) public returns (uint256) {
         return vouchers.join(_crowdtainerAddress, _quantities);
     }
 
     function doJoin(
         address _crowdtainerAddress,
-        uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities,
+        uint256[] calldata _quantities,
         bool _enableReferral,
         address _referrer
     ) public returns (uint256) {
@@ -132,14 +132,9 @@ contract VouchersTest is CrowdtainerTestHelpers {
     uint256 internal targetMinimum = 20000 * ONE;
     uint256 internal targetMaximum = 26000 * ONE;
 
-    string[MAX_NUMBER_OF_PRODUCTS] internal productDescription = [
-        "",
-        "",
-        "",
-        ""
-    ];
+    string[] internal productDescription = ["", "", "", ""];
 
-    uint256[MAX_NUMBER_OF_PRODUCTS] internal unitPricePerType = [
+    uint256[] internal unitPricePerType = [
         10 * ONE,
         20 * ONE,
         25 * ONE,
@@ -157,10 +152,9 @@ contract VouchersTest is CrowdtainerTestHelpers {
 
     address internal owner = address(this);
 
-    function createCrowdtainer(address signer)
-        internal
-        returns (address, uint256)
-    {
+    function createCrowdtainer(
+        address signer
+    ) internal returns (address, uint256) {
         uint256 crowdtainerId;
         address crowdtainerAddress;
         (crowdtainerAddress, crowdtainerId) = vouchers.createCrowdtainer({

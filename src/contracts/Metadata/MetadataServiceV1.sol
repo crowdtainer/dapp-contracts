@@ -33,7 +33,7 @@ contract MetadataServiceV1 is IMetadataService {
                 abi.encodePacked(
                     quantities.toString(),
                     unicode"\t",
-                    "  x  ",
+                    "x ",
                     unicode"\t",
                     description,
                     unicode"\t",
@@ -113,7 +113,7 @@ contract MetadataServiceV1 is IMetadataService {
                     '<style>.svgBody {font-family: "Helvetica" }'
                     ".tiny {font-stretch:normal;font-size:0.525624px;line-height:1.25;text-anchor:end;white-space:pre;fill:#f9f9f9;}"
                     ".footer {font-stretch:normal;font-size:7px;line-height:.25;white-space:pre;fill:#f9f9f9;}"
-                    ".small {font-size:0.65px;text-align:start;text-anchor:start;white-space:pre;fill:#f9f9f9;}"
+                    ".small {font-size:0.5px;text-align:start;text-anchor:start;white-space:pre;fill:#f9f9f9;}"
                     ".medium {font-size:0.92px;"
                     "font-family:Helvetica;text-align:end;text-anchor:end;white-space:pre;"
                     "fill:#f9f9f9;}</style>"

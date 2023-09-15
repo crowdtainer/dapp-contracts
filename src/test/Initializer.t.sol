@@ -312,7 +312,7 @@ contract InitializeFuzzer is CrowdtainerTest {
         uint256 _closingTime,
         uint256 _targetMinimum,
         uint256 _targetMaximum,
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType,
+        uint256[] memory _unitPricePerType,
         uint256 _referralRate,
         uint256 _referralEligibilityValue,
         IERC20 _token
@@ -331,7 +331,7 @@ contract InitializeFuzzer is CrowdtainerTest {
         if (_closingTime < _openingTime + SAFETY_TIME_RANGE) return;
 
         // Ensure that there are no prices set to zero
-        for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
+        for (uint256 i = 0; i < _unitPricePerType.length; i++) {
             // @dev Check if number of items isn't beyond the allowed.
             if (_unitPricePerType[i] == 0) return;
         }
@@ -375,7 +375,7 @@ contract InitializeProver is CrowdtainerTest {
         uint256 _expireTime,
         uint256 _targetMinimum,
         uint256 _targetMaximum,
-        uint256[4] memory _unitPricePerType,
+        uint256[] memory _unitPricePerType,
         uint256 _referralRate,
         uint256 _referralEligibilityValue,
         IERC20 _token

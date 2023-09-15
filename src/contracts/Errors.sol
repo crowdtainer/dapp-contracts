@@ -33,7 +33,7 @@ library Errors {
     error UnauthorizedTransfer();
     // @notice: Insufficient balance.
     error InsufficientBalance();
-    // @notice: Can't initialize with all their prices set to zero.
+    // @notice: Quantities input length doesn't match number of available products.
     error InvalidProductNumberAndPrices();
     // @notice: Can't make transfers in given state.
     error TransferNotAllowed(address crowdtainer, CrowdtainerState state);

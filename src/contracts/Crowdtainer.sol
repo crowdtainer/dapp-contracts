@@ -16,7 +16,7 @@ interface AuthorizationGateway {
     function getSignedJoinApproval(
         address crowdtainerAddress,
         address addr,
-        uint256[MAX_NUMBER_OF_PRODUCTS] calldata quantities,
+        uint256[] calldata quantities,
         bool _enableReferral,
         address _referrer
     ) external view returns (bytes memory signature);
@@ -41,7 +41,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     address public owner;
 
     /// @notice The entity or person responsible for the delivery of this crowdtainer project.
-    /// @dev Allowed to call getPaidAndDeliver() and set signers.
+    /// @dev Allowed to call getPaidAndDeliver(), abortProject() and set signer address.
     address public shippingAgent;
 
     /// @notice Maps wallets that joined this Crowdtainer to the values they paid to join.
@@ -82,16 +82,18 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     //  Modifiers
     // -----------------------------------------------
     /**
-     * @dev Throws if msg.sender != owner, except when owner is address(0), in which case no restriction is applied.
+     * @dev If the Crowdtainer contract has an "owner" contract (such as Vouchers721.sol), this modifier will
+     * enforce that only the owner can call this function. If no owner is assigned (is address(0)), then the
+     * restriction is not applied, in which case msg.sender checks are performed by the owner.
      */
-    modifier onlyAddress(address requiredAddress) {
+    modifier onlyOwner() {
         if (owner == address(0)) {
             // This branch means this contract is being used as a stand-alone contract, not managed/owned by a EIP-721/1155 contract
             // E.g.: A Crowdtainer instance interacted directly by an EOA.
             _;
             return;
         }
-        requireAddress(requiredAddress);
+        requireMsgSender(owner);
         _;
     }
 
@@ -115,7 +117,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         require(crowdtainerState == requiredState);
     }
 
-    function requireAddress(address requiredAddress) internal view {
+    function requireMsgSender(address requiredAddress) internal view {
         if (msg.sender != requiredAddress)
             revert Errors.CallerNotAllowed({
                 expected: requiredAddress,
@@ -141,14 +143,14 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         return signer;
     }
 
-    function setSigner(address _signer) external onlyAddress(shippingAgent) {
+    function setSigner(address _signer) external {
+        requireMsgSender(shippingAgent);
         signer = _signer;
         emit SignerChanged(signer);
     }
 
-    function setUrls(
-        string[] memory _urls
-    ) external onlyAddress(shippingAgent) {
+    function setUrls(string[] memory _urls) external {
+        requireMsgSender(shippingAgent);
         urls = _urls;
         emit CCIPURLChanged(urls);
     }
@@ -164,11 +166,9 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     uint256 public targetMinimum;
     /// @notice Amount in ERC20 units after which no further participation is possible.
     uint256 public targetMaximum;
-    /// @notice Number of products/services variations offered by this project.
-    uint256 public numberOfProducts;
     /// @notice The price for each unit type.
     /// @dev The price should be given in the number of smallest unit for precision (e.g 10^18 == 1 DAI).
-    uint256[MAX_NUMBER_OF_PRODUCTS] public unitPricePerType;
+    uint256[] public unitPricePerType;
     /// @notice Half of the value act as a discount for a new participant using an existing referral code, and the other
     /// half is given for the participant making a referral. The former is similar to the 'cash discount device' in stamp era,
     /// while the latter is a reward for contributing to the Crowdtainer by incentivising participation from others.
@@ -202,7 +202,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         uint256 _expireTime,
         uint256 _targetMinimum,
         uint256 _targetMaximum,
-        uint256[MAX_NUMBER_OF_PRODUCTS] _unitPricePerType,
+        uint256[] _unitPricePerType,
         uint256 _referralRate,
         uint256 _referralEligibilityValue,
         string _legalContractURI,
@@ -212,7 +212,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     /// @notice Emmited when a user joins, signalling participation intent.
     event Joined(
         address indexed wallet,
-        uint256[MAX_NUMBER_OF_PRODUCTS] quantities,
+        uint256[] quantities,
         address indexed referrer,
         uint256 finalCost, // @dev with discount applied
         uint256 appliedDiscount,
@@ -278,19 +278,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         if (_campaignData.targetMinimum > _campaignData.targetMaximum)
             revert Errors.MinimumTargetHigherThanMaximum();
 
-        // @dev The first price of zero indicates the end of price list.
-        for (uint256 i = 0; i < MAX_NUMBER_OF_PRODUCTS; i++) {
-            if (_campaignData.unitPricePerType[i] == 0) {
-                break;
-            } else if (_campaignData.unitPricePerType[i] < ONE) {
+        for (uint256 i = 0; i < _campaignData.unitPricePerType.length; i++) {
+            if (_campaignData.unitPricePerType[i] < ONE) {
                 revert Errors.PriceTooLow();
             }
-
-            numberOfProducts++;
-        }
-
-        if (numberOfProducts == 0) {
-            revert Errors.InvalidProductNumberAndPrices();
         }
 
         if (_campaignData.referralRate > SAFETY_MAX_REFERRAL_RATE)
@@ -328,6 +319,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         );
     }
 
+    function numberOfProducts() external view returns (uint256) {
+        return unitPricePerType.length;
+    }
+
     /**
      * @notice Join the Crowdtainer project.
      * @param _wallet The wallet that is joining the Crowdtainer. Must be the msg.sender if Crowdtainer owner is address(0x0).
@@ -336,10 +331,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
      * @dev This method is present to make wallet interactions more friendly, by requiring fewer parameters for projects with referral system disabled.
      * @dev Requires IERC20 permit.
      */
-    function join(
-        address _wallet,
-        uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities
-    ) public {
+    function join(address _wallet, uint256[] calldata _quantities) public {
         join(_wallet, _quantities, false, address(0));
     }
 
@@ -359,12 +351,12 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
      */
     function join(
         address _wallet,
-        uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities,
+        uint256[] calldata _quantities,
         bool _enableReferral,
         address _referrer
     )
         public
-        onlyAddress(owner)
+        onlyOwner
         onlyInState(CrowdtainerState.Funding)
         onlyActive
         nonReentrant
@@ -388,7 +380,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         }
 
         if (owner == address(0)) {
-            requireAddress(_wallet);
+            requireMsgSender(_wallet);
         }
 
         _join(_wallet, _quantities, _enableReferral, _referrer);
@@ -406,7 +398,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         bytes calldata extraData // retained by client, passed for verification in this function
     )
         external
-        onlyAddress(owner)
+        onlyOwner
         onlyInState(CrowdtainerState.Funding)
         onlyActive
         nonReentrant
@@ -416,13 +408,17 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         // decode extraData provided by client
         (
             address _wallet,
-            uint256[MAX_NUMBER_OF_PRODUCTS] memory _quantities,
+            uint256[] memory _quantities,
             bool _enableReferral,
             address _referrer
-        ) = abi.decode(extraData, (address, uint256[4], bool, address));
+        ) = abi.decode(extraData, (address, uint256[], bool, address));
+
+        if (_quantities.length != unitPricePerType.length) {
+            revert Errors.InvalidProductNumberAndPrices();
+        }
 
         if (owner == address(0)) {
-            requireAddress(_wallet);
+            requireMsgSender(_wallet);
         }
 
         // Get signature from server response
@@ -492,11 +488,15 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
 
     function _join(
         address _wallet,
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _quantities,
+        uint256[] memory _quantities,
         bool _enableReferral,
         address _referrer
     ) internal {
         enableReferral[_wallet] = _enableReferral;
+
+        if (_quantities.length != unitPricePerType.length) {
+            revert Errors.InvalidProductNumberAndPrices();
+        }
 
         // @dev Check if wallet didn't already join
         if (costForWallet[_wallet] != 0) revert Errors.UserAlreadyJoined();
@@ -504,7 +504,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         // @dev Calculate cost
         uint256 finalCost;
 
-        for (uint256 i = 0; i < numberOfProducts; i++) {
+        for (uint256 i = 0; i < _quantities.length; i++) {
             if (_quantities[i] > MAX_NUMBER_OF_PURCHASED_ITEMS)
                 revert Errors.ExceededNumberOfItemsAllowed({
                     received: _quantities[i],
@@ -596,13 +596,13 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         address _wallet
     )
         external
-        onlyAddress(owner)
+        onlyOwner
         onlyInState(CrowdtainerState.Funding)
         onlyActive
         nonReentrant
     {
         if (owner == address(0)) {
-            requireAddress(_wallet);
+            requireMsgSender(_wallet);
         }
 
         uint256 withdrawalTotal = costForWallet[_wallet];
@@ -640,10 +640,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
      */
     function getPaidAndDeliver()
         public
-        onlyAddress(shippingAgent)
         onlyInState(CrowdtainerState.Funding)
         nonReentrant
     {
+        requireMsgSender(shippingAgent);
         uint256 availableForAgent = totalValueRaised - accumulatedRewards;
 
         if (totalValueRaised < targetMinimum) {
@@ -667,10 +667,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
      */
     function abortProject()
         public
-        onlyAddress(shippingAgent)
         onlyInState(CrowdtainerState.Funding)
         nonReentrant
     {
+        requireMsgSender(shippingAgent);
         crowdtainerState = CrowdtainerState.Failed;
     }
 
@@ -701,13 +701,13 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         // Reaching this line means the project failed either due expiration or explicit transition from `abortProject()`.
         uint256 withdrawalTotal = costForWallet[msg.sender];
 
-        costForWallet[msg.sender] = 0;
-        discountForUser[msg.sender] = 0;
-        referrerOfReferee[msg.sender] = address(0);
-
         if (withdrawalTotal == 0) {
             revert Errors.InsufficientBalance();
         }
+
+        costForWallet[msg.sender] = 0;
+        discountForUser[msg.sender] = 0;
+        referrerOfReferee[msg.sender] = address(0);
 
         // @dev transfer the owed funds from this contract back to the user.
         token.safeTransferFrom(address(this), msg.sender, withdrawalTotal);

@@ -18,14 +18,14 @@ contract Participant {
         token = IERC20(_token);
     }
 
-    function doJoinSimple(uint256[MAX_NUMBER_OF_PRODUCTS] calldata quantities)
+    function doJoinSimple(uint256[] calldata quantities)
         public
     {
         crowdtainer.join(address(this), quantities);
     }
 
     function doJoin(
-        uint256[MAX_NUMBER_OF_PRODUCTS] calldata quantities,
+        uint256[] calldata quantities,
         bool enableReferral,
         address referrer
     ) public {
@@ -80,7 +80,7 @@ contract ShippingAgent {
 
     // Only for testing, function not allowed for shippingAgent
     function doJoin(
-        uint256[MAX_NUMBER_OF_PRODUCTS] calldata quantities,
+        uint256[] calldata quantities,
         bool enableReferral,
         address referrer
     ) public {
@@ -105,7 +105,7 @@ contract CrowdtainerTest is CrowdtainerTestHelpers {
     uint256 internal targetMinimum = 20000 * ONE;
     uint256 internal targetMaximum = 26000 * ONE;
 
-    uint256[MAX_NUMBER_OF_PRODUCTS] internal unitPricePerType = [
+    uint256[] internal unitPricePerType = [
         10 * ONE,
         20 * ONE,
         25 * ONE,

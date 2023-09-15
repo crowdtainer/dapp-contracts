@@ -10,12 +10,12 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
     function testGetPaidAndDeliverCalledByShippingAgentMustSucceed() public {
         // Create a crowdtainer where targetMinimum is small enough that a single user could
         // make the project succeed with a single join() call.
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
-            uint256(100) * ONE,
-            200 * ONE,
-            300 * ONE,
-            0
-        ];
+        uint256[] memory _unitPricePerType = new uint256[](4);
+        _unitPricePerType[0] = 100 * ONE;
+        _unitPricePerType[1] = 200 * ONE;
+        _unitPricePerType[2] = 300 * ONE;
+        _unitPricePerType[3] = 1 * ONE;
+
         uint256 _targetMinimum = 3000 * ONE;
         uint256 _targetMaximum = 4000 * ONE;
         crowdtainer.initialize(
@@ -36,25 +36,26 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
         );
 
         // one user buys enough to succeed the crowdtainer project
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(0),
-            0,
-            10,
-            0
-        ];
-        alice.doJoin(quantities, false, address(0));
+        uint256[] memory quantities = new uint256[](4);
+        quantities[2] = 10;
+        try alice.doJoin(quantities, false, address(0)) {} catch (
+            bytes memory
+        ) {
+            fail();
+        }
 
-        agent.doGetPaidAndDeliver();
+        try agent.doGetPaidAndDeliver() {} catch (bytes memory) {
+            fail();
+        }
         assert(crowdtainer.crowdtainerState() == CrowdtainerState.Delivery);
     }
 
     function testFailclaimFundsOnSuccessfulProject() public {
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
-            uint256(100) * ONE,
-            200 * ONE,
-            300 * ONE,
-            0
-        ];
+        uint256[] memory _unitPricePerType = new uint256[](4);
+        _unitPricePerType[0] = 100 * ONE;
+        _unitPricePerType[1] = 200 * ONE;
+        _unitPricePerType[2] = 300 * ONE;
+
         uint256 _targetMinimum = 3000 * ONE;
         uint256 _targetMaximum = 4000 * ONE;
         crowdtainer.initialize(
@@ -75,12 +76,8 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
         );
 
         // one user buys enough to succeed the crowdtainer project
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(0),
-            0,
-            10,
-            0
-        ];
+        uint256[] memory quantities = new uint256[](4);
+        quantities[2] = 10;
         alice.doJoin(quantities, false, address(0));
 
         agent.doGetPaidAndDeliver();
@@ -96,12 +93,11 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
     }
 
     function testFailGetPaidAndDeliverCalledBeforeTargetReached() public {
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
-            uint256(100) * ONE,
-            200 * ONE,
-            300 * ONE,
-            0
-        ];
+        uint256[] memory _unitPricePerType = new uint256[](4);
+        _unitPricePerType[0] = 100 * ONE;
+        _unitPricePerType[1] = 200 * ONE;
+        _unitPricePerType[2] = 300 * ONE;
+
         uint256 _targetMinimum = 3000 * ONE;
         uint256 _targetMaximum = 4000 * ONE;
         crowdtainer.initialize(
@@ -121,15 +117,12 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
             )
         );
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(0),
-            0,
-            9,
-            0
-        ];
+        uint256[] memory quantities = new uint256[](4);
+        quantities[2] = 9;
         alice.doJoin(quantities, true, address(0));
 
-        quantities = [uint256(3), 0, 0, 0];
+        quantities[2] = 0;
+        quantities[0] = 3;
         bob.doJoin(quantities, false, address(alice));
 
         try agent.doGetPaidAndDeliver() {} catch (bytes memory lowLevelData) {
@@ -142,12 +135,11 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
     }
 
     function testFailGetPaidAndDeliverCalledBeforeActivePeriod() public {
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
-            uint256(100) * ONE,
-            200 * ONE,
-            300 * ONE,
-            0
-        ];
+        uint256[] memory _unitPricePerType = new uint256[](4);
+        _unitPricePerType[0] = 100 * ONE;
+        _unitPricePerType[1] = 200 * ONE;
+        _unitPricePerType[2] = 300 * ONE;
+
         uint256 _targetMinimum = 3000 * ONE;
         uint256 _targetMaximum = 4000 * ONE;
         crowdtainer.initialize(
@@ -167,12 +159,9 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
             )
         );
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(0),
-            0,
-            9,
-            0
-        ];
+        uint256[] memory quantities = new uint256[](4);
+        quantities[2] = 9;
+
         alice.doJoin(quantities, false, address(0));
 
         // go back in time just for testing (though in practice small shifts backward in blocktime are possible)
@@ -188,12 +177,11 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
     }
 
     function testFailGetPaidAndDeliverCalledOnFailedAndExpiredProject() public {
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
-            uint256(100) * ONE,
-            200 * ONE,
-            300 * ONE,
-            0
-        ];
+        uint256[] memory _unitPricePerType = new uint256[](4);
+        _unitPricePerType[0] = 100 * ONE;
+        _unitPricePerType[1] = 200 * ONE;
+        _unitPricePerType[2] = 300 * ONE;
+
         uint256 _targetMinimum = 3000 * ONE;
         uint256 _targetMaximum = 4000 * ONE;
         crowdtainer.initialize(
@@ -213,12 +201,9 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
             )
         );
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(0),
-            0,
-            9,
-            0
-        ];
+        uint256[] memory quantities = new uint256[](4);
+        quantities[2] = 9;
+
         alice.doJoin(quantities, false, address(0));
 
         hevm.warp(closingTime + 1 hours);
@@ -234,15 +219,48 @@ contract CrowdtainerStateTransitionTester is CrowdtainerTest {
 }
 
 contract CrowdtainerAuthorizationTester is CrowdtainerTest {
-    function testGetPaidAndDeliverCalledByNonAgentMustFail() public {
-        bool failed; // @dev: specific error must be thrown
+    function testFailGetPaidAndDeliverCalledByNonAgent() public {
+        // Create a crowdtainer where targetMinimum is small enough that a single user could
+        // make the project succeed with a single join() call.
+        uint256[] memory _unitPricePerType = new uint256[](4);
+        _unitPricePerType[0] = 100 * ONE;
+        _unitPricePerType[1] = 200 * ONE;
+        _unitPricePerType[2] = 300 * ONE;
+        _unitPricePerType[3] = 1 * ONE;
+
+        uint256 _targetMinimum = 3000 * ONE;
+        uint256 _targetMaximum = 4000 * ONE;
+        crowdtainer.initialize(
+            address(0),
+            CampaignData(
+                address(agent),
+                address(0),
+                openingTime,
+                closingTime,
+                _targetMinimum,
+                _targetMaximum,
+                _unitPricePerType,
+                referralRate,
+                referralEligibilityValue,
+                address(iERC20Token),
+                ""
+            )
+        );
+
+        // one user buys enough to succeed the crowdtainer project
+        uint256[] memory quantities = new uint256[](4);
+        quantities[2] = 10;
+        alice.doJoin(quantities, false, address(0));
+
         try bob.doGetPaidAndDeliver() {} catch (bytes memory lowLevelData) {
-            failed = this.isEqualSignature(
+            bool errorMatch = this.isEqualSignature(
                 makeError(Errors.CallerNotAllowed.selector),
                 lowLevelData
             );
+            if (errorMatch) {
+                fail();
+            }
         }
-        if (failed) fail();
     }
 }
 

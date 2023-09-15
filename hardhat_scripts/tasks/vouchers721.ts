@@ -23,17 +23,16 @@ task(
 
     const erc20Decimals = await coin.decimals();
 
-    let arrayOfBigNumbers: [
-      BigNumberish,
-      BigNumberish,
-      BigNumberish,
-      BigNumberish
-    ];
+    let arrayOfPrices = new Array<BigNumberish>();
 
-    arrayOfBigNumbers = [parseUnits('10', erc20Decimals),
-    parseUnits('20', erc20Decimals),
-    parseUnits('30', erc20Decimals),
-    parseUnits('40', erc20Decimals)];
+    arrayOfPrices.push(parseUnits('120', erc20Decimals));
+    arrayOfPrices.push(parseUnits('90', erc20Decimals));
+    arrayOfPrices.push(parseUnits('15', erc20Decimals));
+    arrayOfPrices.push(parseUnits('30', erc20Decimals));
+    arrayOfPrices.push(parseUnits('140', erc20Decimals));
+    arrayOfPrices.push(parseUnits('144', erc20Decimals));
+    arrayOfPrices.push(parseUnits('25', erc20Decimals));
+    arrayOfPrices.push(parseUnits('48', erc20Decimals));
 
     const currentTime = (await ethers.provider.getBlock("latest")).timestamp;
 
@@ -43,20 +42,29 @@ task(
     const campaignData = {
       shippingAgent: agent,
       signer: agent, // to disable EIP-3668 use 0x0000000000000000000000000000000000000000
+      // signer: '0x0000000000000000000000000000000000000000',
       openingTime: currentTime + 10,
-      expireTime: currentTime + 20*60,
+      expireTime: currentTime + 20 * 60,
       targetMinimum: parseUnits('1000', erc20Decimals),
       targetMaximum: parseUnits('10000000', erc20Decimals),
-      unitPricePerType: arrayOfBigNumbers,
-      referralRate: 0,
+      unitPricePerType: arrayOfPrices,
+      referralRate: 20,
       referralEligibilityValue: parseUnits('0', erc20Decimals),
       token: coin.address,
       legalContractURI: ""
     };
 
     await vouchers721.createCrowdtainer(
-      campaignData,
-      ["250g", "500g", "1kg", "2kg"],
+      campaignData, [
+      "Germany Delivery | 3 Month Subscription | 500g",
+      "Germany Delivery | 3 Month Subscription | 1kg",
+      "Germany Delivery | Single | 500g",
+      "Germany Delivery | Single | 1kg",
+      "Europe Delivery | 3 Month Subscription | 500g",
+      "Europe Delivery | 3 Month Subscription | 1kg",
+      "Europe Delivery | Single | 500g",
+      "Europe Delivery | Single | 1kg"
+    ],
       metadataService.address
     );
 
@@ -83,7 +91,7 @@ task("join", "Join a Crowdtainer with the given parameters.")
     console.log(`Crowdtainer address: ${crowdtainerAddress}`);
 
     let quantity: [BigNumberish, BigNumberish, BigNumberish, BigNumberish] = [quantities, quantities, quantities, quantities];
-    await vouchers721.connect(sender)["join(address,uint256[4])"](crowdtainerAddress, quantity);
+    await vouchers721.connect(sender)["join(address,uint256[])"](crowdtainerAddress, quantity);
 
     console.log(`${sender.address} has joined crowdtainerId ${crowdtainerid}`);
   });

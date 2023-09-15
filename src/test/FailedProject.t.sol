@@ -13,12 +13,9 @@ contract CrowdtainerValidProjectTerminationTester is CrowdtainerTest {
 
         uint256 previousBalance = erc20Token.balanceOf(address(bob));
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(0),
-            2,
-            10,
-            0
-        ];
+        uint256[] memory quantities = new uint256[](4);
+        quantities[1] = 2;
+        quantities[2] = 10;
 
         bob.doJoin(quantities, false, address(0));
 
@@ -44,12 +41,9 @@ contract CrowdtainerValidProjectTerminationTester is CrowdtainerTest {
 
         uint256 previousBalance = erc20Token.balanceOf(address(bob));
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(0),
-            2,
-            0,
-            0
-        ];
+        uint256[] memory quantities = new uint256[](4);
+        quantities[1] = 2;
+
         uint256 totalCost = quantities[1] * unitPricePerType[1];
 
         bob.doJoin(quantities, false, address(0));
@@ -73,12 +67,9 @@ contract CrowdtainerValidProjectTerminationTester is CrowdtainerTest {
 
         uint256 previousBalance = erc20Token.balanceOf(address(bob));
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(0),
-            2,
-            0,
-            0
-        ];
+        uint256[] memory quantities = new uint256[](4);
+        quantities[1] = 2;
+
         uint256 totalCost = quantities[1] * unitPricePerType[1];
 
         bob.doJoin(quantities, false, address(0));
@@ -101,12 +92,9 @@ contract CrowdtainerValidProjectTerminationTester is CrowdtainerTest {
 
         uint256 previousBalance = erc20Token.balanceOf(address(bob));
 
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(0),
-            2,
-            0,
-            0
-        ];
+        uint256[] memory quantities = new uint256[](4);
+        quantities[1] = 2;
+
         uint256 totalCost = quantities[1] * unitPricePerType[1];
 
         bob.doJoin(quantities, false, address(0));
@@ -118,7 +106,9 @@ contract CrowdtainerValidProjectTerminationTester is CrowdtainerTest {
 
         hevm.warp(closingTime + 1 seconds);
 
-        bob.doClaimFunds();
+        try bob.doClaimFunds() {} catch (bytes memory) {
+            fail();
+        }
 
         assertEq(erc20Token.balanceOf(address(bob)), previousBalance);
     }
@@ -128,14 +118,15 @@ contract CrowdtainerInvalidProjectTerminationTester is CrowdtainerTest {
     function testFailAbortDuringDeliveryPhase() public {
         // Create a crowdtainer where targetMinimum is small enough that a single user could
         // make the project succeed with a single join() call.
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory _unitPricePerType = [
-            uint256(100) * ONE,
-            200 * ONE,
-            300 * ONE,
-            0
-        ];
+        uint256[] memory _unitPricePerType = new uint256[](4);
+        _unitPricePerType[0] = 100 * ONE;
+        _unitPricePerType[1] = 200 * ONE;
+        _unitPricePerType[2] = 300 * ONE;
+        _unitPricePerType[3] = ONE;
+
         uint256 _targetMinimum = 3000 * ONE;
         uint256 _targetMaximum = 4000 * ONE;
+
         crowdtainer.initialize(
             address(0),
             CampaignData(
@@ -154,23 +145,22 @@ contract CrowdtainerInvalidProjectTerminationTester is CrowdtainerTest {
         );
 
         // one user buys enough to succeed the crowdtainer project
-        uint256[MAX_NUMBER_OF_PRODUCTS] memory quantities = [
-            uint256(0),
-            0,
-            10,
-            0
-        ];
+        uint256[] memory quantities = new uint256[](4);
+        quantities[2] = 10;
+
         alice.doJoin(quantities, false, address(0));
 
         agent.doGetPaidAndDeliver();
         assert(crowdtainer.crowdtainerState() == CrowdtainerState.Delivery);
 
         try agent.doAbortProject() {} catch (bytes memory lowLevelData) {
-            bool failed = this.isEqualSignature(
+            bool errorMatch = this.isEqualSignature(
                 makeError(Errors.InvalidOperationFor.selector),
                 lowLevelData
             );
-            if (failed) fail();
+            if (errorMatch) {
+                fail();
+            }
         }
     }
 }
