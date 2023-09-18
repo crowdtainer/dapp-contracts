@@ -59,7 +59,7 @@ contract Vouchers721 is ERC721Enumerable {
     // -----------------------------------------------
 
     // @note Emmited when this contract is created.
-    event Vouchers721Created(address indexed crowdtainer);
+    event Vouchers721Created(address indexed crowdtainer); // @audit-issue INFO change this variable name
 
     // @note Emmited when a new Crowdtainer is deployed and initialized by this contract.
     event CrowdtainerDeployed(
@@ -115,7 +115,7 @@ contract Vouchers721 is ERC721Enumerable {
             ] = _metadataService;
             emit CrowdtainerDeployed(address(crowdtainer), crowdtainerCount);
 
-            return (address(crowdtainer), crowdtainerCount);
+            return (address(crowdtainer), crowdtainerCount); // @audit Why return this data?
         } catch (bytes memory receivedBytes) {
             _bubbleRevert(receivedBytes);
         }
@@ -166,7 +166,7 @@ contract Vouchers721 is ERC721Enumerable {
         ICrowdtainer crowdtainer = ICrowdtainer(_crowdtainer);
 
         try
-            crowdtainer.join(
+            crowdtainer.join( // @audit-issue reentry opportunity here.
                 msg.sender,
                 _quantities,
                 _enableReferral,
@@ -196,7 +196,7 @@ contract Vouchers721 is ERC721Enumerable {
         tokenIdQuantities[newTokenID] = _quantities;
 
         // Mint the voucher to the respective owner
-        _safeMint(msg.sender, newTokenID);
+        _safeMint(msg.sender, newTokenID); // @audit onERC721Received called here.
 
         return newTokenID;
     }
@@ -314,7 +314,7 @@ contract Vouchers721 is ERC721Enumerable {
      * @param extraData ABI encoded (address, bytes4, bytes), 3rd parameter contains encoded values for Crowdtainer._join() method.
      *
      * @dev Requires IRC20 permit.
-     * @dev This function is called automatically by EIP-3668-compliant clients.
+     * @dev This function is called automatically by EIP-3668-compliant clients. // @audit what do you mean automatically? below it requires msg.sender == wallet users must sign it. Or is _wallet == crowdtainer.signer == msg.sender?
      */
     function joinWithSignature(
         bytes calldata result, // off-chain signed payload
@@ -344,13 +344,14 @@ contract Vouchers721 is ERC721Enumerable {
 
         require(crowdtainer.code.length > 0);
 
+        // @audit GAS why get costForWallet, it must be 0 otherwise Crowdtainer._join reverts.
         uint256 costForWallet = Crowdtainer(crowdtainer).costForWallet(_wallet);
 
         try Crowdtainer(crowdtainer).joinWithSignature(result, innerExtraData) {
             // internal state invariant after joining
             assert(
                 Crowdtainer(crowdtainer).costForWallet(_wallet) > costForWallet
-            );
+            ); // @audit don't use assert in prod, use require or if + revert. Asserts only for FV.
         } catch (bytes memory receivedBytes) {
             handleJoinError(crowdtainer, receivedBytes);
         }
@@ -372,7 +373,7 @@ contract Vouchers721 is ERC721Enumerable {
         tokenIdQuantities[newTokenID] = _quantities;
 
         // Mint the voucher to the respective owner
-        _safeMint(_wallet, newTokenID);
+        _safeMint(_wallet, newTokenID); // @audit reentry opportunity.
 
         return newTokenID;
     }
@@ -508,6 +509,8 @@ contract Vouchers721 is ERC721Enumerable {
 
         bool mintOrBurn = from == address(0) || to == address(0);
         if (mintOrBurn) return;
+
+        // @audit can we play with readonly reentry -> crowdtainerState, crowdtainerIdToAddress, tokenIdToCrowdtainerId? below?
 
         // Transfers are only allowed after funding either succeeded or failed.
         address crowdtainerAddress = crowdtainerIdToAddress(

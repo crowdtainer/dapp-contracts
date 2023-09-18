@@ -81,6 +81,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
 
     // @audit-issue apparently missing disable initialization in constructor (see Initializable.sol definition). Try and initialize the implementation again
 
+    // @audit TODO: this modifier should only be used to check if the crowdtainer is being used with vouchers i.e. to check the owner. Check if it is used to verify any other types of addresses besides owner.
+
     // -----------------------------------------------
     //  Modifiers
     // -----------------------------------------------
@@ -96,7 +98,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             _;
             return;
         }
-        requireMsgSender(owner);
+        requireMsgSenderEquals(requiredAddress);
         _;
     }
 
@@ -117,16 +119,16 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     function requireState(CrowdtainerState requiredState) internal view {
         if (crowdtainerState != requiredState)
             revert Errors.InvalidOperationFor({state: crowdtainerState});
-        require(crowdtainerState == requiredState);
+        require(crowdtainerState == requiredState); // @audit-issue GAS redundant call, remove.
     }
 
-    function requireMsgSender(address requiredAddress) internal view {
+    function requireMsgSenderEquals(address requiredAddress) internal view {
         if (msg.sender != requiredAddress)
             revert Errors.CallerNotAllowed({
                 expected: requiredAddress,
                 actual: msg.sender
             });
-        require(msg.sender == requiredAddress);
+        require(msg.sender == requiredAddress); // @audit-issue GAS redundant call, remove.
     }
 
     function requireActive() internal view {
@@ -237,6 +239,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     // Contract functions
     // -----------------------------------------------
 
+    // @audit Does anything enforce initialization of implementation contract, for the
+    // case where it is used as implementation for delegatecalls? What happens if it is
+    // not initialized?
+
     /**
      * @notice Initializes a Crowdtainer.
      * @param _owner The contract owning this Crowdtainer instance, if any (address(0x0) for no owner).
@@ -308,6 +314,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         legalContractURI = _campaignData.legalContractURI;
         oneUnit = _oneUnit;
 
+        // @audit-issue LOW since we don't use _campaignData.openingTime == block.timestamp, it can
+        // be in the future. If this happens, getPaidAndDeliver, abortProject be called run before the crowdtainer ran.
         crowdtainerState = CrowdtainerState.Funding;
 
         emit CrowdtainerInitialized(
@@ -337,7 +345,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
      * @dev This method is present to make wallet interactions more friendly, by requiring fewer parameters for projects with referral system disabled.
      * @dev Requires IERC20 permit.
      */
-    function join(address _wallet, uint256[] calldata _quantities) public {
+    function join(
+        address _wallet,
+        uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities
+    ) public { // @audit-issue why does this need to be public?
         join(_wallet, _quantities, false, address(0));
     }
 
@@ -348,10 +359,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
      * @param _enableReferral Informs whether the user would like to be eligible to collect rewards for being referred.
      * @param _referrer Optional referral code to be used to claim a discount.
      *
-     * @dev Requires IERC20 permit.
+     * @dev Requires IERC20 permit. // @audit no it doesn't?
      * @dev referrer is the wallet address of a previous participant.
      * @dev if `enableReferral` is true, and the user decides to leave after the wallet has been used to claim a discount,
-     *       then the full value can't be claimed if deciding to leave the project.
+     *       then the full value can't be claimed if deciding to leave the project. // @audit TODO check ways to break this
      * @dev A same user is not allowed to increase the order amounts (i.e., by calling join multiple times).
      *      To 'update' an order, the user must first 'leave' then join again with the new values.
      */
@@ -364,13 +375,16 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         public
         onlyOwner
         onlyInState(CrowdtainerState.Funding)
-        onlyActive
+        onlyActive // @audit can be called before opening time
         nonReentrant
     {
+        // @audit-issue can we call this from an attack contract, catch the revert with a
+        // try catch and then call the callbackfunction with the parameters of the revert +
+        // arbitrary (potentially malicious) data?
         if (signer != address(0)) {
             // See https://eips.ethereum.org/EIPS/eip-3668
             revert Errors.OffchainLookup(
-                address(this), // sender
+                address(this), // sender // @audit-issue why is this commented as sender when its not?
                 urls, // gateway urls
                 abi.encodeWithSelector(
                     AuthorizationGateway.getSignedJoinApproval.selector,
@@ -386,7 +400,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         }
 
         if (owner == address(0)) {
-            requireMsgSender(_wallet);
+            requireMsgSenderEquals(_wallet); // require msg.sender == _wallet
         }
 
         _join(_wallet, _quantities, _enableReferral, _referrer);
@@ -406,9 +420,12 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         external
         onlyOwner
         onlyInState(CrowdtainerState.Funding)
-        onlyActive
+        onlyActive // @audit can be called before opening time
         nonReentrant
     {
+        // @audit security portion of the eip3668 says extraData is where it should receive
+        // data for verification of authenticity. Here it seems to be flipped, signature is in
+        // result instead of extraData, and extraData is the actual data.
         require(signer != address(0));
 
         // decode extraData provided by client
@@ -424,7 +441,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         }
 
         if (owner == address(0)) {
-            requireMsgSender(_wallet);
+            requireMsgSenderEquals(_wallet);
         }
 
         // Get signature from server response
@@ -470,14 +487,14 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         bytes32 nonce,
         bytes memory signature
     ) internal view returns (bool) {
-        address recoveredPublicKey = keccak256(
+        address recoveredAccount = keccak256(
             abi.encodePacked("\x19Ethereum Signed Message:\n32", messageDigest)
         ).recover(signature);
 
-        if (recoveredPublicKey != expectedPublicKey) {
+        if (recoveredAccount != expectedAccount) {
             revert Errors.InvalidSignature();
         }
-        if (contractAddress != address(this)) {
+        if (contractAddress != address(this)) { // @audit Can this break due to proxies and/or delegatecall?
             revert Errors.InvalidSignature();
         }
 
@@ -485,8 +502,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             revert Errors.SignatureExpired(uint64(block.timestamp), expiration);
         }
 
-        if (usedNonces[expectedPublicKey][nonce]) {
-            revert Errors.NonceAlreadyUsed(expectedPublicKey, nonce);
+        if (usedNonces[expectedAccount][nonce]) {
+            revert Errors.NonceAlreadyUsed(expectedAccount, nonce);
         }
 
         return true;
@@ -504,6 +521,9 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             revert Errors.InvalidProductNumberAndPrices();
         }
 
+        // @audit can we join and make costForWallet == 0 to pass this check and
+        // break things?
+
         // @dev Check if wallet didn't already join
         if (costForWallet[_wallet] != 0) revert Errors.UserAlreadyJoined();
 
@@ -519,6 +539,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
 
             finalCost += unitPricePerType[i] * _quantities[i];
         }
+
+        // @audit 1 USDC is still quite low. Could this be used to perform an attack? DoS? Dust? Phishing?
 
         if (finalCost < oneUnit) {
             revert Errors.InvalidNumberOfQuantities();
@@ -572,6 +594,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         // increase total value accumulated by this contract
         totalValueRaised += finalCost;
 
+        // @audit-issue MED adversary can prevent reaching target maximum by
+        // frontrunning all joins such that the below call reverts. To fix this
+        // consider adding a "buy as much as possible" boolean, so the amount purchased
+        // doesn't need to be exact.
         // @dev Check if the purchase order doesn't exceed the goal's `targetMaximum`.
         if (totalValueRaised > targetMaximum)
             revert Errors.PurchaseExceedsMaximumTarget({
@@ -580,7 +606,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             });
 
         // @dev transfer required funds into this contract
-        token.safeTransferFrom(_wallet, address(this), finalCost);
+        token.safeTransferFrom(_wallet, address(this), finalCost); // @audit-info Check this
 
         emit Joined(
             _wallet,
@@ -607,8 +633,9 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         onlyActive
         nonReentrant
     {
+        // @audit issue can call this even if user never joined or costForWallet == 0.
         if (owner == address(0)) {
-            requireMsgSender(_wallet);
+            requireMsgSenderEquals(_wallet);
         }
 
         uint256 withdrawalTotal = costForWallet[_wallet];
@@ -624,16 +651,19 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
          *      E.g.: A user uses two different wallets, the first joins to generate a discount code for him/herself to be used in
          *      the second wallet, and then immediatelly leaves the pool from the first wallet, leaving the second wallet with a full discount. */
         if (accumulatedRewardsOf[_wallet] > 0) {
+            // @audit what if the user uses 2 wallets or makes accumulatedRewardsOf be just above 0?
             revert Errors.CannotLeaveDueAccumulatedReferralCredits();
         }
 
         totalValueRaised -= costForWallet[_wallet];
-        accumulatedRewards -= discountForUser[_wallet];
+        accumulatedRewards -= discountForUser[_wallet]; // @audit-issue HIGH this should be inside the if above (if referrer != address(0)), similar to how it is set inside the if in _join.
 
         costForWallet[_wallet] = 0;
         discountForUser[_wallet] = 0;
         referrerOfReferee[_wallet] = address(0);
         enableReferral[_wallet] = false;
+
+        // @audit-issue HIGH-1 Any implications of using safeTransferFrom to transfer tokens from "this" contract to some other wallet (in other words, where a safeTransfer or just transfer would suffice)? Doesn't this decrease the allowance and potentially DoS something? See https://github.com/code-423n4/2022-12-backed-findings/issues/110.
 
         // @dev transfer the owed funds from this contract back to the user.
         token.safeTransfer(_wallet, withdrawalTotal);
@@ -647,7 +677,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     function getPaidAndDeliver()
         public
         onlyInState(CrowdtainerState.Funding)
-        nonReentrant
+        nonReentrant // @audit missing onlyActive. Is this a problem?
     {
         requireMsgSender(shippingAgent);
         uint256 availableForAgent = totalValueRaised - accumulatedRewards;
@@ -680,6 +710,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         crowdtainerState = CrowdtainerState.Failed;
     }
 
+    // @audit if owner is vouchers721, this call would claim all funds to the vouchers contract.
     /**
      * @notice Function used by participants to withdraw funds from a failed/expired project.
      */
@@ -732,6 +763,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         emit FundsClaimed(wallet, withdrawalTotal);
     }
 
+    // @audit if owner is vouchers721, this call would claim all funds to the vouchers contract.
     /**
      * @notice Function used by participants to withdraw referral rewards from a successful project.
      */

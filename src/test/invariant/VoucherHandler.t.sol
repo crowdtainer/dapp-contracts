@@ -38,7 +38,8 @@ contract Handler is Test {
     }
 
     function join(uint _seed) useRandomParticipant(_seed) external {
-
+        // Invariant: If being used as standalone, can only call join with `wallet` == `msg.sender`
+        // Invariant: cannot refer a user that does not have enableReferral == true.
     }
 
 }

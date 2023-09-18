@@ -64,10 +64,7 @@ contract Invariants {
 
         uint256 targetMinimum = 20000 ** tokenDecimals;
         uint256 targetMaximum = 26000 ** tokenDecimals;
-        uint256 referralRate = 10;
-        uint256 referralEligibilityValue = 50;
-        uint256 discountRate = 10;
-        uint256 referralRate = 10;
+        uint256 referralRate = 1000; // 10% in basis points
         uint256 referralEligibilityValue = 50 ** tokenDecimals;
 
         vouchers = new Vouchers721(address(new Crowdtainer()));
@@ -115,6 +112,8 @@ contract Invariants {
         // It says the issue was fixed but I still faced it sometimes.
         targetSender(address(0x1234));
     }
+
+    // I-1: Crowdtainer active and state.funding must always go together.
 
     function invariant_totalCashMatchesBalance() external {
         // for (uint i; i < markets.length; ++i ) {
