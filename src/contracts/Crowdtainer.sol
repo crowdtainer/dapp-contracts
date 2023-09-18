@@ -352,6 +352,9 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         join(_wallet, _quantities, false, address(0));
     }
 
+    // @audit docs below say function require permit. It seems like it doesn't?
+    // @audit Check ways to break via enableReferral note.
+
     /**
      * @notice Join the Crowdtainer project with optional referral and discount.
      * @param _wallet The wallet that is joining the Crowdtainer. Must be the msg.sender if Crowdtainer owner is address(0x0).
@@ -359,10 +362,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
      * @param _enableReferral Informs whether the user would like to be eligible to collect rewards for being referred.
      * @param _referrer Optional referral code to be used to claim a discount.
      *
-     * @dev Requires IERC20 permit. // @audit no it doesn't?
+     * @dev Requires IERC20 permit.
      * @dev referrer is the wallet address of a previous participant.
      * @dev if `enableReferral` is true, and the user decides to leave after the wallet has been used to claim a discount,
-     *       then the full value can't be claimed if deciding to leave the project. // @audit TODO check ways to break this
+     *       then the full value can't be claimed if deciding to leave the project.
      * @dev A same user is not allowed to increase the order amounts (i.e., by calling join multiple times).
      *      To 'update' an order, the user must first 'leave' then join again with the new values.
      */
@@ -405,6 +408,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
 
         _join(_wallet, _quantities, _enableReferral, _referrer);
     }
+
+    // @audit-issue What happens if the address joiningWithSignature is in the USDC blacklist?
 
     /**
      * @notice Allows joining by means of CCIP-READ (EIP-3668).
@@ -482,7 +487,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     function signaturePayloadValid(
         address contractAddress,
         bytes32 messageDigest,
-        address expectedPublicKey,
+        address expectedAccount,
         uint64 expiration,
         bytes32 nonce,
         bytes memory signature

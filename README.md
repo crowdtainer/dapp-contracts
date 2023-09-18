@@ -205,13 +205,16 @@ make solcheck
 ### Estimation of gas costs:
 
 With dapp.tools:
+
 - First run a local testnet with `dapp testnet`.
 - Then run e.g.: `make contract=Crowdtainer estimate`
 
 With Foundry:
+
 - forge test --gas-report
 
 ### Contract size estimation:
+
 - Example: `make contract=Vouchers721 size`
 
 ### To apply linter (Solidity only):
@@ -274,3 +277,9 @@ ETH_FROM=0x3538b6eF447f244268BCb2A0E1796fEE7c45002D make deploy-rinkeby
 ```sh
 ETH_RPC_URL=<your network> make deploy
 ```
+
+### Audit Notes
+
+- `lib/forge-std/src/test/StdInvariant.sol` manually added (and to Test.sol) because the currently (outdated) used in this project, does not include it
+- Fork invariant test command: forge test -vv --mp src/test/invariant/Voucher.t.sol --fork-url http://erigon.dappnode:8545 --fork-block-number 18128401
+- Use vscode coverage gutters + `forge coverage --report lcov`` to check for untested code areas
