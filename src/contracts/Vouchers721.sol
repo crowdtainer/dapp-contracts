@@ -519,7 +519,7 @@ contract Vouchers721 is ERC721Enumerable {
         ICrowdtainer crowdtainer = ICrowdtainer(crowdtainerAddress);
 
         if (
-            crowdtainer.crowdtainerState() == CrowdtainerState.Funding ||
+            crowdtainer.crowdtainerState() == CrowdtainerState.Funding || // @audit check these for read-only reentry and front-running.
             crowdtainer.crowdtainerState() == CrowdtainerState.Uninitialized
         ) {
             revert Errors.TransferNotAllowed({
@@ -560,7 +560,7 @@ contract Vouchers721 is ERC721Enumerable {
 
         ICrowdtainer crowdtainer = ICrowdtainer(crowdtainerAddress);
 
-        address shippingAgent = crowdtainer.shippingAgent();
+        address shippingAgent = crowdtainer.shippingAgent(); // @audit check this for readonly reentrancy + frontrunning
 
         if (msg.sender != shippingAgent) {
             revert Errors.SetClaimedOnlyAllowedByShippingAgent();

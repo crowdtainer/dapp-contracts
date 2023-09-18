@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 import "forge-std/Test.sol";
 import "../utils/Vouchers721Test.sol";
 
-contract Handler is Test {
+contract VoucherHandler is Test {
 
     Vouchers721 vouchers;
     address[] participants;
@@ -11,13 +11,13 @@ contract Handler is Test {
     Crowdtainer defaultCrowdtainer;
     uint256 defaultCrowdtainerId;
 
-    uint nonce++;
+    uint nonce;
 
     constructor(
-        address[] _participants,
+        address[] memory _participants,
         Vouchers721 _vouchers,
-        Crowdtainer _defaultCrowdtainer;
-        uint256 _defaultCrowdtainerId;
+        Crowdtainer _defaultCrowdtainer,
+        uint256 _defaultCrowdtainerId
     ) {
         vouchers = _vouchers;
         participants = _participants;
