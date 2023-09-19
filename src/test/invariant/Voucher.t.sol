@@ -40,81 +40,81 @@ contract Invariants is Test {
     VoucherHandler handler;
 
     function setUp() public {
-        // vm.label(signer, "signer");
-        // vm.label(shippingAgent, "shippingAgent");
-        // vm.label(alice, "alice");
-        // vm.label(bob, "bob");
-        // vm.label(charlie, "charlie");
-        // vm.label(dave, "dave");
-        // vm.label(erin, "erin");
-        // vm.label(frank, "frank");
+        vm.label(signer, "signer");
+        vm.label(shippingAgent, "shippingAgent");
+        vm.label(alice, "alice");
+        vm.label(bob, "bob");
+        vm.label(charlie, "charlie");
+        vm.label(dave, "dave");
+        vm.label(erin, "erin");
+        vm.label(frank, "frank");
 
-        // address usdcAddress = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
-        // IERC20Metadata token = IERC20Metadata(usdcAddress);
+        address usdcAddress = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+        IERC20Metadata token = IERC20Metadata(usdcAddress);
 
-        // uint tokenDecimals = token.decimals();
+        uint tokenDecimals = token.decimals();
 
-        // uint256[] memory unitPricePerType = new uint[](4);
-        // unitPricePerType[0] = 10 ** tokenDecimals;
-        // unitPricePerType[1] = 20 ** tokenDecimals;
-        // unitPricePerType[2] = 25 ** tokenDecimals;
-        // unitPricePerType[3] = 30 ** tokenDecimals;
+        uint256[] memory unitPricePerType = new uint[](4);
+        unitPricePerType[0] = 10 ** tokenDecimals;
+        unitPricePerType[1] = 20 ** tokenDecimals;
+        unitPricePerType[2] = 25 ** tokenDecimals;
+        unitPricePerType[3] = 30 ** tokenDecimals;
 
-        // string[] memory productDescription = new string[](4);
-        // productDescription[0] = "";
-        // productDescription[1] = "";
-        // productDescription[2] = "";
-        // productDescription[3] = "";
+        string[] memory productDescription = new string[](4);
+        productDescription[0] = "";
+        productDescription[1] = "";
+        productDescription[2] = "";
+        productDescription[3] = "";
 
-        // uint256 targetMinimum = 20000 ** tokenDecimals;
-        // uint256 targetMaximum = 26000 ** tokenDecimals;
-        // uint256 referralRate = 1000; // 10% in basis points
-        // uint256 referralEligibilityValue = 50 ** tokenDecimals;
+        uint256 targetMinimum = 20000 ** tokenDecimals;
+        uint256 targetMaximum = 26000 ** tokenDecimals;
+        uint256 referralRate = 1000; // 10% in basis points
+        uint256 referralEligibilityValue = 50 ** tokenDecimals;
 
-        // vouchers = new Vouchers721(address(new Crowdtainer()));
+        vouchers = new Vouchers721(address(new Crowdtainer()));
 
-        // (address crowdtainerAddress, uint crowdtainerId) = vouchers.createCrowdtainer({
-        //     _campaignData: CampaignData(
-        //         address(shippingAgent),
-        //         address(signer),
-        //         block.timestamp,
-        //         block.timestamp + 2 hours,
-        //         targetMinimum,
-        //         targetMaximum,
-        //         unitPricePerType,
-        //         referralRate,
-        //         referralEligibilityValue,
-        //         address(token),
-        //         ""
-        //     ),
-        //     _productDescription: productDescription,
-        //     _metadataService: address(metadataService)
-        // });
+        (address crowdtainerAddress, uint crowdtainerId) = vouchers.createCrowdtainer({
+            _campaignData: CampaignData(
+                address(shippingAgent),
+                address(signer),
+                block.timestamp,
+                block.timestamp + 2 hours,
+                targetMinimum,
+                targetMaximum,
+                unitPricePerType,
+                referralRate,
+                referralEligibilityValue,
+                address(token),
+                ""
+            ),
+            _productDescription: productDescription,
+            _metadataService: address(metadataService)
+        });
 
-        // defaultCrowdtainerId = crowdtainerId;
-        // defaultCrowdtainer = Crowdtainer(
-        //     vouchers.crowdtainerForId(crowdtainerId)
-        // );
+        defaultCrowdtainerId = crowdtainerId;
+        defaultCrowdtainer = Crowdtainer(
+            vouchers.crowdtainerForId(crowdtainerId)
+        );
 
-        // handler = new VoucherHandler(
-        //     participants,
-        //     vouchers,
-        //     defaultCrowdtainer,
-        //     defaultCrowdtainerId
-        // );
-        // bytes4[] memory selectors = new bytes4[](2);
-        // selectors[0] = VoucherHandler.join.selector;
+        handler = new VoucherHandler(
+            participants,
+            vouchers,
+            defaultCrowdtainer,
+            defaultCrowdtainerId
+        );
+        bytes4[] memory selectors = new bytes4[](2);
+        selectors[0] = VoucherHandler.join.selector;
 
-        // targetSelector(FuzzSelector({
-        //     addr: address(handler),
-        //     selectors: selectors
-        // }));
+        targetSelector(FuzzSelector({
+            addr: address(handler),
+            selectors: selectors
+        }));
 
-        // targetContract(address(handler));
+        targetContract(address(handler));
 
-        // // Work around bug https://github.com/foundry-rs/foundry/issues/2963#issuecomment-1403730126
-        // // It says the issue was fixed but I still faced it sometimes.
-        // targetSender(address(0x1234));
+        // Work around bug https://github.com/foundry-rs/foundry/issues/2963#issuecomment-1403730126
+        // It says the issue was fixed but I still faced it sometimes.
+        targetSender(address(0x1234));
     }
 
     // I-1: Crowdtainer active and state.funding must always go together.

@@ -425,7 +425,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         external
         onlyOwner
         onlyInState(CrowdtainerState.Funding)
-        onlyActive // @audit can be called before opening time
+        onlyActive
         nonReentrant
     {
         // @audit security portion of the eip3668 says extraData is where it should receive
