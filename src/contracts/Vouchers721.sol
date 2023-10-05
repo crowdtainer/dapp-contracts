@@ -292,7 +292,17 @@ contract Vouchers721 is ERC721Enumerable {
                 received,
                 maximum
             );
-        } else {
+        } else if (
+            receivedErrorSelector ==
+            Errors.NonceAlreadyUsed.selector
+        ) {
+            (address wallet, bytes32 nonce) = abi.decode(
+                this.getParameters(receivedBytes),
+                (address, bytes32)
+            );
+            revert Errors.NonceAlreadyUsed(wallet, nonce);
+        }
+        else {
             // other
             revert Errors.CrowdtainerLowLevelError(receivedBytes);
         }

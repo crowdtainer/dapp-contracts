@@ -144,7 +144,7 @@ Copy the `.env.example` file to `.env`.
 
 ```sh
 # Run a simulated Ethereum blockchain locally and deploy contracts:
-npx hardhat node
+npx hardhat node (scripts under deploy/*.ts are executed sequentially)
 ```
 
 To deploy to a specific network:
@@ -160,7 +160,8 @@ npx hardhat deploy --network <network_name> # e.g. rinkeby
 npx hardhat accounts
 npx hardhat compile
 npx hardhat clean
-npx hardhat node ; npx hardhat run scripts/deploy.ts --network localhost
+# To deploy all contracts + Crowdtainer instance to some other node (local or remote):
+npx hardhat run hardhat_scripts/deploy.ts --network localhost
 # TS_NODE_FILES=true npx ts-node scripts/deploy.ts
 npx eslint '**/*.{js,ts}'
 npx eslint '**/*.{js,ts}' --fix

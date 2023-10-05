@@ -2,7 +2,7 @@ import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-ethers";
 import { BigNumberish } from "@ethersproject/bignumber/lib/bignumber";
 import { parseUnits } from "ethers/lib/utils";
-import { Coin, Vouchers721 } from "../../out/typechain/";
+import { Coin, Vouchers721 } from "../../out/typechain";
 
 task(
   "createCrowdtainer",
@@ -25,14 +25,14 @@ task(
 
     let arrayOfPrices = new Array<BigNumberish>();
 
-    arrayOfPrices.push(parseUnits('120', erc20Decimals));
-    arrayOfPrices.push(parseUnits('90', erc20Decimals));
     arrayOfPrices.push(parseUnits('15', erc20Decimals));
     arrayOfPrices.push(parseUnits('30', erc20Decimals));
-    arrayOfPrices.push(parseUnits('140', erc20Decimals));
-    arrayOfPrices.push(parseUnits('144', erc20Decimals));
+    arrayOfPrices.push(parseUnits('120', erc20Decimals));
+    arrayOfPrices.push(parseUnits('90', erc20Decimals));
     arrayOfPrices.push(parseUnits('25', erc20Decimals));
     arrayOfPrices.push(parseUnits('48', erc20Decimals));
+    arrayOfPrices.push(parseUnits('140', erc20Decimals));
+    arrayOfPrices.push(parseUnits('144', erc20Decimals));
 
     const currentTime = (await ethers.provider.getBlock("latest")).timestamp;
 
@@ -55,16 +55,15 @@ task(
     };
 
     await vouchers721.createCrowdtainer(
-      campaignData, [
-      "Germany Delivery | 3 Month Subscription | 500g",
-      "Germany Delivery | 3 Month Subscription | 1kg",
-      "Germany Delivery | Single | 500g",
-      "Germany Delivery | Single | 1kg",
-      "Europe Delivery | 3 Month Subscription | 500g",
-      "Europe Delivery | 3 Month Subscription | 1kg",
-      "Europe Delivery | Single | 500g",
-      "Europe Delivery | Single | 1kg"
-    ],
+      campaignData,
+      ["Germany Delivery | Single | 500g",
+        "Germany Delivery | Single | 1kg",
+        "Germany Delivery | 3 Month Subscription | 500g",
+        "Germany Delivery | 3 Month Subscription | 1kg",
+        "Europe Delivery | Single | 500g",
+        "Europe Delivery | Single | 1kg",
+        "Europe Delivery | 3 Month Subscription | 500g",
+        "Europe Delivery | 3 Month Subscription | 1kg"],
       metadataService.address
     );
 
