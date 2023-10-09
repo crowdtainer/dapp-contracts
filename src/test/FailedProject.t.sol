@@ -4,6 +4,7 @@ pragma solidity ^0.8.16;
 import "./utils/CrowdtainerTest.sol";
 import {Errors} from "../contracts/Crowdtainer.sol";
 import "../contracts/States.sol";
+import "../contracts/Constants.sol";
 
 /* solhint-disable no-empty-blocks */
 
@@ -111,6 +112,61 @@ contract CrowdtainerValidProjectTerminationTester is CrowdtainerTest {
         }
 
         assertEq(erc20Token.balanceOf(address(bob)), previousBalance);
+    }
+
+    function testClaimFundsOnSuccessfulProjectWithUnresponsiveServiceProvider() public {
+        // Create a crowdtainer where targetMinimum is small enough that a single user could
+        // make the project succeed with a single join() call.
+        uint256[] memory _unitPricePerType = new uint256[](4);
+        _unitPricePerType[0] = 100 * ONE;
+        _unitPricePerType[1] = 200 * ONE;
+        _unitPricePerType[2] = 300 * ONE;
+        _unitPricePerType[3] = ONE;
+
+        uint256 _targetMinimum = 3000 * ONE;
+        uint256 _targetMaximum = 4000 * ONE;
+
+        crowdtainer.initialize(
+            address(0),
+            CampaignData(
+                address(agent),
+                address(0),
+                openingTime,
+                closingTime,
+                _targetMinimum,
+                _targetMaximum,
+                _unitPricePerType,
+                referralRate,
+                referralEligibilityValue,
+                address(iERC20Token),
+                ""
+            )
+        );
+
+        assert(crowdtainer.crowdtainerState() == CrowdtainerState.Funding);
+
+        uint256 previousBalance = erc20Token.balanceOf(address(alice));
+
+        // one user buys enough to succeed the crowdtainer project
+        uint256[] memory quantities = new uint256[](4);
+        quantities[2] = 11;
+
+        uint256 totalCost = quantities[2] * _unitPricePerType[2];
+
+        alice.doJoin(quantities, false, address(0));
+
+        assertEq(
+            erc20Token.balanceOf(address(alice)),
+            previousBalance - totalCost
+        );
+
+        hevm.warp(closingTime + MAX_UNRESPONSIVE_TIME + 1 seconds);
+
+        try alice.doClaimFunds() {} catch (bytes memory) {
+            fail();
+        }
+
+        assertEq(erc20Token.balanceOf(address(alice)), previousBalance);
     }
 }
 
