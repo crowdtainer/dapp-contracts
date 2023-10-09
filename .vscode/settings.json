@@ -4,5 +4,6 @@
   "files.associations": {
     ".dapprc": "shellscript"
   },
-  "solidity-va.uml.actors.enable": true
+  "solidity-va.uml.actors.enable": true,
+  "solidity.compileUsingRemoteVersion": "v0.8.21+commit.d9974bed"
 }

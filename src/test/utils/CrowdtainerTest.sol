@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.16;
+pragma solidity ^0.8.21;
 
 import "../../contracts/external/Coin.sol";
 import "./CrowdtainerTestHelpers.sol";
