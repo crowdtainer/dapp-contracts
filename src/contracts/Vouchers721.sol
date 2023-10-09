@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.16;
+pragma solidity ^0.8.21;
 
 // @dev External dependencies
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -492,15 +492,11 @@ contract Vouchers721 is ERC721Enumerable {
      *
      * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
      */
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal virtual override {
-        super._beforeTokenTransfer(from, to, tokenId);
+    function _update(address to, uint256 tokenId, address auth) internal virtual override returns (address) {
+        address previous = super._update(to, tokenId, auth);
 
-        bool mintOrBurn = from == address(0) || to == address(0);
-        if (mintOrBurn) return;
+        bool mintOrBurn = auth == address(0) || to == address(0);
+        if (mintOrBurn) return previous;
 
         // Transfers are only allowed after funding either succeeded or failed.
         address crowdtainerAddress = crowdtainerIdToAddress(
@@ -517,6 +513,7 @@ contract Vouchers721 is ERC721Enumerable {
                 state: crowdtainer.crowdtainerState()
             });
         }
+        return previous;
     }
 
     function tokenIdToCrowdtainerId(
