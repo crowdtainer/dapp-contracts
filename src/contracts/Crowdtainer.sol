@@ -675,9 +675,22 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     }
 
     /**
-     * @notice Function used by participants to withdrawl funds from a failed/expired project.
+     * @notice Function used by participants to withdraw funds from a failed/expired project.
      */
-    function claimFunds() public nonReentrant {
+    function claimFunds() public {
+        claimFunds(msg.sender);
+    }
+
+    /**
+     * @notice Function used by participants to withdraw funds from a failed/expired project.
+     */
+    function claimFunds(address wallet) public nonReentrant {
+        uint256 withdrawalTotal = costForWallet[wallet];
+
+        if (withdrawalTotal == 0) {
+            revert Errors.InsufficientBalance();
+        }
+
         if (block.timestamp < openingTime)
             revert Errors.OpeningTimeNotReachedYet(
                 block.timestamp,
@@ -691,32 +704,30 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             revert Errors.InvalidOperationFor({state: crowdtainerState});
 
         // The first interaction with this function 'nudges' the state to `Failed` if
-        // the project didn't reach the goal in time.
-        if (block.timestamp > expireTime && totalValueRaised < targetMinimum)
+        // the project didn't reach the goal in time, or if service provider is unresponsive.
+        if (block.timestamp > expireTime && totalValueRaised < targetMinimum) {
             crowdtainerState = CrowdtainerState.Failed;
+        } else if (block.timestamp > expireTime + MAX_UNRESPONSIVE_TIME) {
+            crowdtainerState = CrowdtainerState.Failed;
+        }
 
         if (crowdtainerState != CrowdtainerState.Failed)
             revert Errors.CantClaimFundsOnActiveProject();
 
         // Reaching this line means the project failed either due expiration or explicit transition from `abortProject()`.
-        uint256 withdrawalTotal = costForWallet[msg.sender];
 
-        if (withdrawalTotal == 0) {
-            revert Errors.InsufficientBalance();
-        }
-
-        costForWallet[msg.sender] = 0;
-        discountForUser[msg.sender] = 0;
-        referrerOfReferee[msg.sender] = address(0);
+        costForWallet[wallet] = 0;
+        discountForUser[wallet] = 0;
+        referrerOfReferee[wallet] = address(0);
 
         // @dev transfer the owed funds from this contract back to the user.
-        token.safeTransferFrom(address(this), msg.sender, withdrawalTotal);
+        token.safeTransferFrom(address(this), wallet, withdrawalTotal);
 
-        emit FundsClaimed(msg.sender, withdrawalTotal);
+        emit FundsClaimed(wallet, withdrawalTotal);
     }
 
     /**
-     * @notice Function used by participants to withdrawl referral rewards from a successful project.
+     * @notice Function used by participants to withdraw referral rewards from a successful project.
      */
     function claimRewards()
         public

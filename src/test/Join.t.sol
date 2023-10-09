@@ -67,9 +67,7 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
             address(0)
         );
 
-        try bob.doJoinWithSignature(proof, extraData) {} catch (
-            bytes memory
-        ) {
+        try bob.doJoinWithSignature(proof, extraData) {} catch (bytes memory) {
             fail();
         }
 
@@ -153,6 +151,39 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
 }
 
 contract CrowdtainerInvalidJoinTester is CrowdtainerTest {
+    function testFailJoinWithValueRaisedAboveMaximumTarget() public {
+        crowdtainer.initialize(
+            address(0),
+            CampaignData(
+                address(agent),
+                address(0),
+                openingTime,
+                closingTime,
+                1 * ONE,
+                2 * ONE,
+                unitPricePerType,
+                referralRate,
+                referralEligibilityValue,
+                address(iERC20Token),
+                ""
+            )
+        );
+
+        uint256[] memory quantities = new uint256[](4);
+        quantities[1] = 1;
+
+        try
+            // bob can't use referral code coming from the same wallet
+            bob.doJoin(quantities, false, address(0))
+        {} catch (bytes memory lowLevelData) {
+            bool failed = this.isEqualSignature(
+                makeError(Errors.PurchaseExceedsMaximumTarget.selector),
+                lowLevelData
+            );
+            if (failed) fail();
+        }
+    }
+
     function testFailUseOwnReferralCode() public {
         init();
 
