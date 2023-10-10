@@ -2,10 +2,11 @@
 pragma solidity ^0.8.16;
 
 // @dev External dependencies
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 import "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
@@ -128,7 +129,7 @@ contract Vouchers721 is ERC721Enumerable {
     function join(
         address _crowdtainer,
         uint256[] calldata _quantities
-    ) external returns (uint256) {
+    ) public returns (uint256) {
         return join(_crowdtainer, _quantities, false, address(0));
     }
 
@@ -197,6 +198,51 @@ contract Vouchers721 is ERC721Enumerable {
         return newTokenID;
     }
 
+    /**
+     * @notice Join the specified Crowdtainer project with optional referral and discount, along with an ERC-2612 Permit.
+     * @param _crowdtainer Crowdtainer project address.
+     * @param _quantities Array with the number of units desired for each product.
+     * @param _enableReferral Informs whether the user would like to be eligible to collect rewards for being referred.
+     * @param _referrer Optional referral code to be used to claim a discount.
+     * @param _signedPermit The ERC-2612 signed permit data.
+     * @return The token id that represents the created voucher / ownership.
+     *
+     * @dev referrer is the wallet address of a previous participant.
+     * @dev if `enableReferral` is true, and the user decides to leave after the wallet has been used to claim a discount,
+     *       then the full value can't be claimed if deciding to leave the project.
+     * @dev A same user is not allowed to increase the order amounts (i.e., by calling join multiple times).
+     *      To 'update' an order, the user must first 'leave' then join again with the new values.
+     */
+    function join(
+        address _crowdtainer,
+        uint256[] calldata _quantities,
+        bool _enableReferral,
+        address _referrer,
+        SignedPermit memory _signedPermit
+    ) public returns (uint256) {
+        IERC20Permit erc20token = IERC20Permit(
+            address(Crowdtainer(_crowdtainer).token())
+        );
+        try
+            erc20token.permit(
+                _signedPermit.owner,
+                _crowdtainer,
+                _signedPermit.value,
+                _signedPermit.deadline,
+                _signedPermit.v,
+                _signedPermit.r,
+                _signedPermit.s
+            )
+        /* solhint-disable-next-line no-empty-blocks */
+        {
+
+        } catch (bytes memory receivedBytes) {
+            revert Errors.PermitOperationFailed(receivedBytes);
+        }
+
+        return join(_crowdtainer, _quantities, _enableReferral, _referrer);
+    }
+
     // @dev Decodes external Crowdtainer join function call errors.
     // Most of this function code can be removed once Solidity supports
     // 'rethrowing' an external call's custom error revert.
@@ -227,7 +273,7 @@ contract Vouchers721 is ERC721Enumerable {
                 address(this),
                 urls,
                 callData,
-                Vouchers721.joinWithSignature.selector,
+                this.joinWithSignature.selector,
                 abi.encode(address(crowdtainer), callbackFunction, extraData)
             );
         } else if (receivedErrorSelector == Errors.SignatureExpired.selector) {
@@ -292,17 +338,13 @@ contract Vouchers721 is ERC721Enumerable {
                 received,
                 maximum
             );
-        } else if (
-            receivedErrorSelector ==
-            Errors.NonceAlreadyUsed.selector
-        ) {
+        } else if (receivedErrorSelector == Errors.NonceAlreadyUsed.selector) {
             (address wallet, bytes32 nonce) = abi.decode(
                 this.getParameters(receivedBytes),
                 (address, bytes32)
             );
             revert Errors.NonceAlreadyUsed(wallet, nonce);
-        }
-        else {
+        } else {
             // other
             revert Errors.CrowdtainerLowLevelError(receivedBytes);
         }
@@ -331,25 +373,21 @@ contract Vouchers721 is ERC721Enumerable {
     function joinWithSignature(
         bytes calldata result, // off-chain signed payload
         bytes calldata extraData // retained by client, passed for verification in this function
-    ) external returns (uint256) {
+    ) public returns (uint256) {
         (
             address crowdtainer, // Address of Crowdtainer contract
             bytes4 innerCallbackFunction,
             bytes memory innerExtraData
         ) = abi.decode(extraData, (address, bytes4, bytes));
 
-        require(innerCallbackFunction == Crowdtainer.joinWithSignature.selector);
-    
+        require(
+            innerCallbackFunction == Crowdtainer.joinWithSignature.selector
+        );
+
         (address _wallet, uint256[] memory _quantities, , ) = abi.decode(
             innerExtraData,
             (address, uint256[], bool, address)
         );
-
-        if (msg.sender != _wallet)
-            revert Errors.CallerNotAllowed({
-                expected: _wallet,
-                actual: msg.sender
-            });
 
         require(crowdtainer != address(0));
         uint256 crowdtainerId = idForCrowdtainer[crowdtainer];
@@ -390,6 +428,48 @@ contract Vouchers721 is ERC721Enumerable {
         _safeMint(_wallet, newTokenID);
 
         return newTokenID;
+    }
+
+    /**
+     * @notice Set ERC20's allowance using Permit, and call joinWithSignature(..), in a single call.
+     * @param result ABI encoded (uint64, bytes) for signature time validity and the signature itself.
+     * @param extraData ABI encoded (address, bytes4, bytes), 3rd parameter contains encoded values for Crowdtainer._join() method.
+     * @param _signedPermit The ERC-2612 signed permit data.
+     *
+     * @dev This convenience function is *not* EIP-3668-compliant: the frontend needs to be aware of it to take advantage.
+     */
+    function joinWithSignatureAndPermit(
+        bytes calldata result, // off-chain signed payload
+        bytes calldata extraData, // retained by client, passed for verification in this function
+        SignedPermit memory _signedPermit // Params to be forwarded to ERC-20 contract.
+    ) external returns (uint256) {
+        (address crowdtainer, , ) = abi.decode(
+            extraData,
+            (address, bytes4, bytes)
+        );
+
+        IERC20Permit erc20token = IERC20Permit(
+            address(Crowdtainer(crowdtainer).token())
+        );
+
+        try
+            erc20token.permit(
+                _signedPermit.owner,
+                crowdtainer,
+                _signedPermit.value,
+                _signedPermit.deadline,
+                _signedPermit.v,
+                _signedPermit.r,
+                _signedPermit.s
+            )
+        /* solhint-disable-next-line no-empty-blocks */
+        {
+
+        } catch (bytes memory receivedBytes) {
+            revert Errors.PermitOperationFailed(receivedBytes);
+        }
+
+        return joinWithSignature(result, extraData);
     }
 
     /**

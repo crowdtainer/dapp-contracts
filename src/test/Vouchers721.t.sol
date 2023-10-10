@@ -68,6 +68,77 @@ contract Vouchers721CreateTester is VouchersTest {
     uint256 internal signerPrivateKey;
     address internal signer;
 
+    function testJoinWithPermitMustReturnTokenId() public {
+        metadataService = IMetadataService(address(1));
+        createCrowdtainer(address(0));
+
+        uint256 previousBalance = erc20Token.balanceOf(address(eve));
+
+        uint256[] memory quantities = new uint256[](4);
+        quantities[0] = 1;
+        quantities[1] = 4;
+        quantities[2] = 3;
+        quantities[3] = 100;
+
+        uint256 totalCost = quantities[0] * unitPricePerType[0];
+        totalCost += quantities[1] * unitPricePerType[1];
+        totalCost += quantities[2] * unitPricePerType[2];
+        totalCost += quantities[3] * unitPricePerType[3];
+
+        SigUtils.Permit memory permit = SigUtils.Permit({
+            owner: eve,
+            spender: address(defaultCrowdtainer),
+            value: totalCost,
+            nonce: 0,
+            deadline: block.timestamp + 2 minutes
+        });
+
+        bytes32 digest = sigUtils.getTypedDataHash(permit);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(evePrivateKey, digest);
+
+        SignedPermit memory signedPermit = SignedPermit(
+            permit.owner,
+            permit.spender,
+            permit.value,
+            permit.nonce,
+            permit.deadline,
+            v,
+            r,
+            s
+        );
+
+        PrankedVoucherParticipant evePranked = new PrankedVoucherParticipant(
+            vm,
+            evePrivateKey,
+            address(vouchers),
+            address(erc20Token)
+        );
+
+        uint256 eveCrowdtainerTokenId = evePranked.doJoinWithPermit(
+            address(defaultCrowdtainer),
+            quantities,
+            false,
+            address(0),
+            signedPermit
+        );
+
+        assertTrue(!vouchers.getClaimStatus(eveCrowdtainerTokenId));
+
+        // Shipping agent deems project successful
+        agent.doGetPaidAndDeliver(defaultCrowdtainerId);
+
+        // agent set claimed to true
+        agent.doSetClaimStatus(eveCrowdtainerTokenId, true);
+
+        // verify state is true
+        assertTrue(vouchers.getClaimStatus(eveCrowdtainerTokenId));
+
+        assertEq(
+            erc20Token.balanceOf(address(eve)),
+            (previousBalance - totalCost)
+        );
+    }
+
     function testJoinUsingSignatureMustReturnTokenId() public {
         signerPrivateKey = 0xA11CE;
         signer = vm.addr(signerPrivateKey);
