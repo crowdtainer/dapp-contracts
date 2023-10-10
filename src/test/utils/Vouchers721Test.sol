@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.16;
 
-import "../../contracts/external/Coin.sol";
+import "../../contracts/external/MockERC20.sol";
 
 import "./CrowdtainerTestHelpers.sol";
 import "../../contracts/Vouchers721.sol";
@@ -147,8 +147,8 @@ contract VouchersTest is CrowdtainerTestHelpers {
 
     // Create a token
     uint8 internal numberOfDecimals = 6;
-    Coin internal erc20Token = new Coin("StableToken", "STK", numberOfDecimals);
-    IERC20 internal iERC20Token = IERC20(erc20Token);
+    MockERC20 internal erc20Token = new MockERC20("StableToken", "STK", numberOfDecimals);
+    IERC20 internal iERC20Token = IERC20(address(erc20Token));
 
     address internal owner = address(this);
 

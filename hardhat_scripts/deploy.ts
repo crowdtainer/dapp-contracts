@@ -25,11 +25,13 @@ async function main() {
     "MetadataServiceV1"
   );
 
-  const coinFactory = await ethers.getContractFactory("Coin");
-  const coin = await coinFactory.deploy("Token", "USDC", 1);
+  const coinFactory = await ethers.getContractFactory("MockERC20");
+  const coin = await coinFactory.deploy("Token", "USDC", 6);
   await coin.deployed();
   const erc20Decimals = await coin.decimals();
   console.log("Coin deployed to:", crowdtainer.address);
+  console.log("Coin symbol:", await coin.symbol());
+  console.log("Coin decimals:", erc20Decimals);
 
   const metadataService = await metadataServiceV1Factory.deploy(
     "USDC",

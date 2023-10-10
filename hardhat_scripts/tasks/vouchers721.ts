@@ -2,7 +2,7 @@ import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-ethers";
 import { BigNumberish } from "@ethersproject/bignumber/lib/bignumber";
 import { parseUnits } from "ethers/lib/utils";
-import { Coin, Vouchers721 } from "../../out/typechain";
+import { MockERC20, Vouchers721 } from "../../out/typechain";
 
 task(
   "createCrowdtainer",
@@ -10,7 +10,7 @@ task(
 ).addParam("agent", "The agent/service provider address")
   .setAction(async function ({ agent }, hre) {
     let { ethers } = hre;
-    const coin = <Coin>(await ethers.getContract("Coin"));
+    const coin = <MockERC20>(await ethers.getContract("MockERC20"));
 
     const agentSigner = await ethers.getSigner(agent);
 

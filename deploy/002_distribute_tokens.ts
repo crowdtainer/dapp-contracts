@@ -15,13 +15,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   if (isMainnet) {
     console.warn(
-      "Mainnet configuration detected, skipping Coin.sol token distribution."
+      "Mainnet configuration detected, skipping MockERC20 token distribution."
     );
     return;
   }
 
   // Give some Matrix ERC20 tokens to Neo and Trinity, our simulated participants declared in hardhat.config.js
-  const token = await hre.ethers.getContract("Coin");
+  const token = await hre.ethers.getContract("MockERC20");
   const symbol = await token.symbol();
 
   const quantity = parseUnits("10000", 6);

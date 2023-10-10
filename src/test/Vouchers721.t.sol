@@ -350,7 +350,7 @@ contract Vouchers721CreateTester is VouchersTest {
 
         createCrowdtainer(address(0));
 
-        // Bob purchases enough to make project succeed its target
+        // Alice purchases enough to make project succeed its target
         uint256[] memory quantities = new uint256[](4);
         quantities[0] = 1;
         quantities[1] = 4;
