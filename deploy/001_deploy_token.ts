@@ -14,23 +14,23 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   if (isMainnet) {
     console.warn(
-      "Mainnet configuration detected, skipping Coin.sol contract deployment."
+      "Mainnet configuration detected, skipping MockERC20.sol contract deployment."
     );
     return;
   }
 
-  // Deploy Coin.sol, a fake ERC20 contract for testing purposes.
-  await deploy("Coin", {
+  // Deploy MockERC20.sol, a fake ERC20 contract for testing purposes.
+  await deploy("MockERC20", {
     from: deployer,
-    args: ["FakeERC20", "USDC", chainId],
+    args: ["FakeERC20", "USDC", 6],
     log: true,
   });
 
-  const token = await hre.ethers.getContract("Coin");
+  const token = await hre.ethers.getContract("MockERC20");
   const supply = await token.totalSupply();
   const symbol = await token.symbol();
   console.log(
-    `Coin deployed at: ${token.address}. Current supply of ${supply} ${symbol}`
+    `MockERC20 deployed at: ${token.address}. Current supply of ${supply} ${symbol}`
   );
 };
 

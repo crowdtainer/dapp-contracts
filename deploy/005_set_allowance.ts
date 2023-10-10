@@ -2,7 +2,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import "@nomiclabs/hardhat-ethers";
 import { parseUnits } from "ethers/lib/utils";
-import { Crowdtainer, Vouchers721, Coin } from "../out/typechain/";
+import { Crowdtainer, Vouchers721, MockERC20 } from "../out/typechain/";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const chainId = await hre.getChainId();
@@ -19,7 +19,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     return;
   }
 
-  const token = await hre.ethers.getContract<Coin>("Coin");
+  const token = await hre.ethers.getContract<MockERC20>("MockERC20");
   const symbol = await token.symbol();
   const { neo, trinity } = await hre.getNamedAccounts();
 

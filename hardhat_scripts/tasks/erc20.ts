@@ -1,5 +1,5 @@
 import { task } from "hardhat/config";
-import { Coin } from "../../out/typechain/";
+import { MockERC20 } from "../../out/typechain/";
 
 task("accounts", "Prints the list of accounts.", async (taskArgs, hre) => {
   const accounts = await hre.ethers.getSigners();
@@ -21,7 +21,7 @@ task(
 task("totalSupply", "Total supply of the ERC-20 token.").setAction(
   async function (_, hre) {
     console.log(`ChainId: ${await hre.getChainId()}`);
-    const token = await hre.ethers.getContract("Coin");
+    const token = await hre.ethers.getContract("MockERC20");
     const supply = await token.totalSupply();
     const tokenSymbol = await token.symbol();
     console.log(
@@ -34,7 +34,7 @@ task("balanceOf", "Total balance of ERC-20 token for a given account.")
   .addParam("account", "Account address")
   .setAction(async function ({ account }, hre) {
     console.log(`ChainId: ${await hre.getChainId()}`);
-    const token = await hre.ethers.getContract("Coin");
+    const token = await hre.ethers.getContract("MockERC20");
     const balance = await token.balanceOf(account);
     const tokenSymbol = await token.symbol();
     console.log(
@@ -46,7 +46,7 @@ task("mint", "ERC-20 mint.")
   .addParam("receiver", "Receiver address")
   .addParam("amount", "Token amount")
   .setAction(async function ({ receiver, amount }, hre) {
-    const token = await hre.ethers.getContract<Coin>("Coin");
+    const token = await hre.ethers.getContract<MockERC20>("MockERC20");
     const [deployer] = await hre.ethers.getSigners();
     await (await token.connect(deployer).mint(receiver, amount)).wait();
 
@@ -60,7 +60,7 @@ task("approve", "ERC-20 approve.")
   .addParam("spender", "Spender address")
   .addParam("amount", "Token amount")
   .setAction(async function ({  from, spender, amount }, hre) {
-    const token = await hre.ethers.getContract<Coin>("Coin");
+    const token = await hre.ethers.getContract<MockERC20>("MockERC20");
     const sender = await hre.ethers.getSigner(from);
 
     console.log(`Gas price: ${await sender.getGasPrice()}`);

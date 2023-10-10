@@ -6,7 +6,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = hre.deployments;
   const { deployer } = await hre.getNamedAccounts();
 
-  const token = await hre.ethers.getContract("Coin");
+  const token = await hre.ethers.getContract("MockERC20");
   const symbol = await token.symbol();
 
   // Deploy Crowdtainer

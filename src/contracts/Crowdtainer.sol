@@ -5,6 +5,8 @@ pragma solidity ^0.8.16;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 // @dev Internal dependencies
@@ -76,7 +78,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     /// @notice URL templates to the service provider's gateways that implement the CCIP-read protocol.
     string[] public urls;
 
-    uint256 internal constant ONE = 1e6; // 6 decimal places
+    uint256 internal oneUnit; // Smallest unit based on erc20 decimals.
 
     // -----------------------------------------------
     //  Modifiers
@@ -278,8 +280,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         if (_campaignData.targetMinimum > _campaignData.targetMaximum)
             revert Errors.MinimumTargetHigherThanMaximum();
 
+        uint256 _oneUnit = 10 ** IERC20Metadata(_campaignData.token).decimals();
+
         for (uint256 i = 0; i < _campaignData.unitPricePerType.length; i++) {
-            if (_campaignData.unitPricePerType[i] < ONE) {
+            if (_campaignData.unitPricePerType[i] < _oneUnit) {
                 revert Errors.PriceTooLow();
             }
         }
@@ -301,6 +305,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         referralEligibilityValue = _campaignData.referralEligibilityValue;
         token = IERC20(_campaignData.token);
         legalContractURI = _campaignData.legalContractURI;
+        oneUnit = _oneUnit;
 
         crowdtainerState = CrowdtainerState.Funding;
 
@@ -514,7 +519,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             finalCost += unitPricePerType[i] * _quantities[i];
         }
 
-        if (finalCost < ONE) {
+        if (finalCost < oneUnit) {
             revert Errors.InvalidNumberOfQuantities();
         }
 
@@ -630,7 +635,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         enableReferral[_wallet] = false;
 
         // @dev transfer the owed funds from this contract back to the user.
-        token.safeTransferFrom(address(this), _wallet, withdrawalTotal);
+        token.safeTransfer(_wallet, withdrawalTotal);
 
         emit Left(_wallet, withdrawalTotal);
     }
@@ -656,7 +661,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         crowdtainerState = CrowdtainerState.Delivery;
 
         // @dev transfer the owed funds from this contract to the service provider.
-        token.safeTransferFrom(address(this), shippingAgent, availableForAgent);
+        token.safeTransfer(shippingAgent, availableForAgent);
 
         emit CrowdtainerInDeliveryStage(shippingAgent, availableForAgent);
     }
@@ -721,7 +726,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         referrerOfReferee[wallet] = address(0);
 
         // @dev transfer the owed funds from this contract back to the user.
-        token.safeTransferFrom(address(this), wallet, withdrawalTotal);
+        token.safeTransfer(wallet, withdrawalTotal);
 
         emit FundsClaimed(wallet, withdrawalTotal);
     }
@@ -737,7 +742,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         uint256 totalRewards = accumulatedRewardsOf[msg.sender];
         accumulatedRewardsOf[msg.sender] = 0;
 
-        token.safeTransferFrom(address(this), msg.sender, totalRewards);
+        token.safeTransfer(msg.sender, totalRewards);
 
         emit RewardsClaimed(msg.sender, totalRewards);
     }

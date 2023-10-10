@@ -5,7 +5,7 @@ pragma solidity ^0.8.16;
 //  Safety margins to avoid impractical values
 // -----------------------------------------------
 // @notice Safety time buffer to avoid expiration time too close to the opening time.
-uint256 constant SAFETY_TIME_RANGE = 1 hours;
+uint256 constant SAFETY_TIME_RANGE = 10 minutes;
 // @notice Maximum value for referral discounts and rewards
 uint256 constant SAFETY_MAX_REFERRAL_RATE = 50;
 // @notice Maximum number of items per type on each purchase/join.

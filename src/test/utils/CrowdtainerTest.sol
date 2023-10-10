@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.16;
 
-import "../../contracts/external/Coin.sol";
+import "../../contracts/external/MockERC20.sol";
 import "./CrowdtainerTestHelpers.sol";
 import "../../contracts/Crowdtainer.sol";
 import "../../contracts/Constants.sol";
@@ -117,8 +117,8 @@ contract CrowdtainerTest is CrowdtainerTestHelpers {
 
     // Create a token
     uint8 internal numberOfDecimals = 6;
-    Coin internal erc20Token = new Coin("StableToken", "STK", numberOfDecimals);
-    IERC20 internal iERC20Token = IERC20(erc20Token);
+    MockERC20 internal erc20Token = new MockERC20("StableToken", "STK", numberOfDecimals);
+    IERC20 internal iERC20Token = IERC20(address(erc20Token));
 
     address internal owner = address(this);
 
@@ -180,16 +180,20 @@ contract CrowdtainerTest is CrowdtainerTestHelpers {
         vm.label(address(0), "none");
 
         // Give lots of tokens to alice
-        erc20Token.mint(address(alice), type(uint256).max - (1000 * ONE));
+        uint256 tokenAmount = type(uint256).max - 1000 * ONE;
+        erc20Token.mint(address(alice), tokenAmount);
+        emit log_named_uint("Minted for Alice: ", tokenAmount);
         // Alice allows Crowdtainer to pull the value
         alice.doApprovePayment(
             address(crowdtainer),
-            type(uint256).max - (1000 * ONE)
+            tokenAmount
         );
 
         // Give 1000 tokens to bob
-        erc20Token.mint(address(bob), 1000 * ONE);
+        tokenAmount = 1000 * ONE;
+        erc20Token.mint(address(bob), tokenAmount);
+        emit log_named_uint("Minted for Bob: ", tokenAmount);
         // Bob allows Crowdtainer to pull the value
-        bob.doApprovePayment(address(crowdtainer), 1000 * ONE);
+        bob.doApprovePayment(address(crowdtainer), tokenAmount);
     }
 }
