@@ -7,6 +7,7 @@ import "./CrowdtainerTestHelpers.sol";
 import "../../contracts/Vouchers721.sol";
 import "../../contracts/Constants.sol";
 import "../../contracts/Crowdtainer.sol";
+import "./SigUtils.sol";
 
 // This file contains the basic setup to test the Vouchers721 contract.
 
@@ -87,6 +88,88 @@ contract VoucherParticipant {
     }
 }
 
+contract PrankedVoucherParticipant {
+    Vm internal vm;
+    Vouchers721 internal vouchers;
+    IERC20 internal token;
+    uint256 internal prankedPrivateKey;
+    address internal prankedUser;
+
+    constructor(
+        Vm _vm,
+        uint256 _prankedPrivateKey,
+        address _vouchers721,
+        address _token
+    ) {
+        vouchers = Vouchers721(_vouchers721);
+        token = IERC20(_token);
+        prankedPrivateKey = _prankedPrivateKey;
+        vm = _vm;
+        prankedUser = vm.addr(_prankedPrivateKey);
+    }
+
+    function doJoinWithPermit(
+        address _crowdtainerAddress,
+        uint256[] calldata _quantities,
+        bool _enableReferral,
+        address _referrer,
+        SignedPermit memory _signedPermit
+    ) public returns (uint256) {
+        vm.prank(prankedUser);
+        return
+            vouchers.join(
+                _crowdtainerAddress,
+                _quantities,
+                _enableReferral,
+                _referrer,
+                _signedPermit
+            );
+    }
+
+    function doApprovePayment(address _contract, uint256 amount) public {
+        vm.prank(prankedUser);
+        token.approve(_contract, amount);
+    }
+
+    function doJoinSimple(
+        address _crowdtainerAddress,
+        uint256[] calldata _quantities
+    ) public returns (uint256) {
+        vm.prank(prankedUser);
+        return vouchers.join(_crowdtainerAddress, _quantities);
+    }
+
+    function doJoin(
+        address _crowdtainerAddress,
+        uint256[] calldata _quantities,
+        bool _enableReferral,
+        address _referrer
+    ) public returns (uint256) {
+        vm.prank(prankedUser);
+        return
+            vouchers.join(
+                _crowdtainerAddress,
+                _quantities,
+                _enableReferral,
+                _referrer
+            );
+    }
+
+    function doJoinWithSignatureAndPermit(
+        bytes calldata result, // off-chain signed payload
+        bytes calldata extraData, // retained by client, passed for verification in this function
+        SignedPermit memory _signedPermit
+    ) public returns (uint256) {
+        vm.prank(prankedUser);
+        return
+            vouchers.joinWithSignatureAndPermit(
+                result,
+                extraData,
+                _signedPermit
+            );
+    }
+}
+
 // ShippingAgent represents the creator/responsible for a crowdtainer.
 contract VoucherShippingAgent {
     Vouchers721 internal vouchersContract;
@@ -105,12 +188,27 @@ contract VoucherShippingAgent {
             .abortProject();
     }
 
+    function doJoinWithSignatureAndPermit(
+        bytes calldata result, // off-chain signed payload
+        bytes calldata extraData, // retained by client, passed for verification in this function
+        SignedPermit memory _signedPermit
+    ) public returns (uint256) {
+        return
+            vouchersContract.joinWithSignatureAndPermit(
+                result,
+                extraData,
+                _signedPermit
+            );
+    }
+
     function doSetClaimStatus(uint256 tokenId, bool value) public {
         vouchersContract.setClaimStatus(tokenId, value);
     }
 }
 
 contract VouchersTest is CrowdtainerTestHelpers {
+    SigUtils internal sigUtils;
+
     // contracts
     Vouchers721 internal vouchers;
     IMetadataService internal metadataService;
@@ -147,10 +245,15 @@ contract VouchersTest is CrowdtainerTestHelpers {
 
     // Create a token
     uint8 internal numberOfDecimals = 6;
-    MockERC20 internal erc20Token = new MockERC20("StableToken", "STK", numberOfDecimals);
+    MockERC20 internal erc20Token =
+        new MockERC20("StableToken", "STK", numberOfDecimals);
+
     IERC20 internal iERC20Token = IERC20(address(erc20Token));
 
     address internal owner = address(this);
+
+    uint256 internal evePrivateKey;
+    address internal eve;
 
     function createCrowdtainer(
         address signer
@@ -184,6 +287,7 @@ contract VouchersTest is CrowdtainerTestHelpers {
             address(defaultCrowdtainer),
             type(uint256).max - 1000 * ONE
         );
+        vm.label(address(defaultCrowdtainer), "DefaultCrowdtainer");
 
         // Bob allows Crowdtainer to pull the value
         bob.doApprovePayment(address(defaultCrowdtainer), 100000 * ONE);
@@ -194,6 +298,8 @@ contract VouchersTest is CrowdtainerTestHelpers {
     function setUp() public virtual {
         hevm.warp(1642429224); // 17.01.2022
         emit log_named_address("CrowdtainerTest address", owner);
+
+        sigUtils = new SigUtils(erc20Token.DOMAIN_SEPARATOR());
 
         openingTime = block.timestamp;
         closingTime = block.timestamp + 2 hours;
@@ -221,5 +327,11 @@ contract VouchersTest is CrowdtainerTestHelpers {
 
         // Give 1000 ERC20 tokens to bob
         erc20Token.mint(address(bob), 1000000 * ONE);
+
+        // Eve is not a smart contract, unlike Alice and Bob
+        evePrivateKey = 0xE0E;
+        eve = vm.addr(evePrivateKey);
+        vm.label(address(eve), "eve");
+        erc20Token.mint(eve, 100000 * ONE);
     }
 }

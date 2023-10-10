@@ -20,8 +20,9 @@ contract CrowdtainerValidLeaveTester is CrowdtainerTest {
             fail();
         }
 
-        uint256 totalCost = quantities[1] * unitPricePerType[1];
-        totalCost += quantities[2] * unitPricePerType[2];
+        uint256 totalCost = calculateTotalCost(
+            AvoidStackTooDeep(quantities, unitPricePerType)
+        );
 
         assertEq(
             erc20Token.balanceOf(address(bob)),
@@ -42,9 +43,9 @@ contract CrowdtainerValidLeaveTester is CrowdtainerTest {
         quantities[1] = 2;
         quantities[2] = 10;
 
-        uint256 totalCost = quantities[0] * unitPricePerType[0];
-        totalCost += quantities[1] * unitPricePerType[1];
-        totalCost += quantities[2] * unitPricePerType[2];
+        uint256 totalCost = calculateTotalCost(
+            AvoidStackTooDeep(quantities, unitPricePerType)
+        );
 
         uint256 previousAliceBalance = erc20Token.balanceOf(address(alice));
 
@@ -72,9 +73,9 @@ contract CrowdtainerValidLeaveTester is CrowdtainerTest {
         quantities[1] = 2;
         quantities[2] = 10;
 
-        uint256 totalCost = quantities[0] * unitPricePerType[0];
-        totalCost += quantities[1] * unitPricePerType[1];
-        totalCost += quantities[2] * unitPricePerType[2];
+        uint256 totalCost = calculateTotalCost(
+            AvoidStackTooDeep(quantities, unitPricePerType)
+        );
         uint256 discount = ((totalCost * referralRate) / 100) / 2;
 
         uint256 previousBobBalance = erc20Token.balanceOf(address(bob));
@@ -130,9 +131,9 @@ contract CrowdtainerInvalidLeaveTester is CrowdtainerTest {
         quantities[1] = 2;
         quantities[2] = 10;
 
-        uint256 totalCost = quantities[0] * unitPricePerType[0];
-        totalCost += quantities[1] * unitPricePerType[1];
-        totalCost += quantities[2] * unitPricePerType[2];
+        uint256 totalCost = calculateTotalCost(
+            AvoidStackTooDeep(quantities, unitPricePerType)
+        );
         uint256 discount = ((totalCost * referralRate) / 100) / 2;
 
         uint256 previousBobBalance = erc20Token.balanceOf(address(bob));

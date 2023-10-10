@@ -4,7 +4,7 @@ pragma solidity ^0.8.16;
 import "./Constants.sol";
 import "./States.sol";
 
-// Data defining all rules and values of a Crowdtainer instance.
+// @notice:  Data defining all rules and values of a Crowdtainer instance.
 struct CampaignData {
     // Ethereum Address that represents the product or service provider.
     address shippingAgent;
@@ -30,6 +30,18 @@ struct CampaignData {
     string legalContractURI;
 }
 
+// @notice: EIP-712 / ERC-2612 permit data structure.
+struct SignedPermit {
+    address owner;
+    address spender;
+    uint256 value;
+    uint256 nonce;
+    uint256 deadline;
+    uint8 v;
+    bytes32 r;
+    bytes32 s;
+}
+
 /**
  * @dev Interface for Crowdtainer instances.
  */
@@ -38,8 +50,10 @@ interface ICrowdtainer {
      * @dev Initializes a Crowdtainer.
      * @param _campaignData Data defining all rules and values of this Crowdtainer instance.
      */
-    function initialize(address owner, CampaignData calldata _campaignData)
-        external;
+    function initialize(
+        address owner,
+        CampaignData calldata _campaignData
+    ) external;
 
     function crowdtainerState() external view returns (CrowdtainerState);
 
@@ -57,10 +71,7 @@ interface ICrowdtainer {
      * @dev This method is present to make wallet interactions more friendly, by requiring fewer parameters for projects with referral system disabled.
      * @dev Requires IERC20 permit.
      */
-    function join(
-        address _wallet,
-        uint256[] calldata _quantities
-    ) external;
+    function join(address _wallet, uint256[] calldata _quantities) external;
 
     /**
      * @notice Join the Crowdtainer project with optional referral and discount.

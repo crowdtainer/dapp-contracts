@@ -71,8 +71,10 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
             fail();
         }
 
-        uint256 totalCost = quantities[1] * unitPricePerType[1];
-        totalCost += quantities[2] * unitPricePerType[2];
+        uint256 totalCost = calculateTotalCost(
+            AvoidStackTooDeep(quantities, unitPricePerType)
+        );
+
         {
             assertEq(
                 erc20Token.balanceOf(address(bob)),
@@ -94,8 +96,9 @@ contract CrowdtainerValidJoinTester is CrowdtainerTest {
             fail();
         }
 
-        uint256 totalCost = quantities[1] * unitPricePerType[1];
-        totalCost += quantities[2] * unitPricePerType[2];
+        uint256 totalCost = calculateTotalCost(
+            AvoidStackTooDeep(quantities, unitPricePerType)
+        );
 
         assertEq(
             erc20Token.balanceOf(address(bob)),
@@ -379,10 +382,9 @@ contract JoinFuzzer is CrowdtainerTest {
         quantities[1] = amountB;
         quantities[2] = amountC;
 
-        uint256 totalCost = 0;
-        for (uint256 i = 0; i < unitPricePerType.length; i++) {
-            totalCost += unitPricePerType[i] * quantities[i];
-        }
+        uint256 totalCost = calculateTotalCost(
+            AvoidStackTooDeep(quantities, unitPricePerType)
+        );
 
         alice.doJoin(quantities, false, address(0));
 
@@ -421,9 +423,7 @@ contract JoinProver is CrowdtainerTest {
         uint256[] memory quantities = [amountA, amountB, amountC];
 
         uint256 totalCost = 0;
-        for (uint256 i = 0; i < ; i++) {
-            totalCost += unitPricePerType[i] * quantities[i];
-        }
+        uint256 totalCost = calculateTotalCost(AvoidStackTooDeep(quantities, unitPricePerType));
 
         alice.doJoin(quantities, bytes32(0x0), "");
 
