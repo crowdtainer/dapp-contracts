@@ -173,6 +173,7 @@ npx solhint 'contracts/**/*.sol' --fix
 forge run src/test/Join.t.sol -t JoinFuzzer --sig "testInvariantsHold(uint256,uint256,uint256)" --debug 0 0 0
 # Debugger for tests; E.g.:
 forge debug src/test/Leave.t.sol --tc CrowdtainerValidLeaveTester --sig "testJoinThenLeaveWithoutReferralsMustSucceed()"
+# Code coverage with Foundry: forge coverage --report lcov (then with e.g. VSCode's Coverage Gutters plugin -> Shift + CMD + 7 to load/display lcov)
 ```
 
 ## Solidity code development
