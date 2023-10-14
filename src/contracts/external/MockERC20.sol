@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.16;
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @notice Modern and gas efficient ERC20 + EIP-2612 implementation.
 /// @author Solmate (https://github.com/transmissions11/solmate/blob/main/src/tokens/ERC20.sol)
@@ -103,7 +104,25 @@ abstract contract ERC20 {
         require(balanceOf[from] >= amount, "Coin/insufficient-balance");
         require(to != address(0), "Coin/null-dst");
         require(to != address(this), "Coin/dst-cannot-be-this-contract");
-        require(allowance[from][msg.sender] >= amount, "Coin/insufficient-allowance"); 
+        string memory fromString = Strings.toHexString(
+            uint256(uint160(from)),
+            20
+        );
+        string memory msgSender = Strings.toHexString(
+            uint256(uint160(msg.sender)),
+            20
+        );
+        require(
+            allowance[from][msg.sender] >= amount,
+            string.concat(
+                "Coin/insufficient-allowance from ",
+                fromString,
+                " to: ",
+                msgSender,
+                ": ",
+                Strings.toString(allowance[from][msg.sender])
+            )
+        );
 
         if (allowed != type(uint256).max)
             allowance[from][msg.sender] = allowed - amount;
@@ -165,7 +184,13 @@ abstract contract ERC20 {
 
             require(
                 recoveredAddress != address(0) && recoveredAddress == owner,
-                "INVALID_SIGNER"
+                string.concat(
+                    "INVALID_SIGNER! ",
+                    "recovered: ",
+                    Strings.toHexString(uint256(uint160(recoveredAddress)), 20),
+                    " owner: ",
+                    Strings.toHexString(uint256(uint160(owner)), 20)
+                )
             );
 
             allowance[recoveredAddress][spender] = value;

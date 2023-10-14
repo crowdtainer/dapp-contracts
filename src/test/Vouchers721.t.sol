@@ -321,12 +321,12 @@ contract Vouchers721CreateTester is VouchersTest {
         quantities[1] = 2;
         quantities[2] = 10;
 
-        PrankedVoucherParticipant evePranked = new PrankedVoucherParticipant(
-            vm,
-            evePrivateKey,
-            address(vouchers),
-            address(erc20Token)
-        );
+        // PrankedVoucherParticipant evePranked = new PrankedVoucherParticipant(
+        //     vm,
+        //     evePrivateKey,
+        //     address(vouchers),
+        //     address(erc20Token)
+        // );
 
         // bool offchainLookupErrorThrown;
 
@@ -378,7 +378,8 @@ contract Vouchers721CreateTester is VouchersTest {
 
         // To avoid solidity stack too deep errors, the resulting extraData is hardcoded in this test.
         // Uncomment code above to re-generate extraData.
-        bytes memory extraData = hex"00000000000000000000000073a1564465e54a58de2dbc3b5032fd013fc95ad4566a2cc200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001200000000000000000000000001d64f27720657aff7110688db6288f7574c3b711000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000000";
+        bytes
+            memory extraData = hex"00000000000000000000000073a1564465e54a58de2dbc3b5032fd013fc95ad4566a2cc200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001200000000000000000000000001d64f27720657aff7110688db6288f7574c3b711000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000000";
 
         // Craft service provider auth/proof
         // uint64 epochExpiration = uint64(block.timestamp) + uint64(1000); // signature expiration
@@ -420,7 +421,8 @@ contract Vouchers721CreateTester is VouchersTest {
         //  emit log_named_bytes("eveProof: ", eveProof);
         // To avoid solidity stack too deep errors, the resulting eveProof is hardcoded in this test.
         // Uncomment code above to re-generate eveProof.
-        bytes memory eveProof = hex"00000000000000000000000073a1564465e54a58de2dbc3b5032fd013fc95ad40000000000000000000000000000000000000000000000000000000061e57f10a4896a3f93bf4bf58378e579f3cf193bb4af1022af7d2089f37d8bae7157b85f000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000411c9b054219414bc49d3283d98aef95f7a397562635ffda71a3d8bfb6573035d01c993ae07b92efdbf59e5dce1566b5e904eb79c97729d5003a2a2dc11313ddf21b00000000000000000000000000000000000000000000000000000000000000";
+        bytes
+            memory eveProof = hex"00000000000000000000000073a1564465e54a58de2dbc3b5032fd013fc95ad40000000000000000000000000000000000000000000000000000000061e57f10a4896a3f93bf4bf58378e579f3cf193bb4af1022af7d2089f37d8bae7157b85f000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000411c9b054219414bc49d3283d98aef95f7a397562635ffda71a3d8bfb6573035d01c993ae07b92efdbf59e5dce1566b5e904eb79c97729d5003a2a2dc11313ddf21b00000000000000000000000000000000000000000000000000000000000000";
 
         uint256 totalCost = quantities[1] * unitPricePerType[1];
         totalCost += quantities[2] * unitPricePerType[2];
@@ -435,10 +437,7 @@ contract Vouchers721CreateTester is VouchersTest {
         });
 
         bytes32 digest = sigUtils.getTypedDataHash(permit);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            evePrivateKey,
-            digest
-        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(evePrivateKey, digest);
 
         SignedPermit memory signedPermit = SignedPermit(
             permit.owner,
@@ -820,6 +819,36 @@ contract Vouchers721CreateInvalidTester is VouchersTest {
         {} catch (bytes memory lowLevelData) {
             bool failed = this.isEqualSignature(
                 makeError(Errors.MetadataServiceAddressIsZero.selector),
+                lowLevelData
+            );
+            if (failed) fail();
+        }
+    }
+
+    function testFailErrorBubblesUpToVouchers721() public {
+        // Equivalent to Crowdtainer's test 'testFailJoinWithValueRaisedAboveMaximumTarget'
+        // This test is to make sure that the 'external' contract call (into Crowdtainer.sol), has its
+        // custom errors propagating correctly in Vouchers721.sol.
+        metadataService = IMetadataService(address(1));
+
+        createCrowdtainer(address(0));
+
+        uint256[] memory quantities = new uint256[](4);
+        quantities[0] = 1;
+        quantities[1] = 4;
+        quantities[2] = 300;
+        quantities[3] = 100;
+
+        try
+            alice.doJoin({
+                _crowdtainerAddress: address(defaultCrowdtainer),
+                _quantities: quantities,
+                _enableReferral: true,
+                _referrer: address(0)
+            })
+        {} catch (bytes memory lowLevelData) {
+            bool failed = this.isEqualSignature(
+                makeError(Errors.ExceededNumberOfItemsAllowed.selector),
                 lowLevelData
             );
             if (failed) fail();

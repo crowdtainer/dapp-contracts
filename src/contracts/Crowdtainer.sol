@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 // @dev Internal dependencies
@@ -687,7 +686,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     }
 
     /**
-     * @notice Function used by participants to withdraw funds from a failed/expired project.
+     * @notice Function to withdraw funds from a failed/expired project back to the participant, with sponsored transaction.
      */
     function claimFunds(address wallet) public nonReentrant {
         uint256 withdrawalTotal = costForWallet[wallet];
@@ -734,16 +733,21 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     /**
      * @notice Function used by participants to withdraw referral rewards from a successful project.
      */
-    function claimRewards()
-        public
-        nonReentrant
-        onlyInState(CrowdtainerState.Delivery)
-    {
-        uint256 totalRewards = accumulatedRewardsOf[msg.sender];
-        accumulatedRewardsOf[msg.sender] = 0;
+    function claimRewards() public {
+        claimRewards(msg.sender);
+    }
 
-        token.safeTransfer(msg.sender, totalRewards);
+    /**
+     * @notice Function to withdraw referral rewards from a successful project, with sponsored transaction.
+     */
+    function claimRewards(
+        address _wallet
+    ) public nonReentrant onlyInState(CrowdtainerState.Delivery) {
+        uint256 totalRewards = accumulatedRewardsOf[_wallet];
+        accumulatedRewardsOf[_wallet] = 0;
 
-        emit RewardsClaimed(msg.sender, totalRewards);
+        token.safeTransfer(_wallet, totalRewards);
+
+        emit RewardsClaimed(_wallet, totalRewards);
     }
 }

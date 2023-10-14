@@ -29,7 +29,7 @@ async function main() {
   const coin = await coinFactory.deploy("Token", "USDC", 6);
   await coin.deployed();
   const erc20Decimals = await coin.decimals();
-  console.log("Coin deployed to:", crowdtainer.address);
+  console.log("Coin deployed to:", coin.address);
   console.log("Coin symbol:", await coin.symbol());
   console.log("Coin decimals:", erc20Decimals);
 
@@ -39,13 +39,13 @@ async function main() {
     "This ticket is not valid as an invoice"
   );
   await metadataService.deployed();
-  console.log("MetadataServiceV1 deployed to:", crowdtainer.address);
+  console.log("MetadataServiceV1 deployed to:", metadataService.address);
 
   const vouchers721Factory = await ethers.getContractFactory("Vouchers721");
   const vouchers721 = <Vouchers721>(await vouchers721Factory.deploy(crowdtainer.address));
   await vouchers721.deployed();
 
-  console.log("Vouchers721 deployed to:", crowdtainer.address);
+  console.log("Vouchers721 deployed to:", vouchers721.address);
 
   const [agent] = await ethers.getSigners();
 
