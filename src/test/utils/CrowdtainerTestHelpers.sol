@@ -17,10 +17,11 @@ contract CrowdtainerTestHelpers is Test {
         return bytes4(data[:4]);
     }
 
-    // @dev Helper function used to get the parameters of a custom error revert.
+    // @dev Extract abi encoded parameters
     function getParameters(
         bytes calldata data
     ) external pure returns (bytes calldata) {
+        assert(data.length > 4);
         return data[4:];
     }
 

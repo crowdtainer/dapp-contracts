@@ -105,24 +105,20 @@ contract Vouchers721 is ERC721Enumerable {
             Clones.clone(crowdtainerImplementation)
         );
 
-        // crowdtainer.initialize(address(this), _campaignData);
-        _call(
-            address(crowdtainer),
-            abi.encodeWithSelector(
-                Crowdtainer.initialize.selector,
-                address(this),
-                _campaignData
-            )
-        );
+        try crowdtainer.initialize(address(this), _campaignData) {
+            idForCrowdtainer[address(crowdtainer)] = ++crowdtainerCount;
+            crowdtainerForId[crowdtainerCount] = address(crowdtainer);
 
-        idForCrowdtainer[address(crowdtainer)] = ++crowdtainerCount;
-        crowdtainerForId[crowdtainerCount] = address(crowdtainer);
+            productDescription[crowdtainerCount] = _productDescription;
+            metadataServiceForCrowdatinerId[
+                crowdtainerCount
+            ] = _metadataService;
+            emit CrowdtainerDeployed(address(crowdtainer), crowdtainerCount);
 
-        productDescription[crowdtainerCount] = _productDescription;
-        metadataServiceForCrowdatinerId[crowdtainerCount] = _metadataService;
-        emit CrowdtainerDeployed(address(crowdtainer), crowdtainerCount);
-
-        return (address(crowdtainer), crowdtainerCount);
+            return (address(crowdtainer), crowdtainerCount);
+        } catch (bytes memory receivedBytes) {
+            _bubbleRevert(receivedBytes);
+        }
     }
 
     /**
@@ -231,10 +227,8 @@ contract Vouchers721 is ERC721Enumerable {
             address(Crowdtainer(_crowdtainer).token())
         );
 
-        _call(
-            address(erc20token),
-            abi.encodeWithSelector(
-                IERC20Permit.permit.selector,
+        try
+            erc20token.permit(
                 _signedPermit.owner,
                 _crowdtainer,
                 _signedPermit.value,
@@ -243,27 +237,23 @@ contract Vouchers721 is ERC721Enumerable {
                 _signedPermit.r,
                 _signedPermit.s
             )
-        );
-
-        return join(_crowdtainer, _quantities, _enableReferral, _referrer);
+        {
+            return join(_crowdtainer, _quantities, _enableReferral, _referrer);
+        } catch (bytes memory receivedBytes) {
+            _bubbleRevert(receivedBytes);
+        }
     }
 
     // @dev Function that calls a contract, and makes sure any revert 'bubbles up' and halts execution.
     // This function is used because there is no Solidity syntax to 'rethrow' custom errors within a try/catch,
     // other than comparing each error manually (which would unnecessarily increase code size / deployment costs).
-    function _call(
-        address target,
-        bytes memory data
-    ) internal returns (bytes memory) {
-        (bool success, bytes memory returndata) = target.call(data);
-        // Propagate revert
-        if (!success) {
-            if (returndata.length == 0) revert();
-            assembly {
-                revert(add(32, returndata), mload(returndata))
-            }
+    function _bubbleRevert(
+        bytes memory receivedBytes
+    ) internal pure returns (bytes memory) {
+        if (receivedBytes.length == 0) revert();
+        assembly {
+            revert(add(32, receivedBytes), mload(receivedBytes))
         }
-        return returndata;
     }
 
     // @dev Extract abi encoded selector bytes
@@ -276,7 +266,7 @@ contract Vouchers721 is ERC721Enumerable {
     function getParameters(
         bytes calldata data
     ) external pure returns (bytes calldata) {
-        require(data.length > 4);
+        assert(data.length > 4);
         return data[4:];
     }
 
@@ -315,10 +305,7 @@ contract Vouchers721 is ERC721Enumerable {
             );
         }
         // All other Crowdtainer.sol's errors can be propagated for decoding in external tooling.
-        if (receivedBytes.length == 0) revert();
-        assembly {
-            revert(add(32, receivedBytes), mload(receivedBytes))
-        }
+        _bubbleRevert(receivedBytes);
     }
 
     /**
@@ -412,10 +399,8 @@ contract Vouchers721 is ERC721Enumerable {
             address(Crowdtainer(crowdtainer).token())
         );
 
-        _call(
-            address(erc20token),
-            abi.encodeWithSelector(
-                IERC20Permit.permit.selector,
+        try
+            erc20token.permit(
                 _signedPermit.owner,
                 crowdtainer,
                 _signedPermit.value,
@@ -424,9 +409,11 @@ contract Vouchers721 is ERC721Enumerable {
                 _signedPermit.r,
                 _signedPermit.s
             )
-        );
-
-        return joinWithSignature(result, extraData);
+        {
+            return joinWithSignature(result, extraData);
+        } catch (bytes memory receivedBytes) {
+            _bubbleRevert(receivedBytes);
+        }
     }
 
     /**
@@ -443,17 +430,18 @@ contract Vouchers721 is ERC721Enumerable {
             tokenIdToCrowdtainerId(_tokenId)
         );
 
-        _call(
-            crowdtainerAddress,
-            abi.encodeWithSelector(ICrowdtainer.leave.selector, msg.sender)
-        );
+        try ICrowdtainer(crowdtainerAddress).leave(msg.sender) {
+            // internal state invariant after leaving
+            assert(
+                Crowdtainer(crowdtainerAddress).costForWallet(msg.sender) == 0
+            );
 
-        // internal state invariant after leaving
-        assert(Crowdtainer(crowdtainerAddress).costForWallet(msg.sender) == 0);
+            delete tokenIdQuantities[_tokenId];
 
-        delete tokenIdQuantities[_tokenId];
-
-        _burn(_tokenId);
+            _burn(_tokenId);
+        } catch (bytes memory receivedBytes) {
+            _bubbleRevert(receivedBytes);
+        }
     }
 
     /**

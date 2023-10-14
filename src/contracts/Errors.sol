@@ -82,8 +82,6 @@ library Errors {
     error ReferralRateNotMultipleOfTwo();
     // @notice: Refferal minimum value for participation can't be higher than project's minimum target.
     error ReferralMinimumValueTooHigh(uint256 received, uint256 maximum);
-    // @notice: ERC-2612 permit request failure. Forwards low level data to be decoded per EIP-6093 or other format.
-    error PermitOperationFailed(bytes receivedBytes);
 
     // -----------------------------------------------
     //  Authorization
