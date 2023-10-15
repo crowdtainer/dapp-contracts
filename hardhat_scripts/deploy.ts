@@ -20,18 +20,44 @@ async function main() {
   await crowdtainer.deployed();
   console.log("Crowdtainer deployed to:", crowdtainer.address);
 
-
   const metadataServiceV1Factory = await ethers.getContractFactory(
     "MetadataServiceV1"
   );
 
   const coinFactory = await ethers.getContractFactory("MockERC20");
-  const coin = await coinFactory.deploy("Token", "USDC", 6);
+  const coin = await coinFactory.deploy("FakeERC20", "USDC", 6);
   await coin.deployed();
   const erc20Decimals = await coin.decimals();
   console.log("Coin deployed to:", coin.address);
   console.log("Coin symbol:", await coin.symbol());
   console.log("Coin decimals:", erc20Decimals);
+
+  // here
+  const [agent, neo, trinity] = await ethers.getSigners();
+
+  const mainnetChainId = 1;
+  const isMainnet = await agent.getChainId() === mainnetChainId;
+
+  if (isMainnet) {
+      console.warn(
+          "Mainnet configuration detected, skipping MockERC20 token distribution."
+      );
+      return;
+  }
+
+  const symbol = await coin.symbol();
+  const quantity = parseUnits("10000", 6);
+
+  console.log(`Mint ${quantity} ${symbol} to trinity (${trinity.address}).`);
+  await coin.mint(trinity.address, quantity);
+
+  console.log(`Mint ${quantity} ${symbol} to neo (${neo.address}).`);
+  await coin.mint(neo.address, quantity);
+
+  console.log(`Mint ${quantity} ${symbol} to agent (${agent.address}).`);
+  await coin.mint(agent.address, quantity);
+
+  console.log(`Done.`);
 
   const metadataService = await metadataServiceV1Factory.deploy(
     "USDC",
@@ -47,8 +73,6 @@ async function main() {
 
   console.log("Vouchers721 deployed to:", vouchers721.address);
 
-  const [agent] = await ethers.getSigners();
-
   let arrayOfPrices = new Array<BigNumberish>();
   arrayOfPrices.push(parseUnits('120', erc20Decimals));
   arrayOfPrices.push(parseUnits('90', erc20Decimals));
@@ -63,7 +87,8 @@ async function main() {
 
   const campaignData = {
     shippingAgent: agent.address,
-    signer: '0x0000000000000000000000000000000000000000', // 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+    // signer: '0x0000000000000000000000000000000000000000',
+    signer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
     openingTime: currentTime + 10,
     expireTime: currentTime + 10 + 3601 * 100,
     targetMinimum: parseUnits('1000', erc20Decimals),

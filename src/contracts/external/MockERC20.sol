@@ -104,25 +104,27 @@ abstract contract ERC20 {
         require(balanceOf[from] >= amount, "Coin/insufficient-balance");
         require(to != address(0), "Coin/null-dst");
         require(to != address(this), "Coin/dst-cannot-be-this-contract");
-        string memory fromString = Strings.toHexString(
-            uint256(uint160(from)),
-            20
-        );
-        string memory msgSender = Strings.toHexString(
-            uint256(uint160(msg.sender)),
-            20
-        );
-        require(
-            allowance[from][msg.sender] >= amount,
-            string.concat(
-                "Coin/insufficient-allowance from ",
-                fromString,
-                " to: ",
-                msgSender,
-                ": ",
-                Strings.toString(allowance[from][msg.sender])
-            )
-        );
+
+        if (allowance[from][msg.sender] < amount) {
+            string memory fromString = Strings.toHexString(
+                uint256(uint160(from)),
+                20
+            );
+            string memory msgSender = Strings.toHexString(
+                uint256(uint160(msg.sender)),
+                20
+            );
+            revert(
+                string.concat(
+                    "Coin/insufficient-allowance from ",
+                    fromString,
+                    " to: ",
+                    msgSender,
+                    ": ",
+                    Strings.toString(allowance[from][msg.sender])
+                )
+            );
+        }
 
         if (allowed != type(uint256).max)
             allowance[from][msg.sender] = allowed - amount;
