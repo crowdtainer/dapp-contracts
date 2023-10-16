@@ -2,9 +2,9 @@
 pragma solidity ^0.8.16;
 
 // @dev External dependencies
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
 import "@openzeppelin/contracts/utils/structs/BitMaps.sol";
@@ -100,21 +100,25 @@ contract Vouchers721 is ERC721Enumerable {
             revert Errors.MetadataServiceAddressIsZero();
         }
 
+        // Equivalent to: ICrowdtainer crowdtainer = ICrowdtainer(new Crowdtainer());
         ICrowdtainer crowdtainer = ICrowdtainer(
             Clones.clone(crowdtainerImplementation)
         );
-        // ICrowdtainer crowdtainer = ICrowdtainer(new Crowdtainer());
 
-        crowdtainer.initialize(address(this), _campaignData);
+        try crowdtainer.initialize(address(this), _campaignData) {
+            idForCrowdtainer[address(crowdtainer)] = ++crowdtainerCount;
+            crowdtainerForId[crowdtainerCount] = address(crowdtainer);
 
-        idForCrowdtainer[address(crowdtainer)] = ++crowdtainerCount;
-        crowdtainerForId[crowdtainerCount] = address(crowdtainer);
+            productDescription[crowdtainerCount] = _productDescription;
+            metadataServiceForCrowdatinerId[
+                crowdtainerCount
+            ] = _metadataService;
+            emit CrowdtainerDeployed(address(crowdtainer), crowdtainerCount);
 
-        productDescription[crowdtainerCount] = _productDescription;
-        metadataServiceForCrowdatinerId[crowdtainerCount] = _metadataService;
-        emit CrowdtainerDeployed(address(crowdtainer), crowdtainerCount);
-
-        return (address(crowdtainer), crowdtainerCount);
+            return (address(crowdtainer), crowdtainerCount);
+        } catch (bytes memory receivedBytes) {
+            _bubbleRevert(receivedBytes);
+        }
     }
 
     /**
@@ -128,7 +132,7 @@ contract Vouchers721 is ERC721Enumerable {
     function join(
         address _crowdtainer,
         uint256[] calldata _quantities
-    ) external returns (uint256) {
+    ) public returns (uint256) {
         return join(_crowdtainer, _quantities, false, address(0));
     }
 
@@ -197,17 +201,86 @@ contract Vouchers721 is ERC721Enumerable {
         return newTokenID;
     }
 
+    /**
+     * @notice Join the specified Crowdtainer project with optional referral and discount, along with an ERC-2612 Permit.
+     * @param _crowdtainer Crowdtainer project address.
+     * @param _quantities Array with the number of units desired for each product.
+     * @param _enableReferral Informs whether the user would like to be eligible to collect rewards for being referred.
+     * @param _referrer Optional referral code to be used to claim a discount.
+     * @param _signedPermit The ERC-2612 signed permit data.
+     * @return The token id that represents the created voucher / ownership.
+     *
+     * @dev referrer is the wallet address of a previous participant.
+     * @dev if `enableReferral` is true, and the user decides to leave after the wallet has been used to claim a discount,
+     *       then the full value can't be claimed if deciding to leave the project.
+     * @dev A same user is not allowed to increase the order amounts (i.e., by calling join multiple times).
+     *      To 'update' an order, the user must first 'leave' then join again with the new values.
+     */
+    function join(
+        address _crowdtainer,
+        uint256[] calldata _quantities,
+        bool _enableReferral,
+        address _referrer,
+        SignedPermit memory _signedPermit
+    ) public returns (uint256) {
+        IERC20Permit erc20token = IERC20Permit(
+            address(Crowdtainer(_crowdtainer).token())
+        );
+
+        try
+            erc20token.permit(
+                _signedPermit.owner,
+                _crowdtainer,
+                _signedPermit.value,
+                _signedPermit.deadline,
+                _signedPermit.v,
+                _signedPermit.r,
+                _signedPermit.s
+            )
+        {
+            return join(_crowdtainer, _quantities, _enableReferral, _referrer);
+        } catch (bytes memory receivedBytes) {
+            _bubbleRevert(receivedBytes);
+        }
+    }
+
+    // @dev Function that calls a contract, and makes sure any revert 'bubbles up' and halts execution.
+    // This function is used because there is no Solidity syntax to 'rethrow' custom errors within a try/catch,
+    // other than comparing each error manually (which would unnecessarily increase code size / deployment costs).
+    function _bubbleRevert(
+        bytes memory receivedBytes
+    ) internal pure returns (bytes memory) {
+        if (receivedBytes.length == 0) revert();
+        assembly {
+            revert(add(32, receivedBytes), mload(receivedBytes))
+        }
+    }
+
+    // @dev Extract abi encoded selector bytes
+    function getSignature(bytes calldata data) external pure returns (bytes4) {
+        assert(data.length >= 4);
+        return bytes4(data[:4]);
+    }
+
+    // @dev Extract abi encoded parameters
+    function getParameters(
+        bytes calldata data
+    ) external pure returns (bytes calldata) {
+        assert(data.length > 4);
+        return data[4:];
+    }
+
     // @dev Decodes external Crowdtainer join function call errors.
-    // Most of this function code can be removed once Solidity supports
-    // 'rethrowing' an external call's custom error revert.
     function handleJoinError(
         address crowdtainer,
         bytes memory receivedBytes
     ) private view {
-        bytes4 receivedErrorSelector = this.getSignature(receivedBytes);
-
-        if (receivedErrorSelector == Errors.OffchainLookup.selector) {
-            // decode error parameters
+        if (
+            receivedBytes.length >= 4 &&
+            this.getSignature(receivedBytes) == Errors.OffchainLookup.selector
+        ) {
+            // EIP-3668 OffchainLookup revert requires processing as below.
+            // Namely, the 'sender' must be address(this), and not the inner contract address.
             (
                 address sender,
                 string[] memory urls,
@@ -227,97 +300,12 @@ contract Vouchers721 is ERC721Enumerable {
                 address(this),
                 urls,
                 callData,
-                Vouchers721.joinWithSignature.selector,
+                this.joinWithSignature.selector,
                 abi.encode(address(crowdtainer), callbackFunction, extraData)
             );
-        } else if (receivedErrorSelector == Errors.SignatureExpired.selector) {
-            (uint64 current, uint64 expires) = abi.decode(
-                this.getParameters(receivedBytes),
-                (uint64, uint64)
-            );
-            revert Errors.SignatureExpired(current, expires);
-        } else if (receivedErrorSelector == Errors.CallerNotAllowed.selector) {
-            (address expected, address actual) = abi.decode(
-                this.getParameters(receivedBytes),
-                (address, address)
-            );
-            revert Errors.CallerNotAllowed(expected, actual);
-        } else if (
-            receivedErrorSelector ==
-            Errors.InvalidProductNumberAndPrices.selector
-        ) {
-            revert Errors.InvalidProductNumberAndPrices();
-        } else if (
-            receivedErrorSelector == Errors.InvalidNumberOfQuantities.selector
-        ) {
-            revert Errors.InvalidNumberOfQuantities();
-        } else if (
-            receivedErrorSelector == Errors.ReferralInexistent.selector
-        ) {
-            revert Errors.ReferralInexistent();
-        } else if (
-            receivedErrorSelector ==
-            Errors.PurchaseExceedsMaximumTarget.selector
-        ) {
-            (uint256 received, uint256 maximum) = abi.decode(
-                this.getParameters(receivedBytes),
-                (uint256, uint256)
-            );
-            revert Errors.PurchaseExceedsMaximumTarget(received, maximum);
-        } else if (
-            receivedErrorSelector ==
-            Errors.ExceededNumberOfItemsAllowed.selector
-        ) {
-            (uint256 received, uint256 maximum) = abi.decode(
-                this.getParameters(receivedBytes),
-                (uint256, uint256)
-            );
-            revert Errors.ExceededNumberOfItemsAllowed(received, maximum);
-        } else if (receivedErrorSelector == Errors.UserAlreadyJoined.selector) {
-            revert Errors.UserAlreadyJoined();
-        } else if (
-            receivedErrorSelector ==
-            Errors.ReferralDisabledForProvidedCode.selector
-        ) {
-            revert Errors.ReferralDisabledForProvidedCode();
-        } else if (
-            receivedErrorSelector ==
-            Errors.MinimumPurchaseValueForReferralNotMet.selector
-        ) {
-            (uint256 received, uint256 maximum) = abi.decode(
-                this.getParameters(receivedBytes),
-                (uint256, uint256)
-            );
-            revert Errors.MinimumPurchaseValueForReferralNotMet(
-                received,
-                maximum
-            );
-        } else if (
-            receivedErrorSelector ==
-            Errors.NonceAlreadyUsed.selector
-        ) {
-            (address wallet, bytes32 nonce) = abi.decode(
-                this.getParameters(receivedBytes),
-                (address, bytes32)
-            );
-            revert Errors.NonceAlreadyUsed(wallet, nonce);
         }
-        else {
-            // other
-            revert Errors.CrowdtainerLowLevelError(receivedBytes);
-        }
-    }
-
-    function getSignature(bytes calldata data) external pure returns (bytes4) {
-        require(data.length >= 4);
-        return bytes4(data[:4]);
-    }
-
-    function getParameters(
-        bytes calldata data
-    ) external pure returns (bytes calldata) {
-        require(data.length > 4);
-        return data[4:];
+        // All other Crowdtainer.sol's errors can be propagated for decoding in external tooling.
+        _bubbleRevert(receivedBytes);
     }
 
     /**
@@ -331,25 +319,21 @@ contract Vouchers721 is ERC721Enumerable {
     function joinWithSignature(
         bytes calldata result, // off-chain signed payload
         bytes calldata extraData // retained by client, passed for verification in this function
-    ) external returns (uint256) {
+    ) public returns (uint256) {
         (
             address crowdtainer, // Address of Crowdtainer contract
             bytes4 innerCallbackFunction,
             bytes memory innerExtraData
         ) = abi.decode(extraData, (address, bytes4, bytes));
 
-        require(innerCallbackFunction == Crowdtainer.joinWithSignature.selector);
-    
+        require(
+            innerCallbackFunction == Crowdtainer.joinWithSignature.selector
+        );
+
         (address _wallet, uint256[] memory _quantities, , ) = abi.decode(
             innerExtraData,
             (address, uint256[], bool, address)
         );
-
-        if (msg.sender != _wallet)
-            revert Errors.CallerNotAllowed({
-                expected: _wallet,
-                actual: msg.sender
-            });
 
         require(crowdtainer != address(0));
         uint256 crowdtainerId = idForCrowdtainer[crowdtainer];
@@ -361,9 +345,10 @@ contract Vouchers721 is ERC721Enumerable {
         require(crowdtainer.code.length > 0);
 
         uint256 costForWallet = Crowdtainer(crowdtainer).costForWallet(_wallet);
+
         try Crowdtainer(crowdtainer).joinWithSignature(result, innerExtraData) {
             // internal state invariant after joining
-            require(
+            assert(
                 Crowdtainer(crowdtainer).costForWallet(_wallet) > costForWallet
             );
         } catch (bytes memory receivedBytes) {
@@ -393,6 +378,45 @@ contract Vouchers721 is ERC721Enumerable {
     }
 
     /**
+     * @notice Set ERC20's allowance using Permit, and call joinWithSignature(..), in a single call.
+     * @param result ABI encoded (uint64, bytes) for signature time validity and the signature itself.
+     * @param extraData ABI encoded (address, bytes4, bytes), 3rd parameter contains encoded values for Crowdtainer._join() method.
+     * @param _signedPermit The ERC-2612 signed permit data.
+     *
+     * @dev This convenience function is *not* EIP-3668-compliant: the frontend needs to be aware of it to take advantage.
+     */
+    function joinWithSignatureAndPermit(
+        bytes calldata result, // off-chain signed payload
+        bytes calldata extraData, // retained by client, passed for verification in this function
+        SignedPermit memory _signedPermit // Params to be forwarded to ERC-20 contract.
+    ) external returns (uint256) {
+        (address crowdtainer, , ) = abi.decode(
+            extraData,
+            (address, bytes4, bytes)
+        );
+
+        IERC20Permit erc20token = IERC20Permit(
+            address(Crowdtainer(crowdtainer).token())
+        );
+
+        try
+            erc20token.permit(
+                _signedPermit.owner,
+                crowdtainer,
+                _signedPermit.value,
+                _signedPermit.deadline,
+                _signedPermit.v,
+                _signedPermit.r,
+                _signedPermit.s
+            )
+        {
+            return joinWithSignature(result, extraData);
+        } catch (bytes memory receivedBytes) {
+            _bubbleRevert(receivedBytes);
+        }
+    }
+
+    /**
      * @notice Returns the specified voucher and withdraw all deposited funds given when joining the Crowdtainer.
      * @notice Calling this method signals that the participant is no longer interested in the project.
      * @dev Only allowed if the respective Crowdtainer is in active funding state.
@@ -406,35 +430,18 @@ contract Vouchers721 is ERC721Enumerable {
             tokenIdToCrowdtainerId(_tokenId)
         );
 
-        try Crowdtainer(crowdtainerAddress).leave(msg.sender) {
+        try ICrowdtainer(crowdtainerAddress).leave(msg.sender) {
             // internal state invariant after leaving
-            require(
+            assert(
                 Crowdtainer(crowdtainerAddress).costForWallet(msg.sender) == 0
             );
+
+            delete tokenIdQuantities[_tokenId];
+
+            _burn(_tokenId);
         } catch (bytes memory receivedBytes) {
-            bytes4 receivedErrorSelector = this.getSignature(receivedBytes);
-
-            if (
-                receivedErrorSelector ==
-                Errors.CannotLeaveDueAccumulatedReferralCredits.selector
-            ) {
-                revert Errors.CannotLeaveDueAccumulatedReferralCredits();
-            } else if (
-                receivedErrorSelector == Errors.CallerNotAllowed.selector
-            ) {
-                (address expected, address actual) = abi.decode(
-                    this.getParameters(receivedBytes),
-                    (address, address)
-                );
-                revert Errors.CallerNotAllowed(expected, actual);
-            } else {
-                revert Errors.CrowdtainerLowLevelError(receivedBytes);
-            }
+            _bubbleRevert(receivedBytes);
         }
-
-        delete tokenIdQuantities[_tokenId];
-
-        _burn(_tokenId);
     }
 
     /**

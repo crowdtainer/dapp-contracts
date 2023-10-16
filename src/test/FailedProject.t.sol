@@ -20,8 +20,9 @@ contract CrowdtainerValidProjectTerminationTester is CrowdtainerTest {
 
         bob.doJoin(quantities, false, address(0));
 
-        uint256 totalCost = quantities[1] * unitPricePerType[1];
-        totalCost += quantities[2] * unitPricePerType[2];
+        uint256 totalCost = calculateTotalCost(
+            AvoidStackTooDeep(quantities, unitPricePerType)
+        );
 
         assertEq(
             erc20Token.balanceOf(address(bob)),
@@ -45,7 +46,9 @@ contract CrowdtainerValidProjectTerminationTester is CrowdtainerTest {
         uint256[] memory quantities = new uint256[](4);
         quantities[1] = 2;
 
-        uint256 totalCost = quantities[1] * unitPricePerType[1];
+        uint256 totalCost = calculateTotalCost(
+            AvoidStackTooDeep(quantities, unitPricePerType)
+        );
 
         bob.doJoin(quantities, false, address(0));
 
@@ -71,7 +74,9 @@ contract CrowdtainerValidProjectTerminationTester is CrowdtainerTest {
         uint256[] memory quantities = new uint256[](4);
         quantities[1] = 2;
 
-        uint256 totalCost = quantities[1] * unitPricePerType[1];
+        uint256 totalCost = calculateTotalCost(
+            AvoidStackTooDeep(quantities, unitPricePerType)
+        );
 
         bob.doJoin(quantities, false, address(0));
 
@@ -96,7 +101,9 @@ contract CrowdtainerValidProjectTerminationTester is CrowdtainerTest {
         uint256[] memory quantities = new uint256[](4);
         quantities[1] = 2;
 
-        uint256 totalCost = quantities[1] * unitPricePerType[1];
+        uint256 totalCost = calculateTotalCost(
+            AvoidStackTooDeep(quantities, unitPricePerType)
+        );
 
         bob.doJoin(quantities, false, address(0));
 
@@ -114,7 +121,9 @@ contract CrowdtainerValidProjectTerminationTester is CrowdtainerTest {
         assertEq(erc20Token.balanceOf(address(bob)), previousBalance);
     }
 
-    function testClaimFundsOnSuccessfulProjectWithUnresponsiveServiceProvider() public {
+    function testClaimFundsOnSuccessfulProjectWithUnresponsiveServiceProvider()
+        public
+    {
         // Create a crowdtainer where targetMinimum is small enough that a single user could
         // make the project succeed with a single join() call.
         uint256[] memory _unitPricePerType = new uint256[](4);
@@ -151,7 +160,9 @@ contract CrowdtainerValidProjectTerminationTester is CrowdtainerTest {
         uint256[] memory quantities = new uint256[](4);
         quantities[2] = 11;
 
-        uint256 totalCost = quantities[2] * _unitPricePerType[2];
+        uint256 totalCost = calculateTotalCost(
+            AvoidStackTooDeep(quantities, _unitPricePerType)
+        );
 
         alice.doJoin(quantities, false, address(0));
 

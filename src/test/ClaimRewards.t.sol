@@ -44,7 +44,7 @@ contract CrowdtainerRewardsTester is CrowdtainerTest {
         quantities[1] = 0;
         quantities[2] = 0;
 
-        uint256 totalCost = quantities[3] * _unitPricePerType[3];
+        uint256 totalCost = calculateTotalCost(AvoidStackTooDeep(quantities, _unitPricePerType));
 
         uint256 discount = ((totalCost * referralRate) / 100) / 2;
         assert(discount != 0);
