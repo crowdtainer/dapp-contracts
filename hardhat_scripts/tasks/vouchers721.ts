@@ -44,7 +44,7 @@ task(
       signer: agent, // to disable EIP-3668 use 0x0000000000000000000000000000000000000000
       // signer: '0x0000000000000000000000000000000000000000',
       openingTime: currentTime + 10,
-      expireTime: currentTime + 60 * 60,
+      expireTime: currentTime + 10 + 3601 * 24 * 60,
       targetMinimum: parseUnits('1000', erc20Decimals),
       targetMaximum: parseUnits('10000000', erc20Decimals),
       unitPricePerType: arrayOfPrices,
