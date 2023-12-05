@@ -53,6 +53,10 @@ const config: HardhatUserConfig = {
       url: nodeUrlFor("optimism"),
       accounts: privateKeysFor('optimism'),
     },
+    arbitrum: {
+      url: nodeUrlFor("arbitrum"),
+      accounts: privateKeysFor('arbitrum'),
+    },
     optimismgoerli: {
       url: "https://goerli.optimism.io",
       accounts: privateKeysFor('optimismgoerli'),

@@ -126,7 +126,8 @@ tasks to e.g. manually interact with the contract state, hardhat requires specif
 // A few examples:
 
 // To create a new crowdtainer:
-npx hardhat createCrowdtainer --network localhost
+npx hardhat createCrowdtainer --network localhost --agent 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+// where the last parameter is the address of the agent/service provider address
 
 // To make a user join a crowdtainer project:
 npx hardhat join --user neo --crowdtainerid 1 --quantities 200 --network localhost
@@ -144,7 +145,8 @@ Copy the `.env.example` file to `.env`.
 
 ```sh
 # Run a simulated Ethereum blockchain locally and deploy contracts:
-npx hardhat node (scripts under deploy/*.ts are executed sequentially)
+# (scripts under deploy/*.ts are executed sequentially)
+npx hardhat node
 ```
 
 To deploy to a specific network:
@@ -161,7 +163,7 @@ npx hardhat accounts
 npx hardhat compile
 npx hardhat clean
 # To deploy all contracts + Crowdtainer instance to some other node (local or remote):
-npx hardhat run hardhat_scripts/deploy.ts --network localhost
+npx hardhat run hardhat_scripts/deploy_with_mocked_token.ts --network localhost
 # TS_NODE_FILES=true npx ts-node scripts/deploy.ts
 npx eslint '**/*.{js,ts}'
 npx eslint '**/*.{js,ts}' --fix

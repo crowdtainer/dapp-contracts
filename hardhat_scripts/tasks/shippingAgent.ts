@@ -4,7 +4,7 @@ import { Crowdtainer} from "../../out/typechain/";
 
 task("setURLs", "Set url for CCIP-Read.")
   .addParam("url", "The first URL to be passed to the client.")
-  .addParam("crowdtainerddress", "The crowdtainerId.")
+  .addParam("crowdtainerddress", "The crowdtainer address.")
   .setAction(async function ({ url, crowdtaineraddress }, hre) {
     const crowdtainer = await hre.ethers.getContract<Crowdtainer>("Crowdtainer");
     crowdtainer.attach(crowdtaineraddress);
@@ -18,7 +18,7 @@ task("setURLs", "Set url for CCIP-Read.")
 
 task("setSigner", "Set signer public key for CCIP-Read.")
   .addParam("address", "The public key to be used for signature verification.")
-  .addParam("crowdtaineraddress", "The crowdtainerId.")
+  .addParam("crowdtaineraddress", "The crowdtainer address.")
   .setAction(async function ({ address, crowdtaineraddress }, hre) {
     const crowdtainerFactory = await hre.ethers.getContractFactory("Crowdtainer");
     const crowdtainer = <Crowdtainer>crowdtainerFactory.attach(crowdtaineraddress);
@@ -29,7 +29,7 @@ task("setSigner", "Set signer public key for CCIP-Read.")
   });
 
 task("getPaidAndDeliver", "Call function to put crowdtainer state in 'delivery' mode. Requires minimum funding target to be reached.")
-  .addParam("crowdtaineraddress", "The crowdtainerId.")
+  .addParam("crowdtaineraddress", "The crowdtainer address.")
   .setAction(async function ({ crowdtaineraddress }, hre) {
     const crowdtainerFactory = await hre.ethers.getContractFactory("Crowdtainer");
     const crowdtainer = <Crowdtainer>crowdtainerFactory.attach(crowdtaineraddress);
