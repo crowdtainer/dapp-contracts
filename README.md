@@ -46,9 +46,9 @@ root
 └── <a href="./hardhat_scripts">hardhat_scripts</a>: Deploy & interact with contracts.
 </pre>
 
-# Security Policy and Vulnerability Reporting
+## Security Policy and Vulnerability Reporting
 
-Please refer to [Security Policy](https://github.com/crowdtainer/dapp-contracts/.github/blob/master/SECURITY.md) for detailed information about how to report vulnerabilities in this codebase.
+Please refer to [Security Policy](https://github.com/crowdtainer/dapp-contracts/blob/main/SECURITY.md) for detailed information about how to report vulnerabilities in this codebase.
 
 # Installing dependencies
 
