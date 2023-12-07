@@ -81,7 +81,7 @@ jobs:
         run: yarn build && npx hardhat compile
 
       - name: Deploy contracts
-        run: npx hardhat run hardhat_scripts/deploy.ts
+        run: npx hardhat run hardhat_scripts/01_deploy_from_scratch.ts
 
       - name: Run forge tests
         run: forge test -vvv
