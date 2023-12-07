@@ -6,78 +6,46 @@
 import { ethers } from "hardhat";
 import { BigNumberish } from "@ethersproject/bignumber/lib/bignumber";
 import { parseUnits } from "ethers/lib/utils";
-import { MetadataServiceV1, Vouchers721 } from "../out/typechain";
-import { DeployResult } from "hardhat-deploy/types.js";
-
-const hre = require('hardhat');
-const { deployments, getNamedAccounts } = hre;
+import { Vouchers721 } from "../out/typechain";
 
 async function main() {
   // If this script is run directly using `node` you may want to call compile
   // manually to make sure everything is compiled
   // await hre.run('compile');
 
-  console.log({ namedAccounts: await getNamedAccounts() });
+  // Deploy contracts
+  // Crowdtainer
+  const crowdtainerFactory = await ethers.getContractFactory("Crowdtainer");
+  const crowdtainer = await crowdtainerFactory.deploy();
+  await crowdtainer.deployed();
+  console.log("Crowdtainer deployed to:", crowdtainer.address);
 
-  const { deploy } = deployments;
-  const { deployer } = await getNamedAccounts();
-
-  // Deploy Crowdtainer
-  let deployResult: DeployResult = await deploy("Crowdtainer", {
-    from: deployer,
-    args: [],
-    log: true,
-  });
-
-  console.log(`Crowdtainer deployed at address ${deployResult.address}`);
-
-  // Deploy ERC-721 containing tokenURI implementation
-  deployResult = await deploy("MetadataServiceV1", {
-    from: deployer,
-    args: ['USDC', 6, "This participation proof is not valid as an invoice."],
-    log: true,
-  });
-
-  console.log(`MetadataServiceV1 deployed at address ${deployResult.address}`);
-
-  const crowdtainerImplementation = await hre.ethers.getContract("Crowdtainer");
-
-  // Deploy Vouchers721 - main contract for users
-  deployResult = await deploy("Vouchers721", {
-    from: deployer,
-    args: [crowdtainerImplementation.address],
-    log: true,
-  });
-
-  console.log(`Vouchers721 deployed at address ${deployResult.address}`);
-
-  await deploy("MockERC20", {
-    from: deployer,
-    args: ["FakeERC20", "USDC", 6],
-    log: true,
-  });
-
-  const coin = await hre.ethers.getContract("MockERC20");
-  const erc20Decimals = await coin.decimals();
-  const supply = await coin.totalSupply();
-  const symbol = await coin.symbol();
-  console.log(
-    `MockERC20 deployed at: ${coin.address}. Current supply of ${supply} ${symbol}`
+  const metadataServiceV1Factory = await ethers.getContractFactory(
+    "MetadataServiceV1"
   );
 
+  const coinFactory = await ethers.getContractFactory("MockERC20");
+  const coin = await coinFactory.deploy("FakeERC20", "USDC", 6);
+  await coin.deployed();
+  const erc20Decimals = await coin.decimals();
+  console.log("Coin deployed to:", coin.address);
+  console.log("Coin symbol:", await coin.symbol());
+  console.log("Coin decimals:", erc20Decimals);
+
+  // here
   const [agent, neo, trinity] = await ethers.getSigners();
 
   const mainnetChainId = 1;
   const isMainnet = await agent.getChainId() === mainnetChainId;
 
   if (isMainnet) {
-    console.warn(
-      "Mainnet configuration detected, skipping MockERC20 token distribution."
-    );
-    return;
+      console.warn(
+          "Mainnet configuration detected, skipping MockERC20 token distribution."
+      );
+      return;
   }
 
-  // const symbol = await coin.symbol();
+  const symbol = await coin.symbol();
   const quantity = parseUnits("10000", 6);
 
   console.log(`Mint ${quantity} ${symbol} to trinity (${trinity.address}).`);
@@ -88,6 +56,22 @@ async function main() {
 
   console.log(`Mint ${quantity} ${symbol} to agent (${agent.address}).`);
   await coin.mint(agent.address, quantity);
+
+  console.log(`Done.`);
+
+  const metadataService = await metadataServiceV1Factory.deploy(
+    "USDC",
+    erc20Decimals,
+    "This ticket is not valid as an invoice"
+  );
+  await metadataService.deployed();
+  console.log("MetadataServiceV1 deployed to:", metadataService.address);
+
+  const vouchers721Factory = await ethers.getContractFactory("Vouchers721");
+  const vouchers721 = <Vouchers721>(await vouchers721Factory.deploy(crowdtainer.address));
+  await vouchers721.deployed();
+
+  console.log("Vouchers721 deployed to:", vouchers721.address);
 
   let arrayOfPrices = new Array<BigNumberish>();
   arrayOfPrices.push(parseUnits('120', erc20Decimals));
@@ -115,9 +99,6 @@ async function main() {
     token: coin.address,
     legalContractURI: ""
   };
-
-  const vouchers721: Vouchers721 = await hre.ethers.getContract("Vouchers721");
-  const metadataService: MetadataServiceV1 = await hre.ethers.getContract("MetadataServiceV1");
 
   await vouchers721.createCrowdtainer(
     campaignData,

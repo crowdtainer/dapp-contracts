@@ -9,6 +9,9 @@ import { parseUnits } from "ethers/lib/utils";
 import { MetadataServiceV1, Vouchers721 } from "../out/typechain";
 import { DeployResult } from "hardhat-deploy/types.js";
 
+// This script can be used to perform a 'real' deployment, either against localhost or a real network, while
+// reusing any previous deployments when possible (note usage of 'deployments' from hre hardhat-deploy plugin).
+
 const hre = require('hardhat');
 const { deployments, getNamedAccounts } = hre;
 
@@ -74,16 +77,17 @@ async function main() {
   arrayOfPrices.push(parseUnits('210', ERC20Decimals));
 
   const currentTime = (await ethers.provider.getBlock("latest")).timestamp;
+  const campaignDurationInDays = 42;
   const campaignData = {
     shippingAgent: agent.address,
     // signer: '0x0000000000000000000000000000000000000000',
     signer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
     openingTime: currentTime + 10,
-    expireTime: currentTime + 10 + 3601 * 100,
-    targetMinimum: parseUnits('1000', ERC20Decimals),
-    targetMaximum: parseUnits('10000000', ERC20Decimals),
+    expireTime: currentTime + 60 * 60 * 24 * campaignDurationInDays,
+    targetMinimum: parseUnits('35000', ERC20Decimals),
+    targetMaximum: parseUnits('100000', ERC20Decimals),
     unitPricePerType: arrayOfPrices,
-    referralRate: 0,
+    referralRate: 20,
     referralEligibilityValue: parseUnits('50', ERC20Decimals),
     token: ERC20TokenAddress,
     legalContractURI: ""
@@ -94,18 +98,18 @@ async function main() {
 
   await vouchers721.createCrowdtainer(
     campaignData,                                       // EUR / kg     USD / kg 
-    ["Germany Delivery | Single | 500g",               // 37             41
+    ["Germany Delivery | Single | 500g",                // 37             41
       "Germany Delivery | Single | 1kg",                // 30             33
       "Germany Delivery | Single | 2kg",                // 28             31
-      "Germany Delivery | 3 Month Subscription | 500g",  // 37             41
+      "Germany Delivery | 3 Month Subscription | 500g", // 37             41
       "Germany Delivery | 3 Month Subscription | 1kg",  // 30             33
       "Germany Delivery | 3 Month Subscription | 2kg",  // 28             31
       "Europe Delivery | Single | 500g",                // 61             66
       "Europe Delivery | Single | 1kg",                 // 42             46
-      "Europe Delivery | Single | 2kg",                // 32             35
+      "Europe Delivery | Single | 2kg",                 // 32             35
       "Europe Delivery | 3 Month Subscription | 500g",  // 61             66
       "Europe Delivery | 3 Month Subscription | 1kg",   // 42             46
-      "Europe Delivery | 3 Month Subscription | 2kg"],   // 32             35
+      "Europe Delivery | 3 Month Subscription | 2kg"],  // 32             35
     metadataService.address
   );
 
