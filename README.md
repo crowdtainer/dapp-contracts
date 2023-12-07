@@ -25,7 +25,7 @@ There are currently three different tools that are able to build & execute tests
 
 ## Community
 
-Come hang on our [discord](https://--.com) - to be announced soon.✨
+Come hang on our [discord](https://discord.gg/D6FrwCfKAP) ✨
 
 ## Contributing
 
@@ -45,6 +45,10 @@ root
 ├── <a href="./scripts">scripts</a>: Scripts used by Makefile. Entry points for dapp.tools.
 └── <a href="./hardhat_scripts">hardhat_scripts</a>: Deploy & interact with contracts.
 </pre>
+
+# Security Policy and Vulnerability Reporting
+
+Please refer to [Security Policy](https://github.com/crowdtainer/dapp-contracts/.github/blob/master/SECURITY.md) for detailed information about how to report vulnerabilities in this codebase.
 
 # Installing dependencies
 
