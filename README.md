@@ -130,7 +130,7 @@ npx hardhat createCrowdtainer --network localhost --agent 0xf39Fd6e51aad88F6F4ce
 // where the last parameter is the address of the agent/service provider address
 
 // Alternatively, to create a new crowdtainer via "hardhat-deploy script":
-npx hardhat run hardhat_scripts/deploy_and_create_crowdtainer.ts --network localhost
+npx hardhat run hardhat_scripts/02_deploy_and_create_crowdtainer.ts --network localhost
 
 // To make a user join a crowdtainer project:
 npx hardhat join --user neo --crowdtainerid 1 --quantities 200 --network localhost
