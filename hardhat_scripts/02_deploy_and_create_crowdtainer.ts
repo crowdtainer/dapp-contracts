@@ -90,7 +90,7 @@ async function main() {
     referralRate: 20,
     referralEligibilityValue: parseUnits('50', ERC20Decimals),
     token: ERC20TokenAddress,
-    legalContractURI: ""
+    legalContractURI: "http://example.com/terms"
   };
 
   const vouchers721: Vouchers721 = await hre.ethers.getContract("Vouchers721");
