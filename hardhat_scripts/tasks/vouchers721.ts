@@ -51,7 +51,7 @@ task(
       referralRate: 20,
       referralEligibilityValue: parseUnits('0', erc20Decimals),
       token: coin.address,
-      legalContractURI: ""
+      legalContractURI: "http://example.com/terms"
     };
 
     await vouchers721.createCrowdtainer(

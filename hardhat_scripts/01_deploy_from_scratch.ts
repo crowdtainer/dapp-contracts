@@ -8,6 +8,8 @@ import { BigNumberish } from "@ethersproject/bignumber/lib/bignumber";
 import { parseUnits } from "ethers/lib/utils";
 import { Vouchers721 } from "../out/typechain";
 
+// This script is mainly used for testing a 'real' deployment on localhost, without reusing any former deployment.
+
 async function main() {
   // If this script is run directly using `node` you may want to call compile
   // manually to make sure everything is compiled
@@ -97,7 +99,7 @@ async function main() {
     referralRate: 0,
     referralEligibilityValue: parseUnits('50', erc20Decimals),
     token: coin.address,
-    legalContractURI: ""
+    legalContractURI: "http://example.com/terms"
   };
 
   await vouchers721.createCrowdtainer(
