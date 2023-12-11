@@ -37,9 +37,10 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     deployer: 0,
+    agent: 0, // shipping agent / service provider
+    agentAuth: 0, // shipping agent signer (join authorizer)
     neo: 1, // participant
     trinity: 2, // participant
-    agent: 0, // agent / service provider
   },
   networks: {
     goerli: {
@@ -64,10 +65,9 @@ const config: HardhatUserConfig = {
     localhost: {
       // gas: 2100000,
       // gasPrice: 8000000000,
+      // saveDeployments: true,
+      accounts: privateKeysFor('localhost')
     },
-    // hardhat: {
-    //   allowUnlimitedContractSize: true
-    // },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
