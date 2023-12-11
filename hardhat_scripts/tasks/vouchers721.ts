@@ -3,22 +3,28 @@ import "@nomiclabs/hardhat-ethers";
 import { BigNumberish } from "@ethersproject/bignumber/lib/bignumber";
 import { parseUnits } from "ethers/lib/utils";
 import { MockERC20, Vouchers721 } from "../../out/typechain";
+import assert from "node:assert";
 
 task(
   "createCrowdtainer",
   "Create/initialize a new Crowdtainer project with default values."
-).addParam("agent", "The agent/service provider address")
-  .setAction(async function ({ agent }, hre) {
+).setAction(async function ({ }, hre) {
     let { ethers } = hre;
     const coin = <MockERC20>(await ethers.getContract("MockERC20"));
+    
+    const { agent, agentAuth } = await hre.getNamedAccounts();
+    const agentSigner = await hre.ethers.getSigner(agent);
+    const agentAuthSigner = await hre.ethers.getSigner(agentAuth);
 
-    const agentSigner = await ethers.getSigner(agent);
+    assert(agentSigner);
+    assert(agentAuthSigner);
 
     const vouchers721 = await ethers.getContract<Vouchers721>("Vouchers721");
     const metadataService = await ethers.getContract("MetadataServiceV1");
 
     console.log(`MetadataServiceV1 address: ${metadataService.address}`);
     console.log(`Agent address: ${agentSigner.address}`);
+    console.log(`Agent join auth address: ${agentAuthSigner.address}`);
     console.log(`token address: ${coin.address}`);
 
     const erc20Decimals = await coin.decimals();
@@ -40,9 +46,9 @@ task(
     // + 1150*100
 
     const campaignData = {
-      shippingAgent: agent,
-      signer: agent, // to disable EIP-3668 use 0x0000000000000000000000000000000000000000
-      // signer: '0x0000000000000000000000000000000000000000',
+      shippingAgent: agentSigner.address,
+      // signer: agentAuthSigner.address, // to disable EIP-3668 use 0x0000000000000000000000000000000000000000
+      signer: '0x0000000000000000000000000000000000000000',
       openingTime: currentTime + 10,
       expireTime: currentTime + 10 + 3601 * 24 * 60,
       targetMinimum: parseUnits('1000', erc20Decimals),
@@ -89,7 +95,12 @@ task("join", "Join a Crowdtainer with the given parameters.")
     let crowdtainerAddress = await vouchers721.crowdtainerIdToAddress(crowdtainerid);
     console.log(`Crowdtainer address: ${crowdtainerAddress}`);
 
-    let quantity: [BigNumberish, BigNumberish, BigNumberish, BigNumberish] = [quantities, quantities, quantities, quantities];
+    let quantity: BigNumberish[] = new Array<BigNumberish>();
+
+    for (let index = 0; index < 8; index++) {
+        quantity.push(quantities);
+    }
+
     await vouchers721.connect(sender)["join(address,uint256[])"](crowdtainerAddress, quantity);
 
     console.log(`${sender.address} has joined crowdtainerId ${crowdtainerid}`);
