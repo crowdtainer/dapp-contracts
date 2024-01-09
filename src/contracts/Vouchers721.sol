@@ -574,6 +574,6 @@ contract Vouchers721 is ERC721Enumerable {
             revert Errors.SetClaimedOnlyAllowedByShippingAgent();
         }
 
-        claimed.setTo(_tokenId, _value);
+        BitMaps.setTo(claimed, _tokenId, _value);
     }
 }
