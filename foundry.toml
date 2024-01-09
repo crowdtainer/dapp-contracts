@@ -39,7 +39,6 @@ block_difficulty = 0
 mainnet = "http://192.168.0.2:8545"
 
 [fuzz]
-seed = 10
 fail_on_revert = true
 runs = 10
 depth = 7

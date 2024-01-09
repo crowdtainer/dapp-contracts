@@ -55,7 +55,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     uint256 public accumulatedRewards;
 
     /// @notice Maps referee to referrer.
-    mapping(address => address) public referredOfReferee;
+    mapping(address => address) public referrerOfReferee;
 
     uint256 public referralEligibilityValue;
 
@@ -94,7 +94,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             _;
             return;
         }
-        requireMsgSenderEquals(requiredAddress);
+        requireMsgSenderEquals(owner);
         _;
     }
 
@@ -151,13 +151,13 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     // benefit of mitigating damage in case of key compromise.
 
     function setSigner(address _signer) external {
-        requireMsgSender(shippingAgent);
+        requireMsgSenderEquals(shippingAgent);
         signer = _signer;
         emit SignerChanged(signer);
     }
 
     function setUrls(string[] memory _urls) external {
-        requireMsgSender(shippingAgent);
+        requireMsgSenderEquals(shippingAgent);
         urls = _urls;
         emit CCIPURLChanged(urls);
     }
@@ -345,7 +345,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
      */
     function join(
         address _wallet,
-        uint256[MAX_NUMBER_OF_PRODUCTS] calldata _quantities
+        uint256[] calldata _quantities
     ) public { // @audit-issue why does this need to be public?
         join(_wallet, _quantities, false, address(0));
     }
@@ -596,7 +596,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             accumulatedRewardsOf[_referred] += discount;
             accumulatedRewards += discount;
 
-            referredOfReferee[_wallet] = _referred;
+            referrerOfReferee[_wallet] = _referred;
         }
 
         costForWallet[_wallet] = finalCost;
@@ -652,7 +652,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         uint256 withdrawalTotal = costForWallet[_wallet];
 
         // @dev Subtract formerly given referral rewards originating from this account.
-        address referred = referredOfReferee[_wallet];
+        address referred = referrerOfReferee[_wallet];
         if (referred != address(0)) {
             accumulatedRewardsOf[referred] -= discountForUser[_wallet]; // @audit-issue MED DoS can prevent user from leaving due to underflow.
         }
@@ -671,7 +671,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
 
         costForWallet[_wallet] = 0;
         discountForUser[_wallet] = 0;
-        referredOfReferee[_wallet] = address(0);
+        referrerOfReferee[_wallet] = address(0);
         enableReferral[_wallet] = false;
 
         // @dev transfer the owed funds from this contract back to the user.
@@ -690,7 +690,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     {
         // @audit shipping agent can use this function to prevent a user from leaving
         // the contract by frontrunning the leave() call (provided it passed the targetMinimum).
-        requireMsgSender(shippingAgent);
+        requireMsgSenderEquals(shippingAgent);
         uint256 availableForAgent = totalValueRaised - accumulatedRewards;
 
         if (totalValueRaised < targetMinimum) {
@@ -717,7 +717,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         onlyInState(CrowdtainerState.Funding)
         nonReentrant
     {
-        requireMsgSender(shippingAgent);
+        requireMsgSenderEquals(shippingAgent);
         crowdtainerState = CrowdtainerState.Failed;
     }
 
