@@ -17,6 +17,8 @@ import "./Errors.sol";
 import "./Constants.sol";
 import "./Metadata/IMetadataService.sol";
 
+// @audit organize functions by security implication state changing, more visible first.
+
 /**
  * @title Crowdtainer's project manager contract.
  * @author Crowdtainer.eth
@@ -25,6 +27,7 @@ import "./Metadata/IMetadataService.sol";
  * @dev Each token id represents a "sold voucher", a set of one or more products or services of a specific Crowdtainer.
  */
 contract Vouchers721 is ERC721Enumerable {
+
     // @dev Each Crowdtainer project is alloacted a range.
     // @dev This is used as a multiple to deduce the crowdtainer id from a given token id.
     uint256 public constant ID_MULTIPLE = 1000000;
@@ -59,7 +62,7 @@ contract Vouchers721 is ERC721Enumerable {
     // -----------------------------------------------
 
     // @note Emmited when this contract is created.
-    event Vouchers721Created(address indexed crowdtainer);
+    event Vouchers721Created(address indexed crowdtainer); // @audit-issue INFO change this variable name
 
     // @note Emmited when a new Crowdtainer is deployed and initialized by this contract.
     event CrowdtainerDeployed(
@@ -94,7 +97,7 @@ contract Vouchers721 is ERC721Enumerable {
     function createCrowdtainer(
         CampaignData calldata _campaignData,
         string[] memory _productDescription,
-        address _metadataService
+        address _metadataService // @audit Phishing source. Consider restricting createCrowdtainer for first version.
     ) external returns (address, uint256) {
         if (_metadataService == address(0)) {
             revert Errors.MetadataServiceAddressIsZero();
@@ -115,7 +118,7 @@ contract Vouchers721 is ERC721Enumerable {
             ] = _metadataService;
             emit CrowdtainerDeployed(address(crowdtainer), crowdtainerCount);
 
-            return (address(crowdtainer), crowdtainerCount);
+            return (address(crowdtainer), crowdtainerCount); // @audit Why return this data?
         } catch (bytes memory receivedBytes) {
             _bubbleRevert(receivedBytes);
         }
@@ -166,7 +169,7 @@ contract Vouchers721 is ERC721Enumerable {
         ICrowdtainer crowdtainer = ICrowdtainer(_crowdtainer);
 
         try
-            crowdtainer.join(
+            crowdtainer.join( // @audit-issue reentry opportunity here.
                 msg.sender,
                 _quantities,
                 _enableReferral,
@@ -196,7 +199,7 @@ contract Vouchers721 is ERC721Enumerable {
         tokenIdQuantities[newTokenID] = _quantities;
 
         // Mint the voucher to the respective owner
-        _safeMint(msg.sender, newTokenID);
+        _safeMint(msg.sender, newTokenID); // @audit onERC721Received called here.
 
         return newTokenID;
     }
@@ -308,6 +311,8 @@ contract Vouchers721 is ERC721Enumerable {
         _bubbleRevert(receivedBytes);
     }
 
+    // @audit Regarding last dev note, what do you mean automatically? below it requires msg.sender ==
+    // wallet users must sign it. Or is _wallet == crowdtainer.signer == msg.sender?
     /**
      * @notice Allows joining by means of CCIP-READ (EIP-3668).
      * @param result ABI encoded (uint64, bytes) for signature time validity and the signature itself.
@@ -344,13 +349,14 @@ contract Vouchers721 is ERC721Enumerable {
 
         require(crowdtainer.code.length > 0);
 
+        // @audit GAS why get costForWallet, it must be 0 otherwise Crowdtainer._join reverts.
         uint256 costForWallet = Crowdtainer(crowdtainer).costForWallet(_wallet);
 
         try Crowdtainer(crowdtainer).joinWithSignature(result, innerExtraData) {
             // internal state invariant after joining
             assert(
                 Crowdtainer(crowdtainer).costForWallet(_wallet) > costForWallet
-            );
+            ); // @audit don't use assert in prod, use require or if + revert. Asserts only for FV.
         } catch (bytes memory receivedBytes) {
             handleJoinError(crowdtainer, receivedBytes);
         }
@@ -372,7 +378,7 @@ contract Vouchers721 is ERC721Enumerable {
         tokenIdQuantities[newTokenID] = _quantities;
 
         // Mint the voucher to the respective owner
-        _safeMint(_wallet, newTokenID);
+        _safeMint(_wallet, newTokenID); // @audit reentry opportunity.
 
         return newTokenID;
     }
@@ -432,7 +438,7 @@ contract Vouchers721 is ERC721Enumerable {
 
         try ICrowdtainer(crowdtainerAddress).leave(msg.sender) {
             // internal state invariant after leaving
-            assert(
+            assert( // @audit-issue can this cause a DoS?
                 Crowdtainer(crowdtainerAddress).costForWallet(msg.sender) == 0
             );
 
@@ -506,8 +512,12 @@ contract Vouchers721 is ERC721Enumerable {
     ) internal virtual override {
         super._beforeTokenTransfer(from, to, tokenId);
 
+        // @audit users can avoid running this code by transfering to 0
         bool mintOrBurn = from == address(0) || to == address(0);
         if (mintOrBurn) return;
+
+        // @audit can we play with readonly reentry -> crowdtainerState,
+        // crowdtainerIdToAddress, tokenIdToCrowdtainerId? below?
 
         // Transfers are only allowed after funding either succeeded or failed.
         address crowdtainerAddress = crowdtainerIdToAddress(
@@ -515,8 +525,9 @@ contract Vouchers721 is ERC721Enumerable {
         );
         ICrowdtainer crowdtainer = ICrowdtainer(crowdtainerAddress);
 
+        // @audit can simplify to crowdtainerState <= CrowdtainerState.Funding.
         if (
-            crowdtainer.crowdtainerState() == CrowdtainerState.Funding ||
+            crowdtainer.crowdtainerState() == CrowdtainerState.Funding || // @audit check these for read-only reentry and front-running.
             crowdtainer.crowdtainerState() == CrowdtainerState.Uninitialized
         ) {
             revert Errors.TransferNotAllowed({
@@ -557,7 +568,7 @@ contract Vouchers721 is ERC721Enumerable {
 
         ICrowdtainer crowdtainer = ICrowdtainer(crowdtainerAddress);
 
-        address shippingAgent = crowdtainer.shippingAgent();
+        address shippingAgent = crowdtainer.shippingAgent(); // @audit check this for readonly reentrancy + frontrunning
 
         if (msg.sender != shippingAgent) {
             revert Errors.SetClaimedOnlyAllowedByShippingAgent();

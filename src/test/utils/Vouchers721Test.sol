@@ -239,8 +239,8 @@ contract VouchersTest is CrowdtainerTestHelpers {
         200 * ONE
     ];
 
-    uint256 internal discountRate = 10;
-    uint256 internal referralRate = 10;
+    uint256 internal discountRate = 10; // @audit looks like this is not used anywhere?
+    uint256 internal referralRate = 10; // @audit is this basis points?
     uint256 internal referralEligibilityValue = 50 * ONE;
 
     // Create a token

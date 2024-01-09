@@ -19,7 +19,7 @@ interface AuthorizationGateway {
         address addr,
         uint256[] calldata quantities,
         bool _enableReferral,
-        address _referrer
+        address _referred
     ) external view returns (bytes memory signature);
 }
 
@@ -94,7 +94,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             _;
             return;
         }
-        requireMsgSender(owner);
+        requireMsgSenderEquals(owner);
         _;
     }
 
@@ -115,16 +115,16 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
     function requireState(CrowdtainerState requiredState) internal view {
         if (crowdtainerState != requiredState)
             revert Errors.InvalidOperationFor({state: crowdtainerState});
-        require(crowdtainerState == requiredState);
+        require(crowdtainerState == requiredState); // @audit-issue GAS redundant call, remove.
     }
 
-    function requireMsgSender(address requiredAddress) internal view {
+    function requireMsgSenderEquals(address requiredAddress) internal view {
         if (msg.sender != requiredAddress)
             revert Errors.CallerNotAllowed({
                 expected: requiredAddress,
                 actual: msg.sender
             });
-        require(msg.sender == requiredAddress);
+        require(msg.sender == requiredAddress); // @audit-issue GAS redundant call, remove.
     }
 
     function requireActive() internal view {
@@ -144,14 +144,20 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         return signer;
     }
 
+    // @audit-issue LOW When a user joins the crowdtainer, he signs a contract
+    // agreeing with a specific signer, url, shipping agent. Do not allow changing
+    // the contract after they signed it. E.g. disallow setSigner once the crowdtainer
+    // campaign starts. Limiting the powers the powers of the signer also has the
+    // benefit of mitigating damage in case of key compromise.
+
     function setSigner(address _signer) external {
-        requireMsgSender(shippingAgent);
+        requireMsgSenderEquals(shippingAgent);
         signer = _signer;
         emit SignerChanged(signer);
     }
 
     function setUrls(string[] memory _urls) external {
-        requireMsgSender(shippingAgent);
+        requireMsgSenderEquals(shippingAgent);
         urls = _urls;
         emit CCIPURLChanged(urls);
     }
@@ -253,6 +259,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         if (address(_campaignData.shippingAgent) == address(0))
             revert Errors.ShippingAgentAddressIsZero();
 
+        // @audit-issue MED why require referralEligibilityValue <= targetMinimum?
+        // I think the code mixed up targetMinimum with the single order minimum for eligibility
         if (
             _campaignData.referralEligibilityValue > _campaignData.targetMinimum
         )
@@ -335,16 +343,21 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
      * @dev This method is present to make wallet interactions more friendly, by requiring fewer parameters for projects with referral system disabled.
      * @dev Requires IERC20 permit.
      */
-    function join(address _wallet, uint256[] calldata _quantities) public {
+    function join(
+        address _wallet,
+        uint256[] calldata _quantities
+    ) public { // @audit-issue why does this need to be public?
         join(_wallet, _quantities, false, address(0));
     }
+
+    // @audit Check ways to break via enableReferral note.
 
     /**
      * @notice Join the Crowdtainer project with optional referral and discount.
      * @param _wallet The wallet that is joining the Crowdtainer. Must be the msg.sender if Crowdtainer owner is address(0x0).
      * @param _quantities Array with the number of units desired for each product.
      * @param _enableReferral Informs whether the user would like to be eligible to collect rewards for being referred.
-     * @param _referrer Optional referral code to be used to claim a discount.
+     * @param _referred Optional referral code to be used to claim a discount.
      *
      * @dev Requires IERC20 permit.
      * @dev referrer is the wallet address of a previous participant.
@@ -357,7 +370,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         address _wallet,
         uint256[] calldata _quantities,
         bool _enableReferral,
-        address _referrer
+        address _referred
     )
         public
         onlyOwner
@@ -368,7 +381,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         if (signer != address(0)) {
             // See https://eips.ethereum.org/EIPS/eip-3668
             revert Errors.OffchainLookup(
-                address(this), // sender
+                address(this), // sender // @audit-issue why is this commented as sender when its not?
                 urls, // gateway urls
                 abi.encodeWithSelector(
                     AuthorizationGateway.getSignedJoinApproval.selector,
@@ -376,26 +389,28 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
                     _wallet,
                     _quantities,
                     _enableReferral,
-                    _referrer
+                    _referred
                 ), // parameters/data for the gateway (callData)
                 Crowdtainer.joinWithSignature.selector, // 4-byte callback function selector
-                abi.encode(_wallet, _quantities, _enableReferral, _referrer) // parameters for the contract callback function
+                abi.encode(_wallet, _quantities, _enableReferral, _referred) // parameters for the contract callback function
             );
         }
 
         if (owner == address(0)) {
-            requireMsgSender(_wallet);
+            requireMsgSenderEquals(_wallet); // require msg.sender == _wallet
         }
 
-        _join(_wallet, _quantities, _enableReferral, _referrer);
+        _join(_wallet, _quantities, _enableReferral, _referred);
     }
+
+    // @audit-issue What happens if the address joiningWithSignature is in the USDC blacklist?
 
     /**
      * @notice Allows joining by means of CCIP-READ (EIP-3668).
      * @param result (uint64, bytes) of signature validity and the signature itself.
      * @param extraData ABI encoded parameters for _join() method.
      *
-     * @dev Requires IRC20 permit.
+     * @dev Requires ERC20 permit. // @audit Doesn't look like it needs permit
      */
     function joinWithSignature(
         bytes calldata result, // off-chain signed payload
@@ -407,6 +422,9 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         onlyActive
         nonReentrant
     {
+        // @audit security portion of the eip3668 says extraData is where it should receive
+        // data for verification of authenticity. Here it seems to be flipped, signature is in
+        // result instead of extraData, and extraData is the actual data.
         require(signer != address(0));
 
         // decode extraData provided by client
@@ -414,7 +432,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             address _wallet,
             uint256[] memory _quantities,
             bool _enableReferral,
-            address _referrer
+            address _referred
         ) = abi.decode(extraData, (address, uint256[], bool, address));
 
         if (_quantities.length != unitPricePerType.length) {
@@ -422,7 +440,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         }
 
         if (owner == address(0)) {
-            requireMsgSender(_wallet);
+            requireMsgSenderEquals(_wallet);
         }
 
         // Get signature from server response
@@ -439,7 +457,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
                 _wallet,
                 _quantities,
                 _enableReferral,
-                _referrer,
+                _referred,
                 epochExpiration,
                 nonce
             )
@@ -457,25 +475,25 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         );
         usedNonces[signer][nonce] = true;
 
-        _join(_wallet, _quantities, _enableReferral, _referrer);
+        _join(_wallet, _quantities, _enableReferral, _referred);
     }
 
     function signaturePayloadValid(
         address contractAddress,
         bytes32 messageDigest,
-        address expectedPublicKey,
+        address expectedAccount,
         uint64 expiration,
         bytes32 nonce,
         bytes memory signature
     ) internal view returns (bool) {
-        address recoveredPublicKey = keccak256(
+        address recoveredAccount = keccak256(
             abi.encodePacked("\x19Ethereum Signed Message:\n32", messageDigest)
         ).recover(signature);
 
-        if (recoveredPublicKey != expectedPublicKey) {
+        if (recoveredAccount != expectedAccount) {
             revert Errors.InvalidSignature();
         }
-        if (contractAddress != address(this)) {
+        if (contractAddress != address(this)) { // @audit Can this break due to proxies and/or delegatecall?
             revert Errors.InvalidSignature();
         }
 
@@ -483,8 +501,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             revert Errors.SignatureExpired(uint64(block.timestamp), expiration);
         }
 
-        if (usedNonces[expectedPublicKey][nonce]) {
-            revert Errors.NonceAlreadyUsed(expectedPublicKey, nonce);
+        if (usedNonces[expectedAccount][nonce]) {
+            revert Errors.NonceAlreadyUsed(expectedAccount, nonce);
         }
 
         return true;
@@ -494,7 +512,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         address _wallet,
         uint256[] memory _quantities,
         bool _enableReferral,
-        address _referrer
+        address _referred
     ) internal {
         enableReferral[_wallet] = _enableReferral;
 
@@ -502,12 +520,17 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             revert Errors.InvalidProductNumberAndPrices();
         }
 
+        // @audit can we join and make costForWallet == 0 to pass this check and
+        // break things?
+
         // @dev Check if wallet didn't already join
         if (costForWallet[_wallet] != 0) revert Errors.UserAlreadyJoined();
 
         // @dev Calculate cost
         uint256 finalCost;
 
+        // @audit shouldn't MAX_NUMBER_OF_PURCHASED_ITEMS be different for each
+        // product?
         for (uint256 i = 0; i < _quantities.length; i++) {
             if (_quantities[i] > MAX_NUMBER_OF_PURCHASED_ITEMS)
                 revert Errors.ExceededNumberOfItemsAllowed({
@@ -518,10 +541,14 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             finalCost += unitPricePerType[i] * _quantities[i];
         }
 
+        // @audit 1 USDC is still quite low. Could this be used to perform an attack? DoS? Dust? Phishing?
+
         if (finalCost < oneUnit) {
             revert Errors.InvalidNumberOfQuantities();
         }
 
+        // @audit-info Why require that referers join the crowdtainer with >= referralEligibilityValue?
+        // Let influencers make money from advertisement even if they themselves don't join.
         if (_enableReferral && finalCost < referralEligibilityValue)
             revert Errors.MinimumPurchaseValueForReferralNotMet({
                 received: finalCost,
@@ -531,13 +558,13 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         // @dev Apply discounts to `finalCost` if applicable.
         bool eligibleForDiscount;
         // @dev Verify validity of given `referrer`
-        if (_referrer != address(0) && referralRate > 0) {
+        if (_referred != address(0) && referralRate > 0) {
             // @dev Check if referrer participated
-            if (costForWallet[_referrer] == 0) {
+            if (costForWallet[_referred] == 0) {
                 revert Errors.ReferralInexistent();
             }
 
-            if (!enableReferral[_referrer]) {
+            if (!enableReferral[_referred]) {
                 revert Errors.ReferralDisabledForProvidedCode();
             }
 
@@ -546,10 +573,16 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
 
         uint256 discount;
 
+        // @audit interesting, we use two different storage mappings to do accounting of discounts
+        // and rewards.
+
         if (eligibleForDiscount) {
             // @dev Two things happens when a valid referral code is given:
             //    1 - Half of the referral rate is applied as a discount to the current order.
             //    2 - Half of the referral rate is credited to the referrer.
+
+            // @audit-issue MED DoS, Grief: if referraRate == 2 && finalCost <= 50 discount == 0.
+            // Note that referrerIfReferee will be set.
 
             // @dev Calculate the discount value
             discount = (finalCost * referralRate) / 100 / 2;
@@ -558,11 +591,12 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             finalCost -= discount;
             discountForUser[_wallet] += discount;
 
+            // @audit-issue HIGH what happens if accumulatedRewardsOf[_referred] > costForWallet[_referred]?
             // @dev 2- Apply reward for referrer
-            accumulatedRewardsOf[_referrer] += discount;
+            accumulatedRewardsOf[_referred] += discount;
             accumulatedRewards += discount;
 
-            referrerOfReferee[_wallet] = _referrer;
+            referrerOfReferee[_wallet] = _referred;
         }
 
         costForWallet[_wallet] = finalCost;
@@ -570,6 +604,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         // increase total value accumulated by this contract
         totalValueRaised += finalCost;
 
+        // @audit-issue MED adversary can prevent reaching target maximum by
+        // frontrunning all joins such that the below call reverts. To fix this
+        // consider adding a "buy as much as possible" boolean, so the amount purchased
+        // doesn't need to be exact.
         // @dev Check if the purchase order doesn't exceed the goal's `targetMaximum`.
         if (totalValueRaised > targetMaximum)
             revert Errors.PurchaseExceedsMaximumTarget({
@@ -578,12 +616,12 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             });
 
         // @dev transfer required funds into this contract
-        token.safeTransferFrom(_wallet, address(this), finalCost);
+        token.safeTransferFrom(_wallet, address(this), finalCost); // @audit-info Check this
 
         emit Joined(
             _wallet,
             _quantities,
-            _referrer,
+            _referred,
             finalCost,
             discount,
             _enableReferral
@@ -600,23 +638,26 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         address _wallet
     )
         external
-        onlyOwner
+        onlyOwner // @audit-issue DoS user cannot leave
         onlyInState(CrowdtainerState.Funding)
         onlyActive
         nonReentrant
     {
+        // @audit-issue can call this even if user never joined or costForWallet == 0.
+
         if (owner == address(0)) {
-            requireMsgSender(_wallet);
+            requireMsgSenderEquals(_wallet);
         }
 
         uint256 withdrawalTotal = costForWallet[_wallet];
 
         // @dev Subtract formerly given referral rewards originating from this account.
-        address referrer = referrerOfReferee[_wallet];
-        if (referrer != address(0)) {
-            accumulatedRewardsOf[referrer] -= discountForUser[_wallet];
+        address referred = referrerOfReferee[_wallet];
+        if (referred != address(0)) {
+            accumulatedRewardsOf[referred] -= discountForUser[_wallet]; // @audit-issue MED DoS can prevent user from leaving due to underflow.
         }
 
+        // @audit I would move this check up, before the update to update to referred.
         /* @dev If this wallet's referral was used, then it is no longer possible to leave().
          *      This is to discourage users from joining just to generate discount codes.
          *      E.g.: A user uses two different wallets, the first joins to generate a discount code for him/herself to be used in
@@ -626,7 +667,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         }
 
         totalValueRaised -= costForWallet[_wallet];
-        accumulatedRewards -= discountForUser[_wallet];
+        accumulatedRewards -= discountForUser[_wallet]; // @audit-issue HIGH this should be inside the if above (if referred != address(0)), similar to how it is set inside the if in _join.
 
         costForWallet[_wallet] = 0;
         discountForUser[_wallet] = 0;
@@ -647,7 +688,9 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         onlyInState(CrowdtainerState.Funding)
         nonReentrant
     {
-        requireMsgSender(shippingAgent);
+        // @audit shipping agent can use this function to prevent a user from leaving
+        // the contract by frontrunning the leave() call (provided it passed the targetMinimum).
+        requireMsgSenderEquals(shippingAgent);
         uint256 availableForAgent = totalValueRaised - accumulatedRewards;
 
         if (totalValueRaised < targetMinimum) {
@@ -674,10 +717,11 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         onlyInState(CrowdtainerState.Funding)
         nonReentrant
     {
-        requireMsgSender(shippingAgent);
+        requireMsgSenderEquals(shippingAgent);
         crowdtainerState = CrowdtainerState.Failed;
     }
 
+    // @audit if owner is vouchers721, this call would claim all funds to the vouchers contract.
     /**
      * @notice Function used by participants to withdraw funds from a failed/expired project.
      */
@@ -695,6 +739,9 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
             revert Errors.InsufficientBalance();
         }
 
+        // @audit-issue LOW crowdtainer is acctive once block.timestamp > opening time,
+        // this means if the transaction is included when timestamp == openingTime
+        // this check will not revert. Change to <=.
         if (block.timestamp < openingTime)
             revert Errors.OpeningTimeNotReachedYet(
                 block.timestamp,
@@ -709,6 +756,10 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
 
         // The first interaction with this function 'nudges' the state to `Failed` if
         // the project didn't reach the goal in time, or if service provider is unresponsive.
+
+        // @audit-issue LOW, similar to the issue above, the check should be
+        // timestamp >= expireTime. If timestamp == expireTime the state will not be nudged.
+        // Thankfully the check after it catches the issue but its better to fix it anyway.
         if (block.timestamp > expireTime && totalValueRaised < targetMinimum) {
             crowdtainerState = CrowdtainerState.Failed;
         } else if (block.timestamp > expireTime + MAX_UNRESPONSIVE_TIME) {
@@ -717,6 +768,8 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
 
         if (crowdtainerState != CrowdtainerState.Failed)
             revert Errors.CantClaimFundsOnActiveProject();
+
+        // @audit is msg.sender here supposed to be vouchers or the nft owner?
 
         // Reaching this line means the project failed either due expiration or explicit transition from `abortProject()`.
 
@@ -730,6 +783,7 @@ contract Crowdtainer is ICrowdtainer, ReentrancyGuard, Initializable {
         emit FundsClaimed(wallet, withdrawalTotal);
     }
 
+    // @audit if owner is vouchers721, this call would claim all funds to the vouchers contract.
     /**
      * @notice Function used by participants to withdraw referral rewards from a successful project.
      */
