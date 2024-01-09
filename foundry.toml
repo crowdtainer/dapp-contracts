@@ -36,7 +36,7 @@ block_timestamp = 0
 block_difficulty = 0
 
 [rpc_endpoints]
-mainnet = "http://192.168.0.2:8545"
+mainnet = "http://192.168.77.8:8545"
 
 [fuzz]
 fail_on_revert = true
