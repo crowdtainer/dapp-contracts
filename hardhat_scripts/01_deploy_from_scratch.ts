@@ -22,7 +22,9 @@ async function main() {
   await crowdtainer.deployed();
   console.log("Crowdtainer deployed to:", crowdtainer.address);
 
-  // @audit-issue Always initialize implementation contracts. Seems to be missing a crowdtainer.initialize.
+  // @audit-issue LOW-1 Always initialize implementation contracts. Seems to be missing a
+  // crowdtainer.initialize. Alternatively, edit crowdtainer.sol and add a disable
+  // initialize on the constructor as recommended in Initialize.sol with _disableInitializers.
 
   const metadataServiceV1Factory = await ethers.getContractFactory(
     "MetadataServiceV1"

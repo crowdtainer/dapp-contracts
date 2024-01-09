@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 import "forge-std/Test.sol";
 import "../utils/Vouchers721Test.sol";
 
-contract VoucherHandler is Test {
+contract Handler is Test {
 
     Vouchers721 vouchers;
     address[] participants;
@@ -32,14 +32,22 @@ contract VoucherHandler is Test {
         vm.stopPrank();
     }
 
+    modifier advanceFewMinutes(uint _seed) {
+        uint secs = uint(uint8(_randomize(_seed, "time")))*2;
+        vm.warp(block.timestamp + secs);
+        _;
+    }
+
     function _randomize(uint256 seed, string memory salt) internal returns (uint256) {
         nonce++;
         return uint256(keccak256(abi.encodePacked(seed, salt)))+nonce;
     }
 
     function join(uint _seed) useRandomParticipant(_seed) external {
-        // Invariant: If being used as standalone, can only call join with `wallet` == `msg.sender`
-        // Invariant: cannot refer a user that does not have enableReferral == true.
+        // TODO: deal some amount.
+        // uint amount = bound(_randomize(_seed, "supply"), 0, currentMarket.totalSupply());
+        // deal(address(currentMarket), currentUser, amount);
+
     }
 
 }

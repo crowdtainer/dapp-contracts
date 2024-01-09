@@ -280,6 +280,5 @@ ETH_RPC_URL=<your network> make deploy
 
 ### Audit Notes
 
-- `lib/forge-std/src/test/StdInvariant.sol` manually added (and to Test.sol) because the currently (outdated) used in this project, does not include it
 - Fork invariant test command: forge test -vv --mp src/test/invariant/Voucher.t.sol --fork-url http://erigon.dappnode:8545 --fork-block-number 18128401
 - Use vscode coverage gutters + `forge coverage --report lcov`` to check for untested code areas
