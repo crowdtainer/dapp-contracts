@@ -9,77 +9,85 @@ task(
   "createCrowdtainer",
   "Create/initialize a new Crowdtainer project with default values."
 ).setAction(async function ({ }, hre) {
-    let { ethers } = hre;
-    const coin = <MockERC20>(await ethers.getContract("MockERC20"));
-    
-    const { agent, agentAuth } = await hre.getNamedAccounts();
-    const agentSigner = await hre.ethers.getSigner(agent);
-    const agentAuthSigner = await hre.ethers.getSigner(agentAuth);
+  let { ethers } = hre;
+  const coin = <MockERC20>(await ethers.getContract("MockERC20"));
 
-    assert(agentSigner);
-    assert(agentAuthSigner);
+  const { agent, agentAuth } = await hre.getNamedAccounts();
+  const agentSigner = await hre.ethers.getSigner(agent);
+  const agentAuthSigner = await hre.ethers.getSigner(agentAuth);
 
-    const vouchers721 = await ethers.getContract<Vouchers721>("Vouchers721");
-    const metadataService = await ethers.getContract("MetadataServiceV1");
+  assert(agentSigner);
+  assert(agentAuthSigner);
 
-    console.log(`MetadataServiceV1 address: ${metadataService.address}`);
-    console.log(`Agent address: ${agentSigner.address}`);
-    console.log(`Agent join auth address: ${agentAuthSigner.address}`);
-    console.log(`token address: ${coin.address}`);
+  const vouchers721 = await ethers.getContract<Vouchers721>("Vouchers721");
+  const metadataService = await ethers.getContract("MetadataServiceV1");
 
-    const erc20Decimals = await coin.decimals();
+  console.log(`MetadataServiceV1 address: ${metadataService.address}`);
+  console.log(`Agent address: ${agentSigner.address}`);
+  console.log(`Agent join auth address: ${agentAuthSigner.address}`);
+  console.log(`token address: ${coin.address}`);
 
-    let arrayOfPrices = new Array<BigNumberish>();
+  const erc20Decimals = await coin.decimals();
 
-    arrayOfPrices.push(parseUnits('15', erc20Decimals));
-    arrayOfPrices.push(parseUnits('30', erc20Decimals));
-    arrayOfPrices.push(parseUnits('120', erc20Decimals));
-    arrayOfPrices.push(parseUnits('90', erc20Decimals));
-    arrayOfPrices.push(parseUnits('25', erc20Decimals));
-    arrayOfPrices.push(parseUnits('48', erc20Decimals));
-    arrayOfPrices.push(parseUnits('140', erc20Decimals));
-    arrayOfPrices.push(parseUnits('144', erc20Decimals));
+  let arrayOfPrices = new Array<BigNumberish>();
 
-    const currentTime = (await ethers.provider.getBlock("latest")).timestamp;
+  arrayOfPrices.push(parseUnits('21', erc20Decimals));
+  arrayOfPrices.push(parseUnits('33', erc20Decimals));
+  arrayOfPrices.push(parseUnits('62', erc20Decimals));
+  arrayOfPrices.push(parseUnits('63', erc20Decimals));
+  arrayOfPrices.push(parseUnits('99', erc20Decimals));
+  arrayOfPrices.push(parseUnits('186', erc20Decimals));
+  arrayOfPrices.push(parseUnits('33', erc20Decimals));
+  arrayOfPrices.push(parseUnits('46', erc20Decimals));
+  arrayOfPrices.push(parseUnits('70', erc20Decimals));
+  arrayOfPrices.push(parseUnits('99', erc20Decimals));
+  arrayOfPrices.push(parseUnits('138', erc20Decimals));
+  arrayOfPrices.push(parseUnits('210', erc20Decimals));
 
-    // + (5*3600)
-    // + 1150*100
+  const currentTime = (await ethers.provider.getBlock("latest")).timestamp;
 
-    const campaignData = {
-      shippingAgent: agentSigner.address,
-      // signer: agentAuthSigner.address, // to disable EIP-3668 use 0x0000000000000000000000000000000000000000
-      signer: '0x0000000000000000000000000000000000000000',
-      openingTime: currentTime + 10,
-      expireTime: currentTime + 10 + 3601 * 24 * 60,
-      targetMinimum: parseUnits('1000', erc20Decimals),
-      targetMaximum: parseUnits('10000000', erc20Decimals),
-      unitPricePerType: arrayOfPrices,
-      referralRate: 20,
-      referralEligibilityValue: parseUnits('0', erc20Decimals),
-      token: coin.address,
-      legalContractURI: "http://example.com/terms"
-    };
+  // + (5*3600)
+  // + 1150*100
 
-    await vouchers721.createCrowdtainer(
-      campaignData,
-      ["Germany Delivery | Single | 500g",
-        "Germany Delivery | Single | 1kg",
-        "Germany Delivery | 3 Month Subscription | 500g",
-        "Germany Delivery | 3 Month Subscription | 1kg",
-        "Europe Delivery | Single | 500g",
-        "Europe Delivery | Single | 1kg",
-        "Europe Delivery | 3 Month Subscription | 500g",
-        "Europe Delivery | 3 Month Subscription | 1kg"],
-      metadataService.address
-    );
+  const campaignData = {
+    shippingAgent: agentSigner.address,
+    // signer: agentAuthSigner.address, // to disable EIP-3668 use 0x0000000000000000000000000000000000000000
+    signer: '0x0000000000000000000000000000000000000000',
+    openingTime: currentTime + 10,
+    expireTime: currentTime + 10 + 3601 * 24 * 60,
+    targetMinimum: parseUnits('1000', erc20Decimals),
+    targetMaximum: parseUnits('10000000', erc20Decimals),
+    unitPricePerType: arrayOfPrices,
+    referralRate: 20,
+    referralEligibilityValue: parseUnits('0', erc20Decimals),
+    token: coin.address,
+    legalContractURI: "http://example.com/terms"
+  };
 
-    let crowdtainerId = (await vouchers721.crowdtainerCount()).toNumber();
-    console.log(`Vouchers721 address: ${vouchers721.address}`);
-    console.log(`Crowdtainer count: ${crowdtainerId}`);
-    let crowdtainerAddress = await vouchers721.crowdtainerIdToAddress(crowdtainerId);
+  await vouchers721.createCrowdtainer(
+    campaignData,
+    ["Germany Delivery | Single | 500g",                // 37             41
+      "Germany Delivery | Single | 1kg",                // 30             33
+      "Germany Delivery | Single | 2kg",                // 28             31
+      "Germany Delivery | 3 Month Subscription | 500g", // 37             41
+      "Germany Delivery | 3 Month Subscription | 1kg",  // 30             33
+      "Germany Delivery | 3 Month Subscription | 2kg",  // 28             31
+      "Europe Delivery | Single | 500g",                // 61             66
+      "Europe Delivery | Single | 1kg",                 // 42             46
+      "Europe Delivery | Single | 2kg",                 // 32             35
+      "Europe Delivery | 3 Month Subscription | 500g",  // 61             66
+      "Europe Delivery | 3 Month Subscription | 1kg",   // 42             46
+      "Europe Delivery | 3 Month Subscription | 2kg"],  // 32             35
+    metadataService.address
+  );
 
-    console.log(`${agent} created a new Crowdtainer project. Id: ${crowdtainerId} @ ${crowdtainerAddress}`);
-  });
+  let crowdtainerId = (await vouchers721.crowdtainerCount()).toNumber();
+  console.log(`Vouchers721 address: ${vouchers721.address}`);
+  console.log(`Crowdtainer count: ${crowdtainerId}`);
+  let crowdtainerAddress = await vouchers721.crowdtainerIdToAddress(crowdtainerId);
+
+  console.log(`${agent} created a new Crowdtainer project. Id: ${crowdtainerId} @ ${crowdtainerAddress}`);
+});
 
 task("join", "Join a Crowdtainer with the given parameters.")
   .addParam("user", "Named account from which the operation should be executed")
@@ -98,7 +106,7 @@ task("join", "Join a Crowdtainer with the given parameters.")
     let quantity: BigNumberish[] = new Array<BigNumberish>();
 
     for (let index = 0; index < 8; index++) {
-        quantity.push(quantities);
+      quantity.push(quantities);
     }
 
     await vouchers721.connect(sender)["join(address,uint256[])"](crowdtainerAddress, quantity);

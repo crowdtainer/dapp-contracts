@@ -163,6 +163,13 @@ To deploy to a specific network:
 npx hardhat deploy --network <network_name> # e.g. rinkeby
 ```
 
+To verify deployed contracts on etherscan and sourcify, run:
+```sh
+# make sure ETHERSCAN_API_KEY is set on the .env file and
+hardhat --network <network_name> etherscan-verify
+hardhat --network <network_name> sourcify
+```
+
 ### Useful commands
 
 ```sh
