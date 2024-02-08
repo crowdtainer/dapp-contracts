@@ -211,6 +211,8 @@ contract VouchersTest is CrowdtainerTestHelpers {
 
     // contracts
     Vouchers721 internal vouchers;
+    Vouchers721 internal vouchersNoOwner;
+
     IMetadataService internal metadataService;
 
     // "default" crowdtainer used in tests
@@ -256,11 +258,13 @@ contract VouchersTest is CrowdtainerTestHelpers {
     address internal eve;
 
     function createCrowdtainer(
+        Vouchers721 vouchers721,
         address signer
     ) internal returns (address, uint256) {
         uint256 crowdtainerId;
         address crowdtainerAddress;
-        (crowdtainerAddress, crowdtainerId) = vouchers.createCrowdtainer({
+        vm.prank(eve);
+        (crowdtainerAddress, crowdtainerId) = vouchers721.createCrowdtainer({
             _campaignData: CampaignData(
                 address(agent),
                 address(signer),
@@ -307,7 +311,13 @@ contract VouchersTest is CrowdtainerTestHelpers {
         // This is the implementation used by proxy/clone pattern
         Crowdtainer crowdtainer = new Crowdtainer();
 
-        vouchers = new Vouchers721(address(crowdtainer));
+        // Eve is not a smart contract, unlike Alice and Bob
+        evePrivateKey = 0xE0E;
+        eve = vm.addr(evePrivateKey);
+        vm.label(address(eve), "eve");
+
+        vouchers = new Vouchers721(address(crowdtainer), address(eve));
+        vouchersNoOwner = new Vouchers721(address(crowdtainer), address(0));
 
         agent = new VoucherShippingAgent(address(vouchers));
 
@@ -325,13 +335,8 @@ contract VouchersTest is CrowdtainerTestHelpers {
         // Give lots of ERC20 tokens to alice
         erc20Token.mint(address(alice), type(uint256).max - 1000000000 * ONE);
 
-        // Give 1000 ERC20 tokens to bob
+        // Give 1000 ERC20 tokens to bob and eve
         erc20Token.mint(address(bob), 1000000 * ONE);
-
-        // Eve is not a smart contract, unlike Alice and Bob
-        evePrivateKey = 0xE0E;
-        eve = vm.addr(evePrivateKey);
-        vm.label(address(eve), "eve");
         erc20Token.mint(eve, 100000 * ONE);
     }
 }

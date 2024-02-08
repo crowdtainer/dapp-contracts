@@ -63,9 +63,10 @@ async function main() {
   const crowdtainerImplementation = await hre.ethers.getContract("Crowdtainer");
 
   // Deploy Vouchers721 - main contract for users
+  // Make sure owner is set accordingly (in the example below, deployer is the address used)
   deployResult = await deploy("Vouchers721", {
     from: deployer,
-    args: [crowdtainerImplementation.address],
+    args: [crowdtainerImplementation.address, deployer],
     log: true,
   });
 

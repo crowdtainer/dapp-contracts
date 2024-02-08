@@ -70,7 +70,7 @@ async function main() {
   console.log("MetadataServiceV1 deployed to:", metadataService.address);
 
   const vouchers721Factory = await ethers.getContractFactory("Vouchers721");
-  const vouchers721 = <Vouchers721>(await vouchers721Factory.deploy(crowdtainer.address));
+  const vouchers721 = <Vouchers721>(await vouchers721Factory.deploy(crowdtainer.address, agent.address));
   await vouchers721.deployed();
 
   console.log("Vouchers721 deployed to:", vouchers721.address);

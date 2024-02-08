@@ -2,6 +2,8 @@
 pragma solidity ^0.8.16;
 
 import "./utils/Vouchers721Test.sol";
+
+import "../contracts/Vouchers721.sol";
 import {Errors} from "../contracts/Crowdtainer.sol";
 
 import "../contracts/Metadata/MetadataServiceV1.sol";
@@ -19,7 +21,10 @@ contract Vouchers721CreateTester is VouchersTest {
 
         uint256 crowdtainerId1;
         address crowdtainerAddress1;
-        (crowdtainerAddress1, crowdtainerId1) = createCrowdtainer(address(0));
+        (crowdtainerAddress1, crowdtainerId1) = createCrowdtainer(
+            vouchers,
+            address(0)
+        );
 
         assert(
             vouchers.crowdtainerForId(crowdtainerId1) == crowdtainerAddress1
@@ -30,10 +35,64 @@ contract Vouchers721CreateTester is VouchersTest {
 
         uint256 crowdtainerId2;
         address crowdtainerAddress2;
-        (crowdtainerAddress2, crowdtainerId2) = createCrowdtainer(address(0));
+        (crowdtainerAddress2, crowdtainerId2) = createCrowdtainer(
+            vouchers,
+            address(0)
+        );
 
         assertEq(crowdtainerId2, 2);
         assertTrue(crowdtainerAddress1 != crowdtainerAddress2);
+    }
+
+    function testRevertWhenSetOwnerCalledOnCrowdtainerDeployedWithNoOwner()
+        public
+    {
+        metadataService = IMetadataService(address(1));
+
+        vouchersNoOwner.createCrowdtainer({
+            _campaignData: CampaignData(
+                address(agent),
+                address(signer),
+                openingTime,
+                closingTime,
+                targetMinimum,
+                targetMaximum,
+                unitPricePerType,
+                referralRate,
+                referralEligibilityValue,
+                address(iERC20Token),
+                ""
+            ),
+            _productDescription: productDescription,
+            _metadataService: address(metadataService)
+        });
+
+        vm.expectRevert(Errors.OwnerAddressIsZero.selector);
+        vouchersNoOwner.setOwner(address(agent));
+    }
+
+    function testRevertWhenSetOwnerCalledByNonOwner() public {
+        vm.prank(address(alice)); // owner is eve
+        // vm.expectRevert(Errors.CallerNotAllowed.selector); No proper decoding of custom error with parameters on foundry as of v0.2.0.
+        try vouchers.setOwner(address(eve)) {} catch (
+            bytes memory receivedBytes
+        ) {
+            bool correctRevert = this.isEqualSignature(
+                receivedBytes,
+                makeError(Errors.CallerNotAllowed.selector)
+            );
+            require(
+                correctRevert,
+                "Invalid error. Expected: CallerNotAllowed."
+            );
+        }
+    }
+
+    function testSetOwnerCalledByOwner() public {
+        assertEq(vouchers.owner(), address(eve));
+        vm.prank(address(eve));
+        vouchers.setOwner(address(bob));
+        assertEq(vouchers.owner(), address(bob));
     }
 
     function testTokenIdMustBeSequential() public {
@@ -46,7 +105,7 @@ contract Vouchers721CreateTester is VouchersTest {
         quantities[2] = 3;
         quantities[3] = 1;
 
-        (crowdtainerAddress, ) = createCrowdtainer(address(0));
+        (crowdtainerAddress, ) = createCrowdtainer(vouchers, address(0));
         uint256 tokenId = alice.doJoin({
             _crowdtainerAddress: crowdtainerAddress,
             _quantities: quantities,
@@ -74,7 +133,7 @@ contract Vouchers721CreateTester is VouchersTest {
         quantities[2] = 3;
         quantities[3] = 1;
 
-        (crowdtainerAddress, ) = createCrowdtainer(address(0));
+        (crowdtainerAddress, ) = createCrowdtainer(vouchers, address(0));
 
         // Alice (smart contract)
         uint256 tokenId = alice.doJoin({
@@ -135,7 +194,7 @@ contract Vouchers721CreateTester is VouchersTest {
 
     function testJoinWithPermitMustReturnTokenId() public {
         metadataService = IMetadataService(address(1));
-        createCrowdtainer(address(0));
+        createCrowdtainer(vouchers, address(0));
 
         uint256 previousBalance = erc20Token.balanceOf(address(eve));
 
@@ -211,7 +270,7 @@ contract Vouchers721CreateTester is VouchersTest {
         metadataService = IMetadataService(address(1));
         address crowdtainerAddress;
 
-        (crowdtainerAddress, ) = createCrowdtainer(address(signer));
+        (crowdtainerAddress, ) = createCrowdtainer(vouchers, address(signer));
 
         vm.label(address(signer), "Signer");
         vm.label(address(crowdtainerAddress), "Crowdtainer");
@@ -312,7 +371,7 @@ contract Vouchers721CreateTester is VouchersTest {
         metadataService = IMetadataService(address(1));
         address crowdtainerAddress;
 
-        (crowdtainerAddress, ) = createCrowdtainer(address(signer));
+        (crowdtainerAddress, ) = createCrowdtainer(vouchers, address(signer));
 
         vm.label(address(signer), "Signer");
         vm.label(address(crowdtainerAddress), "Crowdtainer");
@@ -492,7 +551,10 @@ contract Vouchers721CreateTester is VouchersTest {
 
         uint256 crowdtainerId1;
         address crowdtainerAddress1;
-        (crowdtainerAddress1, crowdtainerId1) = createCrowdtainer(address(0));
+        (crowdtainerAddress1, crowdtainerId1) = createCrowdtainer(
+            vouchers,
+            address(0)
+        );
 
         uint256[] memory quantities = new uint256[](4);
         quantities[0] = 1;
@@ -509,7 +571,10 @@ contract Vouchers721CreateTester is VouchersTest {
 
         uint256 crowdtainerId2;
         address crowdtainerAddress2;
-        (crowdtainerAddress2, crowdtainerId2) = createCrowdtainer(address(0));
+        (crowdtainerAddress2, crowdtainerId2) = createCrowdtainer(
+            vouchers,
+            address(0)
+        );
 
         uint256 bobCrowdtainer2TokenId = bob.doJoin({
             _crowdtainerAddress: crowdtainerAddress2,
@@ -532,7 +597,10 @@ contract Vouchers721CreateTester is VouchersTest {
 
         uint256 crowdtainerId3;
         address crowdtainerAddress3;
-        (crowdtainerAddress3, crowdtainerId3) = createCrowdtainer(address(0));
+        (crowdtainerAddress3, crowdtainerId3) = createCrowdtainer(
+            vouchers,
+            address(0)
+        );
 
         georg.doApprovePayment(
             crowdtainerAddress3,
@@ -590,7 +658,7 @@ contract Vouchers721CreateTester is VouchersTest {
         // This test is just a 'sanity check' on our ERC721 open zeppelin implementation.
         metadataService = IMetadataService(address(1));
 
-        createCrowdtainer(address(0));
+        createCrowdtainer(vouchers, address(0));
 
         uint256[] memory quantities = new uint256[](4);
         quantities[0] = 1;
@@ -641,7 +709,7 @@ contract Vouchers721CreateTester is VouchersTest {
     function testShippingAgentAbleToSetVoucherClaimStatus() public {
         metadataService = IMetadataService(address(1));
 
-        createCrowdtainer(address(0));
+        createCrowdtainer(vouchers, address(0));
 
         // Alice purchases enough to make project succeed its target
         uint256[] memory quantities = new uint256[](4);
@@ -698,7 +766,7 @@ contract Vouchers721CreateTester is VouchersTest {
         metadataService = IMetadataService(address(1));
 
         address crowdtainerAddress;
-        (crowdtainerAddress,) = createCrowdtainer(address(0));
+        (crowdtainerAddress,) = createCrowdtainer(vouchers,address(0));
 
         for(uint256 i = 0; i < vouchers.ID_MULTIPLE(); ++i) {
             VoucherParticipant smith = new VoucherParticipant(address(vouchers), address(erc20Token));
@@ -733,13 +801,11 @@ contract Vouchers721CreateTester is VouchersTest {
         productDescription = [
             "Roasted beans 250g",
             "Roasted beans 500g",
-            "Roasted beans 1Kg",
-            "Roasted beans 2Kg"
+            "Roasted beans 1kg",
+            "Roasted beans 2kg"
         ];
-
         address crowdtainerAddress;
-
-        (crowdtainerAddress, ) = createCrowdtainer(address(0));
+        (crowdtainerAddress, ) = createCrowdtainer(vouchers, address(0));
 
         uint256[] memory quantities = new uint256[](4);
         quantities[0] = 1;
@@ -754,11 +820,14 @@ contract Vouchers721CreateTester is VouchersTest {
             _referrer: address(0)
         });
 
+        emit log_named_address("alice", address(alice));
+        assertEq(vouchers.ownerOf(tokenID), address(alice));
+
         string memory metadata = vouchers.tokenURI(tokenID);
         /*solhint-disable max-line-length*/
         assertEq(
             metadata,
-            "data:application/json;base64,eyJjcm93ZHRhaW5lcklkIjoiMSIsICJ2b3VjaGVySWQiOiIxIiwgImN1cnJlbnRPd25lciI6IjB4MGI3MTA4ZTI3OGMyZTc3ZTRlNGY1YzkzZDllNWU5YTExYWM4MzdmYyIsICJlcmMyMFN5bWJvbCI6Iu+8hCIsICJlcmMyMERlY2ltYWxzIjoiNiIsICJkZXNjcmlwdGlvbiI6W3siZGVzY3JpcHRpb24iOiJSb2FzdGVkIGJlYW5zIDI1MGciLCJhbW91bnQiOiIxIiwicHJpY2VQZXJVbml0IjoiMTAwMDAwMDAifSwgeyJkZXNjcmlwdGlvbiI6IlJvYXN0ZWQgYmVhbnMgNTAwZyIsImFtb3VudCI6IjQiLCJwcmljZVBlclVuaXQiOiIyMDAwMDAwMCJ9LCB7ImRlc2NyaXB0aW9uIjoiUm9hc3RlZCBiZWFucyAxS2ciLCJhbW91bnQiOiIzIiwicHJpY2VQZXJVbml0IjoiMjUwMDAwMDAifSwgeyJkZXNjcmlwdGlvbiI6IlJvYXN0ZWQgYmVhbnMgMktnIiwiYW1vdW50IjoiMSIsInByaWNlUGVyVW5pdCI6IjIwMDAwMDAwMCJ9XSwgIlRvdGFsQ29zdCI6IjM2NTAwMDAwMCIsICJpbWFnZSI6ICJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUIzYVdSMGFEMGlNVEF3YlcwaUlHaGxhV2RvZEQwaU1UTXdiVzBpSUhacFpYZENiM2c5SWpBZ01DQXpNREFnTkRNd0lpQjJaWEp6YVc5dVBTSXhMakVpSUdsa1BTSnpkbWMxSWlCamJHRnpjejBpYzNablFtOWtlU0lnZUcxc2JuTTlJbWgwZEhBNkx5OTNkM2N1ZHpNdWIzSm5Mekl3TURBdmMzWm5JajQ4WnlCcFpEMGliR0Y1WlhJeElqNDhjR0YwYUNCcFpEMGljR0YwYURJaUlITjBlV3hsUFNKamIyeHZjam9qTURBd01EQXdPMlpwYkd3NmRYSnNLQ05UZG1kcWMweHBibVZoY2tkeVlXUnBaVzUwTWpVMk1TazdabWxzYkMxdmNHRmphWFI1T2pBdU9EazVNVGt6TzJacGJHd3RjblZzWlRwbGRtVnViMlJrTzNOMGNtOXJaUzEzYVdSMGFEb3hMalUwTlRRek95MXBibXR6WTJGd1pTMXpkSEp2YTJVNmJtOXVaU0lnWkQwaWJUTXlMakl3TWlBeE1pNDFPSEV0TWpZdU5UQTBOeTB1TURJeE5pMHlOaTQwTkRneElESTJMams0TTJ3d0lETTJNUzQzTXpnMGNTNHdNVEUwSURFeExqZ3pNU0F4TlM0M01qWTVJREV4TGpjNE1EbG9Oell1TnprM1l5MHVNVFl3T1MweExqYzBNVGd0TGpZM016UXRNVEV1TlRJNU1TQTRMakU1TURndE1URXVNRFkzT1M0eE5EVXpMakF3T0M0ek9ERTBMakF4TmpVdU5USTNOUzR3TVRZMWFEa3dMamd3TmpoakxqRTBOakVnTUNBdU16Z3pMUzR3TURVdU5USTVNUzB1TURBMUlEWXVOekF4TmkwdU1EQTJJRGN1TnpBNE15QTVMak0xTlRRZ055NDRNellnTVRFdU1EVTJNUzR3TVRBNUxqRTBOVE11TVRNMU1pNHlOak0wTGpJNE1UTXVNall6Tkd3NE1DNHdPVE14SURCeE1USXVNamcwT1M0d01pQXhNaTR5T1RRM0xURXlMakk1TkRkMkxUTTJNUzQzTmpZNWNTMHVNVEEyT0MweU5pNDVOakUwTFRJMkxqUTBPREl0TWpZdU9UZ3pNbWd0TmpZdU1qYzVOR011TURBeklERXlMall6TVRVdU1EVXdOQ0E1TGpVMU5Ua3ROVFF1TnpJNElEa3VOVFEyTFRRNExqTTBPQzR3TVRBMkxUVXhMalU0TlRRZ01pNHhOelk0TFRVeExqZ3dORFF0T1M0M05UUXllaUl2UGp4MFpYaDBJSGh0YkRwemNHRmpaVDBpY0hKbGMyVnlkbVVpSUdOc1lYTnpQU0p0WldScGRXMGlJSGc5SWpFd0xqUTNPRE0xTkNJZ2VUMGlNQ0lnYVdROUluUmxlSFF4TmpJNE1DMDJMVGtpSUhSeVlXNXpabTl5YlQwaWJXRjBjbWw0S0RFMkxqUTVNVFlzTUN3d0xERTFMall5TnpVME55dzNMakV6TWpVeU1URXNOVFF1TmpZME9UTXlLU0krUEhSemNHRnVJSGc5SWpFMUxqUTNPRE0xTkNJZ2VUMGlNU0krUTNKdmQyUjBZV2x1WlhJZ01Ud3ZkSE53WVc0K1BDOTBaWGgwUGp4MFpYaDBJSGh0YkRwemNHRmpaVDBpY0hKbGMyVnlkbVVpSUdOc1lYTnpQU0owYVc1NUlpQjRQU0l4TUM0ME56Z3pOVFFpSUhrOUlqQWlJR2xrUFNKMFpYaDBNVFl5T0RBdE5pMDVMVGNpSUhSeVlXNXpabTl5YlQwaWJXRjBjbWw0S0RFMkxqUTVNVFlzTUN3d0xERTFMall5TnpVME55dzFMamN5T0RJNE9EUXNPVEF1TVRZd01EazRLU0krUEhSemNHRnVJSGc5SWpFMUxqUTNPRE0xTkNJZ2VUMGlNUzQxSWlCcFpEMGlkSE53WVc0eE1UWXpJajVEYkdGcGJXVmtPaUJPYnp3dmRITndZVzQrUEM5MFpYaDBQangwWlhoMElIaHRiRHB6Y0dGalpUMGljSEpsYzJWeWRtVWlJR05zWVhOelBTSnRaV1JwZFcwaUlIZzlJakV6TGpRM09ETTFOQ0lnZVQwaU1UUXVNVFk0T1RrME5DSWdhV1E5SW5SbGVIUXhOakk0TUMwMklpQjBjbUZ1YzJadmNtMDlJbTFoZEhKcGVDZ3hOaTQwT1RFMkxEQXNNQ3d4TlM0Mk1qYzFORGNzTnk0MU9EazNOeklzTmk0NU9UUTNPVEF6S1NJK1BIUnpjR0Z1SUhnOUlqRTFMalEzT0RNMU5DSWdlVDBpTlM0MElpQnBaRDBpZEhOd1lXNHhNVFkxSWo1V2IzVmphR1Z5SURFOEwzUnpjR0Z1UGp3dmRHVjRkRDQ4ZEdWNGRDQjRiV3c2YzNCaFkyVTlJbkJ5WlhObGNuWmxJaUJqYkdGemN6MGljMjFoYkd3aUlIZzlJakVpSUhrOUlqRXdJaUIwY21GdWMyWnZjbTA5SW0xaGRISnBlQ2d4Tmk0ME9URTJMREFzTUN3eE5TNDJNamMxTkRjc055NDFPRGszTnpJc05pNDVPVFEzT1RBektTSStNUWw0SUFsU2IyRnpkR1ZrSUdKbFlXNXpJREkxTUdjSklDMGdDVEV3Q2UrOGhEd3ZkR1Y0ZEQ0OGRHVjRkQ0I0Yld3NmMzQmhZMlU5SW5CeVpYTmxjblpsSWlCamJHRnpjejBpYzIxaGJHd2lJSGc5SWpFaUlIazlJakV4SWlCMGNtRnVjMlp2Y20wOUltMWhkSEpwZUNneE5pNDBPVEUyTERBc01Dd3hOUzQyTWpjMU5EY3NOeTQxT0RrM056SXNOaTQ1T1RRM09UQXpLU0krTkFsNElBbFNiMkZ6ZEdWa0lHSmxZVzV6SURVd01HY0pJQzBnQ1RJd0NlKzhoRHd2ZEdWNGRENDhkR1Y0ZENCNGJXdzZjM0JoWTJVOUluQnlaWE5sY25abElpQmpiR0Z6Y3owaWMyMWhiR3dpSUhnOUlqRWlJSGs5SWpFeUlpQjBjbUZ1YzJadmNtMDlJbTFoZEhKcGVDZ3hOaTQwT1RFMkxEQXNNQ3d4TlM0Mk1qYzFORGNzTnk0MU9EazNOeklzTmk0NU9UUTNPVEF6S1NJK013bDRJQWxTYjJGemRHVmtJR0psWVc1eklERkxad2tnTFNBSk1qVUo3N3lFUEM5MFpYaDBQangwWlhoMElIaHRiRHB6Y0dGalpUMGljSEpsYzJWeWRtVWlJR05zWVhOelBTSnpiV0ZzYkNJZ2VEMGlNU0lnZVQwaU1UTWlJSFJ5WVc1elptOXliVDBpYldGMGNtbDRLREUyTGpRNU1UWXNNQ3d3TERFMUxqWXlOelUwTnl3M0xqVTRPVGMzTWl3MkxqazVORGM1TURNcElqNHhDWGdnQ1ZKdllYTjBaV1FnWW1WaGJuTWdNa3RuQ1NBdElBa3lNREFKNzd5RVBDOTBaWGgwUGp4MFpYaDBJSGh0YkRwemNHRmpaVDBpY0hKbGMyVnlkbVVpSUdOc1lYTnpQU0p6YldGc2JDSWdlRDBpTWlJZ2VUMGlNVFVpSUhSeVlXNXpabTl5YlQwaWJXRjBjbWw0S0RFMkxqUTVNVFlzTUN3d0xERTFMall5TnpVME55dzNMalU0T1RjM01pdzJMams1TkRjNU1ETXBJajVVYjNSaGJDRHZ2SVF6TmpVOEwzUmxlSFErUEhSbGVIUWdlRzFzT25Od1lXTmxQU0p3Y21WelpYSjJaU0lnWTJ4aGMzTTlJbVp2YjNSbGNpSWdlRDBpT0RVaUlIazlJak00TUNJZ2RISmhibk5tYjNKdFBTSnpZMkZzWlNneExqQXlOekkzTXpNc01DNDVOek0wTlRBNE1Ta2lQbFJvYVhNZ2RtOTFZMmhsY2lCcGN5QnViM1FnZG1Gc2FXUWdZWE1nWVc0Z2FXNTJiMmxqWlM0OEwzUmxlSFErUEM5blBqeHpkSGxzWlQ0dWMzWm5RbTlrZVNCN1ptOXVkQzFtWVcxcGJIazZJQ0pJWld4MlpYUnBZMkVpSUgwdWRHbHVlU0I3Wm05dWRDMXpkSEpsZEdOb09tNXZjbTFoYkR0bWIyNTBMWE5wZW1VNk1DNDFNalUyTWpSd2VEdHNhVzVsTFdobGFXZG9kRG94TGpJMU8zUmxlSFF0WVc1amFHOXlPbVZ1WkR0M2FHbDBaUzF6Y0dGalpUcHdjbVU3Wm1sc2JEb2paamxtT1dZNU8zMHVabTl2ZEdWeUlIdG1iMjUwTFhOMGNtVjBZMmc2Ym05eWJXRnNPMlp2Ym5RdGMybDZaVG8zY0hnN2JHbHVaUzFvWldsbmFIUTZMakkxTzNkb2FYUmxMWE53WVdObE9uQnlaVHRtYVd4c09pTm1PV1k1WmprN2ZTNXpiV0ZzYkNCN1ptOXVkQzF6YVhwbE9qQXVOWEI0TzNSbGVIUXRZV3hwWjI0NmMzUmhjblE3ZEdWNGRDMWhibU5vYjNJNmMzUmhjblE3ZDJocGRHVXRjM0JoWTJVNmNISmxPMlpwYkd3NkkyWTVaamxtT1R0OUxtMWxaR2wxYlNCN1ptOXVkQzF6YVhwbE9qQXVPVEp3ZUR0bWIyNTBMV1poYldsc2VUcElaV3gyWlhScFkyRTdkR1Y0ZEMxaGJHbG5ianBsYm1RN2RHVjRkQzFoYm1Ob2IzSTZaVzVrTzNkb2FYUmxMWE53WVdObE9uQnlaVHRtYVd4c09pTm1PV1k1WmprN2ZUd3ZjM1I1YkdVK1BHeHBibVZoY2tkeVlXUnBaVzUwSUhneFBTY3dKU2NnZVRFOUp6TXdKU2NnZURJOUp6WXdKU2NnZVRJOUp6a3dKU2NnWjNKaFpHbGxiblJWYm1sMGN6MG5kWE5sY2xOd1lXTmxUMjVWYzJVbklHbGtQU2RUZG1kcWMweHBibVZoY2tkeVlXUnBaVzUwTWpVMk1TYytQSE4wYjNBZ2MzUnZjQzFqYjJ4dmNqMG5jbWRpWVNneU1Dd2dNVEV3TENBeE5qQXNJREV3TUNrbklHOW1abk5sZEQwbk1DNHdNaWMrUEM5emRHOXdQanh6ZEc5d0lITjBiM0F0WTI5c2IzSTlKM0puWW1Fb01qVXNJRFU1TENBNU1Dd2dNVEF3S1NjZ2IyWm1jMlYwUFNjeEp6NDhMM04wYjNBK1BDOXNhVzVsWVhKSGNtRmthV1Z1ZEQ0OEwzTjJaejQ9In0="
+            "data:application/json;base64,eyJjcm93ZHRhaW5lcklkIjoiMSIsICJ2b3VjaGVySWQiOiIxIiwgImN1cnJlbnRPd25lciI6IjB4MWRkMTdhZjQ3MGYyY2FhMTNkMjljMDJhYzE5MGEzYTFlZGRjNGU4NCIsICJlcmMyMFN5bWJvbCI6Iu+8hCIsICJlcmMyMERlY2ltYWxzIjoiNiIsICJkZXNjcmlwdGlvbiI6W3siZGVzY3JpcHRpb24iOiJSb2FzdGVkIGJlYW5zIDI1MGciLCJhbW91bnQiOiIxIiwicHJpY2VQZXJVbml0IjoiMTAwMDAwMDAifSwgeyJkZXNjcmlwdGlvbiI6IlJvYXN0ZWQgYmVhbnMgNTAwZyIsImFtb3VudCI6IjQiLCJwcmljZVBlclVuaXQiOiIyMDAwMDAwMCJ9LCB7ImRlc2NyaXB0aW9uIjoiUm9hc3RlZCBiZWFucyAxa2ciLCJhbW91bnQiOiIzIiwicHJpY2VQZXJVbml0IjoiMjUwMDAwMDAifSwgeyJkZXNjcmlwdGlvbiI6IlJvYXN0ZWQgYmVhbnMgMmtnIiwiYW1vdW50IjoiMSIsInByaWNlUGVyVW5pdCI6IjIwMDAwMDAwMCJ9XSwgIlRvdGFsQ29zdCI6IjM2NTAwMDAwMCIsICJpbWFnZSI6ICJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUIzYVdSMGFEMGlNVEF3YlcwaUlHaGxhV2RvZEQwaU1UTXdiVzBpSUhacFpYZENiM2c5SWpBZ01DQXpNREFnTkRNd0lpQjJaWEp6YVc5dVBTSXhMakVpSUdsa1BTSnpkbWMxSWlCamJHRnpjejBpYzNablFtOWtlU0lnZUcxc2JuTTlJbWgwZEhBNkx5OTNkM2N1ZHpNdWIzSm5Mekl3TURBdmMzWm5JajQ4WnlCcFpEMGliR0Y1WlhJeElqNDhjR0YwYUNCcFpEMGljR0YwYURJaUlITjBlV3hsUFNKamIyeHZjam9qTURBd01EQXdPMlpwYkd3NmRYSnNLQ05UZG1kcWMweHBibVZoY2tkeVlXUnBaVzUwTWpVMk1TazdabWxzYkMxdmNHRmphWFI1T2pBdU9EazVNVGt6TzJacGJHd3RjblZzWlRwbGRtVnViMlJrTzNOMGNtOXJaUzEzYVdSMGFEb3hMalUwTlRRek95MXBibXR6WTJGd1pTMXpkSEp2YTJVNmJtOXVaU0lnWkQwaWJUTXlMakl3TWlBeE1pNDFPSEV0TWpZdU5UQTBOeTB1TURJeE5pMHlOaTQwTkRneElESTJMams0TTJ3d0lETTJNUzQzTXpnMGNTNHdNVEUwSURFeExqZ3pNU0F4TlM0M01qWTVJREV4TGpjNE1EbG9Oell1TnprM1l5MHVNVFl3T1MweExqYzBNVGd0TGpZM016UXRNVEV1TlRJNU1TQTRMakU1TURndE1URXVNRFkzT1M0eE5EVXpMakF3T0M0ek9ERTBMakF4TmpVdU5USTNOUzR3TVRZMWFEa3dMamd3TmpoakxqRTBOakVnTUNBdU16Z3pMUzR3TURVdU5USTVNUzB1TURBMUlEWXVOekF4TmkwdU1EQTJJRGN1TnpBNE15QTVMak0xTlRRZ055NDRNellnTVRFdU1EVTJNUzR3TVRBNUxqRTBOVE11TVRNMU1pNHlOak0wTGpJNE1UTXVNall6Tkd3NE1DNHdPVE14SURCeE1USXVNamcwT1M0d01pQXhNaTR5T1RRM0xURXlMakk1TkRkMkxUTTJNUzQzTmpZNWNTMHVNVEEyT0MweU5pNDVOakUwTFRJMkxqUTBPREl0TWpZdU9UZ3pNbWd0TmpZdU1qYzVOR011TURBeklERXlMall6TVRVdU1EVXdOQ0E1TGpVMU5Ua3ROVFF1TnpJNElEa3VOVFEyTFRRNExqTTBPQzR3TVRBMkxUVXhMalU0TlRRZ01pNHhOelk0TFRVeExqZ3dORFF0T1M0M05UUXllaUl2UGp4MFpYaDBJSGh0YkRwemNHRmpaVDBpY0hKbGMyVnlkbVVpSUdOc1lYTnpQU0p0WldScGRXMGlJSGc5SWpFd0xqUTNPRE0xTkNJZ2VUMGlNQ0lnYVdROUluUmxlSFF4TmpJNE1DMDJMVGtpSUhSeVlXNXpabTl5YlQwaWJXRjBjbWw0S0RFMkxqUTVNVFlzTUN3d0xERTFMall5TnpVME55dzNMakV6TWpVeU1URXNOVFF1TmpZME9UTXlLU0krUEhSemNHRnVJSGc5SWpFMUxqUTNPRE0xTkNJZ2VUMGlNU0krUTNKdmQyUjBZV2x1WlhJZ01Ud3ZkSE53WVc0K1BDOTBaWGgwUGp4MFpYaDBJSGh0YkRwemNHRmpaVDBpY0hKbGMyVnlkbVVpSUdOc1lYTnpQU0owYVc1NUlpQjRQU0l4TUM0ME56Z3pOVFFpSUhrOUlqQWlJR2xrUFNKMFpYaDBNVFl5T0RBdE5pMDVMVGNpSUhSeVlXNXpabTl5YlQwaWJXRjBjbWw0S0RFMkxqUTVNVFlzTUN3d0xERTFMall5TnpVME55dzFMamN5T0RJNE9EUXNPVEF1TVRZd01EazRLU0krUEhSemNHRnVJSGc5SWpFMUxqUTNPRE0xTkNJZ2VUMGlNUzQxSWlCcFpEMGlkSE53WVc0eE1UWXpJajVEYkdGcGJXVmtPaUJPYnp3dmRITndZVzQrUEM5MFpYaDBQangwWlhoMElIaHRiRHB6Y0dGalpUMGljSEpsYzJWeWRtVWlJR05zWVhOelBTSnRaV1JwZFcwaUlIZzlJakV6TGpRM09ETTFOQ0lnZVQwaU1UUXVNVFk0T1RrME5DSWdhV1E5SW5SbGVIUXhOakk0TUMwMklpQjBjbUZ1YzJadmNtMDlJbTFoZEhKcGVDZ3hOaTQwT1RFMkxEQXNNQ3d4TlM0Mk1qYzFORGNzTnk0MU9EazNOeklzTmk0NU9UUTNPVEF6S1NJK1BIUnpjR0Z1SUhnOUlqRTFMalEzT0RNMU5DSWdlVDBpTlM0MElpQnBaRDBpZEhOd1lXNHhNVFkxSWo1V2IzVmphR1Z5SURFOEwzUnpjR0Z1UGp3dmRHVjRkRDQ4ZEdWNGRDQjRiV3c2YzNCaFkyVTlJbkJ5WlhObGNuWmxJaUJqYkdGemN6MGljMjFoYkd3aUlIZzlJakVpSUhrOUlqRXdJaUIwY21GdWMyWnZjbTA5SW0xaGRISnBlQ2d4Tmk0ME9URTJMREFzTUN3eE5TNDJNamMxTkRjc055NDFPRGszTnpJc05pNDVPVFEzT1RBektTSStNUWw0SUFsU2IyRnpkR1ZrSUdKbFlXNXpJREkxTUdjSklDMGdDVEV3Q2UrOGhEd3ZkR1Y0ZEQ0OGRHVjRkQ0I0Yld3NmMzQmhZMlU5SW5CeVpYTmxjblpsSWlCamJHRnpjejBpYzIxaGJHd2lJSGc5SWpFaUlIazlJakV4SWlCMGNtRnVjMlp2Y20wOUltMWhkSEpwZUNneE5pNDBPVEUyTERBc01Dd3hOUzQyTWpjMU5EY3NOeTQxT0RrM056SXNOaTQ1T1RRM09UQXpLU0krTkFsNElBbFNiMkZ6ZEdWa0lHSmxZVzV6SURVd01HY0pJQzBnQ1RJd0NlKzhoRHd2ZEdWNGRENDhkR1Y0ZENCNGJXdzZjM0JoWTJVOUluQnlaWE5sY25abElpQmpiR0Z6Y3owaWMyMWhiR3dpSUhnOUlqRWlJSGs5SWpFeUlpQjBjbUZ1YzJadmNtMDlJbTFoZEhKcGVDZ3hOaTQwT1RFMkxEQXNNQ3d4TlM0Mk1qYzFORGNzTnk0MU9EazNOeklzTmk0NU9UUTNPVEF6S1NJK013bDRJQWxTYjJGemRHVmtJR0psWVc1eklERnJad2tnTFNBSk1qVUo3N3lFUEM5MFpYaDBQangwWlhoMElIaHRiRHB6Y0dGalpUMGljSEpsYzJWeWRtVWlJR05zWVhOelBTSnpiV0ZzYkNJZ2VEMGlNU0lnZVQwaU1UTWlJSFJ5WVc1elptOXliVDBpYldGMGNtbDRLREUyTGpRNU1UWXNNQ3d3TERFMUxqWXlOelUwTnl3M0xqVTRPVGMzTWl3MkxqazVORGM1TURNcElqNHhDWGdnQ1ZKdllYTjBaV1FnWW1WaGJuTWdNbXRuQ1NBdElBa3lNREFKNzd5RVBDOTBaWGgwUGp4MFpYaDBJSGh0YkRwemNHRmpaVDBpY0hKbGMyVnlkbVVpSUdOc1lYTnpQU0p6YldGc2JDSWdlRDBpTWlJZ2VUMGlNVFFpSUhSeVlXNXpabTl5YlQwaWJXRjBjbWw0S0RFMkxqUTVNVFlzTUN3d0xERTFMall5TnpVME55dzNMalU0T1RjM01pdzJMams1TkRjNU1ETXBJajVVYjNSaGJDRHZ2SVF6TmpVOEwzUmxlSFErUEhSbGVIUWdlRzFzT25Od1lXTmxQU0p3Y21WelpYSjJaU0lnWTJ4aGMzTTlJbVp2YjNSbGNpSWdlRDBpT0RVaUlIazlJak01TUNJZ2RISmhibk5tYjNKdFBTSnpZMkZzWlNneExqQXlOekkzTXpNc01DNDVOek0wTlRBNE1Ta2lQbFJvYVhNZ2RtOTFZMmhsY2lCcGN5QnViM1FnZG1Gc2FXUWdZWE1nWVc0Z2FXNTJiMmxqWlM0OEwzUmxlSFErUEM5blBqeHpkSGxzWlQ0dWMzWm5RbTlrZVNCN1ptOXVkQzFtWVcxcGJIazZJQ0pJWld4MlpYUnBZMkVpSUgwdWRHbHVlU0I3Wm05dWRDMXpkSEpsZEdOb09tNXZjbTFoYkR0bWIyNTBMWE5wZW1VNk1DNDFNalUyTWpSd2VEdHNhVzVsTFdobGFXZG9kRG94TGpJMU8zUmxlSFF0WVc1amFHOXlPbVZ1WkR0M2FHbDBaUzF6Y0dGalpUcHdjbVU3Wm1sc2JEb2paamxtT1dZNU8zMHVabTl2ZEdWeUlIdG1iMjUwTFhOMGNtVjBZMmc2Ym05eWJXRnNPMlp2Ym5RdGMybDZaVG8zY0hnN2JHbHVaUzFvWldsbmFIUTZMakkxTzNkb2FYUmxMWE53WVdObE9uQnlaVHRtYVd4c09pTm1PV1k1WmprN2ZTNXpiV0ZzYkNCN1ptOXVkQzF6YVhwbE9qQXVOWEI0TzNSbGVIUXRZV3hwWjI0NmMzUmhjblE3ZEdWNGRDMWhibU5vYjNJNmMzUmhjblE3ZDJocGRHVXRjM0JoWTJVNmNISmxPMlpwYkd3NkkyWTVaamxtT1R0OUxtMWxaR2wxYlNCN1ptOXVkQzF6YVhwbE9qQXVPVEp3ZUR0bWIyNTBMV1poYldsc2VUcElaV3gyWlhScFkyRTdkR1Y0ZEMxaGJHbG5ianBsYm1RN2RHVjRkQzFoYm1Ob2IzSTZaVzVrTzNkb2FYUmxMWE53WVdObE9uQnlaVHRtYVd4c09pTm1PV1k1WmprN2ZUd3ZjM1I1YkdVK1BHeHBibVZoY2tkeVlXUnBaVzUwSUhneFBTY3dKU2NnZVRFOUp6TXdKU2NnZURJOUp6WXdKU2NnZVRJOUp6a3dKU2NnWjNKaFpHbGxiblJWYm1sMGN6MG5kWE5sY2xOd1lXTmxUMjVWYzJVbklHbGtQU2RUZG1kcWMweHBibVZoY2tkeVlXUnBaVzUwTWpVMk1TYytQSE4wYjNBZ2MzUnZjQzFqYjJ4dmNqMG5jbWRpWVNneU1Dd2dNVEV3TENBeE5qQXNJREV3TUNrbklHOW1abk5sZEQwbk1DNHdNaWMrUEM5emRHOXdQanh6ZEc5d0lITjBiM0F0WTI5c2IzSTlKM0puWW1Fb01qVXNJRFU1TENBNU1Dd2dNVEF3S1NjZ2IyWm1jMlYwUFNjeEp6NDhMM04wYjNBK1BDOXNhVzVsWVhKSGNtRmthV1Z1ZEQ0OEwzTjJaejQ9In0="
         );
         /*solhint-enable max-line-length*/
     }
@@ -769,7 +838,7 @@ contract Vouchers721FailureTester is VouchersTest {
         metadataService = IMetadataService(address(1));
         address crowdtainerAddress;
 
-        (crowdtainerAddress, ) = createCrowdtainer(address(0));
+        (crowdtainerAddress, ) = createCrowdtainer(vouchers, address(0));
 
         uint256[] memory quantities = new uint256[](4);
         quantities[3] = 100;
@@ -798,6 +867,7 @@ contract Vouchers721FailureTester is VouchersTest {
 contract Vouchers721CreateInvalidTester is VouchersTest {
     function testFailUseInvalidMetadataServiceAddress() public {
         string[] memory productDescription = new string[](4);
+        vm.prank(eve);
         try
             vouchers.createCrowdtainer({
                 _campaignData: CampaignData(
@@ -831,7 +901,7 @@ contract Vouchers721CreateInvalidTester is VouchersTest {
         // custom errors propagating correctly in Vouchers721.sol.
         metadataService = IMetadataService(address(1));
 
-        createCrowdtainer(address(0));
+        createCrowdtainer(vouchers, address(0));
 
         uint256[] memory quantities = new uint256[](4);
         quantities[0] = 1;

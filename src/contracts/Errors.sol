@@ -62,7 +62,7 @@ library Errors {
     // -----------------------------------------------
     //  Initialization with invalid parameters
     // -----------------------------------------------
-    // @notice: Cannot initialize with owner of address(0).
+    // @notice: Contract initialized without owner address can't be set to having one.
     error OwnerAddressIsZero();
     // @notice: Cannot initialize with token of address(0).
     error TokenAddressIsZero();
