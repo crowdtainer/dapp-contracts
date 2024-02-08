@@ -63,9 +63,10 @@ async function main() {
   const crowdtainerImplementation = await hre.ethers.getContract("Crowdtainer");
 
   // Deploy Vouchers721 - main contract for users
+  // Make sure owner is set accordingly (in the example below, deployer is the address used)
   deployResult = await deploy("Vouchers721", {
     from: deployer,
-    args: [crowdtainerImplementation.address],
+    args: [crowdtainerImplementation.address, deployer],
     log: true,
   });
 
@@ -89,7 +90,7 @@ async function main() {
   const currentTime = (await ethers.provider.getBlock("latest")).timestamp;
   const campaignDurationInDays = 42;
   const campaignData = {
-    shippingAgent: agent.address,
+    shippingAgent: agentSigner.address,
     signer: '0x0000000000000000000000000000000000000000', // address(0) means no off-chain authorization required.
     // signer: agentSigner.address
     openingTime: currentTime + 10,
@@ -111,7 +112,7 @@ async function main() {
 
   try {
     txResult = await vouchers721.connect(deployerSigner).createCrowdtainer(
-      campaignData,                                       // EUR / kg     USD / kg 
+      campaignData,                                       // EUR / kg     USD / kg
       ["Germany Delivery | Single | 500g",                // 37             41
         "Germany Delivery | Single | 1kg",                // 30             33
         "Germany Delivery | Single | 2kg",                // 28             31
@@ -137,7 +138,7 @@ async function main() {
   let crowdtainerId = (numberOfDeployedCampaigns).toNumber();
   let crowdtainerAddress = await vouchers721.crowdtainerIdToAddress(crowdtainerId);
 
-  console.log(`${agent.address} created a new Crowdtainer project. Id: ${crowdtainerId} @ ${crowdtainerAddress}`);
+  console.log(`${agentSigner.address} created a new Crowdtainer project. Id: ${crowdtainerId} @ ${crowdtainerAddress}`);
 }
 
 main().catch((error) => {

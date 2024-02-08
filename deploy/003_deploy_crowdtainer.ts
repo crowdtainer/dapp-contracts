@@ -26,9 +26,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const crowdtainerImplementation = await hre.ethers.getContract("Crowdtainer");
 
   // Deploy Vouchers721 - main contract for users
+  const Vouchers721Owner = '0x0000000000000000000000000000000000000000'; // address(0) means no restrictions to createCrowdtainer() function.
   await deploy("Vouchers721", {
     from: deployer,
-    args: [crowdtainerImplementation.address],
+    args: [crowdtainerImplementation.address, Vouchers721Owner],
     log: true,
   });
 };

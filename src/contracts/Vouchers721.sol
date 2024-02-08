@@ -35,6 +35,12 @@ contract Vouchers721 is ERC721Enumerable {
     // @dev The next available tokenId for the given crowdtainerId.
     mapping(uint256 => uint256) private nextTokenIdForCrowdtainer;
 
+    /// @notice Owner of this contract deployment.
+    /// @dev Has permission to call createCrowdtainer() function. This function is optionally
+    /// @dev gated so that unrelated entities can't maliciously associate themselves with the deployer
+    /// @dev of this contract, but is instead required to deploy a new contract.
+    address public owner;
+
     // @dev Number of created crowdtainers.
     uint256 public crowdtainerCount;
 
@@ -55,17 +61,55 @@ contract Vouchers721 is ERC721Enumerable {
     mapping(uint256 => string[]) public productDescription;
 
     // -----------------------------------------------
+    //  Modifiers
+    // -----------------------------------------------
+    /**
+     * @dev If the contract has an "owner" specified, this modifier will
+     * enforce that only the owner can call the function. If no owner is assigned (is address(0)), then the
+     * restriction is not applied.
+     */
+    modifier onlyOwner() {
+        if (owner == address(0)) {
+            // No restrictions.
+            _;
+            return;
+        }
+        if (msg.sender != owner)
+            revert Errors.CallerNotAllowed({
+                expected: owner,
+                actual: msg.sender
+            });
+        require(msg.sender == owner);
+        _;
+    }
+
+    // -----------------------------------------------
     //  Events
     // -----------------------------------------------
 
     // @note Emmited when this contract is created.
-    event Vouchers721Created(address indexed crowdtainer);
+    event Vouchers721Created(
+        address indexed crowdtainer,
+        address indexed owner
+    );
 
     // @note Emmited when a new Crowdtainer is deployed and initialized by this contract.
     event CrowdtainerDeployed(
         address indexed _crowdtainerAddress,
         uint256 _nextCrowdtainerId
     );
+
+    /// @notice Emmited when the owner changes.
+    event OwnerChanged(address indexed newOwner);
+
+    function requireMsgSender(address requiredAddress) internal view {
+        if (msg.sender != requiredAddress)
+            revert Errors.CallerNotAllowed({
+                expected: requiredAddress,
+                actual: msg.sender
+            });
+        require(msg.sender == requiredAddress);
+    }
 
     // -----------------------------------------------
     //  Contract functions
@@ -75,13 +119,28 @@ contract Vouchers721 is ERC721Enumerable {
      * @notice Create and deploy a new Crowdtainer manager.
      * @dev Uses contract factory pattern.
      * @param _crowdtainerImplementation the address of the reference implementation.
+     * @param _owner Optional. If not address(0), it will be the only address allowed to create new crowdtainer projects from this manager contract.
      */
     constructor(
-        address _crowdtainerImplementation
+        address _crowdtainerImplementation,
+        address _owner
     ) ERC721("Vouchers721", "VV1") {
         // equivalent to: crowdtainerImplementation = address(new Crowdtainer(address(this)));.
         crowdtainerImplementation = _crowdtainerImplementation;
-        emit Vouchers721Created(address(this));
+        owner = _owner;
+        emit Vouchers721Created(address(this), owner);
+    }
+
+    /**
+     * @notice Set a new address to be allowed to deploy new campaigns from this manager contract.
+     * @notice Only possible if this contract was deployed with a owner other than address(0).
+     */
+    function setOwner(address _owner) external onlyOwner {
+        if (owner == address(0)) {
+            revert Errors.OwnerAddressIsZero();
+        }
+        owner = _owner;
+        emit OwnerChanged(owner);
     }
 
     /**
@@ -95,7 +154,7 @@ contract Vouchers721 is ERC721Enumerable {
         CampaignData calldata _campaignData,
         string[] memory _productDescription,
         address _metadataService
-    ) external returns (address, uint256) {
+    ) external onlyOwner returns (address, uint256) {
         if (_metadataService == address(0)) {
             revert Errors.MetadataServiceAddressIsZero();
         }

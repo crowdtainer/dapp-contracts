@@ -132,8 +132,7 @@ contract MetadataServiceV1 is IMetadataService {
     {
         uint256 totalCostYShift = yStartingPoint +
             yIncrement *
-            numberOfProuducts +
-            anchorX; // constant just to give a bit of extra spacing
+            numberOfProuducts;
 
         return
             string(
@@ -194,7 +193,7 @@ contract MetadataServiceV1 is IMetadataService {
                     "</tspan></text>",
                     description,
                     getSVGTotalCost(totalCost, _metadata.numberOfProducts),
-                    '<text xml:space="preserve" class="footer" x="85" y="380" transform="scale(1.0272733,0.97345081)">',
+                    '<text xml:space="preserve" class="footer" x="85" y="390" transform="scale(1.0272733,0.97345081)">',
                     _ticketFootnotes,
                     "</text></g>",
                     getSVGFooter()
