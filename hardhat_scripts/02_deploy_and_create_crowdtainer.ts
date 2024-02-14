@@ -66,11 +66,11 @@ async function main() {
   // Make sure owner is set accordingly (in the example below, deployer is the address used)
   deployResult = await deploy("Vouchers721", {
     from: deployer,
-    args: [crowdtainerImplementation.address, deployer],
+    args: [crowdtainerImplementation.address, deployerSigner.address],
     log: true,
   });
 
-  console.log(`Vouchers721 deployed at address ${deployResult.address}`);
+  console.log(`Vouchers721 deployed at address ${deployResult.address} with ${deployerSigner.address}`);
 
   // const [agent, neo, trinity] = await ethers.getSigners();
   let arrayOfPrices = new Array<BigNumberish>();
@@ -138,7 +138,7 @@ async function main() {
   let crowdtainerId = (numberOfDeployedCampaigns).toNumber();
   let crowdtainerAddress = await vouchers721.crowdtainerIdToAddress(crowdtainerId);
 
-  console.log(`${agentSigner.address} created a new Crowdtainer project. Id: ${crowdtainerId} @ ${crowdtainerAddress}`);
+  console.log(`${deployerSigner.address} created a new Crowdtainer project. Id: ${crowdtainerId} @ ${crowdtainerAddress}`);
 }
 
 main().catch((error) => {
