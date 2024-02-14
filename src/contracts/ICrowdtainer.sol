@@ -48,10 +48,11 @@ struct SignedPermit {
 interface ICrowdtainer {
     /**
      * @dev Initializes a Crowdtainer.
+     * @param _owner The contract owning this Crowdtainer instance, if any (address(0x0) for no owner).
      * @param _campaignData Data defining all rules and values of this Crowdtainer instance.
      */
     function initialize(
-        address owner,
+        address _owner,
         CampaignData calldata _campaignData
     ) external;
 
